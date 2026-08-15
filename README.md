@@ -92,9 +92,9 @@ docs/
 | Etapa | Escopo | Situação |
 | --- | --- | --- |
 | 0 | Fundação: scaffold, tokens, configuração, documentação | Concluída |
-| 1 | Banco: tabelas, RLS, funções transacionais, seeds | Pendente |
-| 2 | Núcleo de domínio testado: medidas, "cabe ou não cabe", estoque | Pendente |
-| 3 | Autenticação e perfis de acesso | Pendente |
+| 1 | Banco: tabelas, RLS, funções transacionais, seeds | Concluída |
+| 2 | Núcleo de domínio testado: medidas, "cabe ou não cabe", estoque | Concluída |
+| 3 | Autenticação e perfis de acesso | Em andamento |
 | 4 | Cadastros: perfis, acabamentos, locais, clientes, configurações | Pendente |
 | 5 | Cadastro rápido de sobras | Pendente |
 | 6 | Pesquisa, reserva e corte | Pendente |

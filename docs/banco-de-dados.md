@@ -2,10 +2,13 @@
 
 ## Situação
 
-O esquema da Fase 1 está **escrito e com sintaxe validada**, mas **ainda não foi
-aplicado** em nenhum banco. Não há Docker nesta máquina, então não foi possível
-subir um Supabase local para testar antes. A prova de que funciona é aplicar no
-projeto e rodar o teste de RLS — passo 3 abaixo.
+**Aplicado e verificado** no projeto `dvwzpdhlfjzriqmdtceu` em 15/08/2026.
+As 16 verificações de isolamento passaram, executadas sob o papel
+`authenticated` (não como superusuário, que ignoraria o RLS). O cadastro
+público de usuários está desabilitado no painel.
+
+Os passos abaixo continuam valendo para recriar o banco do zero, para um
+ambiente de homologação ou para uma segunda empresa.
 
 ## Passo 1 — Aplicar o esquema
 
