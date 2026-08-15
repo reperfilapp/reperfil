@@ -1,42 +1,60 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { GuardaConexao } from '@/componentes/GuardaConexao'
 import { ProvedorAutenticacao } from '@/autenticacao/ContextoAutenticacao'
 import { RotaProtegida } from '@/autenticacao/RotaProtegida'
+import { LayoutApp } from '@/componentes/LayoutApp'
+import { clienteConsultas } from '@/lib/consultas'
 import Entrar from '@/paginas/Entrar'
 import RecuperarSenha from '@/paginas/RecuperarSenha'
 import DefinirSenha from '@/paginas/DefinirSenha'
 import Inicio from '@/paginas/Inicio'
+import Mais from '@/paginas/Mais'
+import Configuracoes from '@/paginas/Configuracoes'
+import ModelosPerfil from '@/paginas/cadastros/ModelosPerfil'
+import Acabamentos from '@/paginas/cadastros/Acabamentos'
+import Localizacoes from '@/paginas/cadastros/Localizacoes'
+import Clientes from '@/paginas/cadastros/Clientes'
 
 /**
  * Casca da aplicação.
  *
- * A ordem importa: a guarda de conexão fica por fora de tudo. Sem rede não
- * adianta tentar restaurar sessão nem carregar perfil — só produziria erros
- * confusos em vez de uma mensagem clara.
+ * A ordem das camadas importa. A guarda de conexão fica por fora de tudo:
+ * sem rede não adianta restaurar sessão nem consultar o banco, só
+ * produziria erros confusos em vez de uma mensagem clara.
  */
 export default function App() {
   return (
     <GuardaConexao>
-      <ProvedorAutenticacao>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/entrar" element={<Entrar />} />
-            <Route path="/recuperar-senha" element={<RecuperarSenha />} />
-            <Route path="/definir-senha" element={<DefinirSenha />} />
+      <QueryClientProvider client={clienteConsultas}>
+        <ProvedorAutenticacao>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/entrar" element={<Entrar />} />
+              <Route path="/recuperar-senha" element={<RecuperarSenha />} />
+              <Route path="/definir-senha" element={<DefinirSenha />} />
 
-            <Route
-              path="/"
-              element={
-                <RotaProtegida>
-                  <Inicio />
-                </RotaProtegida>
-              }
-            />
+              <Route
+                element={
+                  <RotaProtegida>
+                    <LayoutApp />
+                  </RotaProtegida>
+                }
+              >
+                <Route path="/" element={<Inicio />} />
+                <Route path="/perfis" element={<ModelosPerfil />} />
+                <Route path="/acabamentos" element={<Acabamentos />} />
+                <Route path="/localizacoes" element={<Localizacoes />} />
+                <Route path="/clientes" element={<Clientes />} />
+                <Route path="/mais" element={<Mais />} />
+                <Route path="/configuracoes" element={<Configuracoes />} />
+              </Route>
 
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </ProvedorAutenticacao>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </ProvedorAutenticacao>
+      </QueryClientProvider>
     </GuardaConexao>
   )
 }
