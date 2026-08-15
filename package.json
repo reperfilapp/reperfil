@@ -14,7 +14,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cobertura": "vitest run --coverage",
-    "verificar": "npm run lint && npm run test && npm run build"
+    "verificar": "npm run lint && npm run test && npm run build",
+    "banco:consolidar": "node scripts/consolidar-banco.mjs",
+    "banco:validar": "node scripts/validar-sql.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.0",
@@ -30,7 +32,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.7",
     "@testing-library/jest-dom": "^7.0.1",
-    "@testing-library/react": "^16.4.1",
+    "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
@@ -39,6 +41,7 @@
     "@vitest/coverage-v8": "^4.1.1",
     "jsdom": "^29.1.1",
     "oxlint": "^1.75.0",
+    "pg-query-emscripten": "^5.1.0",
     "prettier": "^3.7.4",
     "prettier-plugin-tailwindcss": "^0.7.1",
     "tailwindcss": "^4.2.7",
