@@ -15,13 +15,22 @@ import fs from 'node:fs'
 import path from 'node:path'
 import iniciarParser from 'pg-query-emscripten'
 
-const alvos = [
-  ...fs
-    .readdirSync('supabase/migrations')
+/** Lista os .sql de uma pasta, em ordem. */
+function sqlDe(pasta) {
+  return fs
+    .readdirSync(pasta)
+    .filter((arquivo) => arquivo.endsWith('.sql'))
     .sort()
-    .map((a) => path.join('supabase/migrations', a)),
+    .map((arquivo) => path.join(pasta, arquivo))
+}
+
+// Varre as pastas inteiras, para que um arquivo novo não passe despercebido
+// por não ter sido acrescentado a uma lista fixa aqui.
+const alvos = [
+  ...sqlDe('supabase/migrations'),
+  ...sqlDe('supabase/testes'),
   'supabase/seed.sql',
-  'supabase/testes/verificar-rls.sql',
+  'supabase/criar-primeiro-administrador.sql',
 ]
 
 let falhas = 0
