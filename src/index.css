@@ -3,13 +3,17 @@
 /*
  * RePerfil — tokens de tema
  *
- * Identidade industrial, limpa e moderna: tons de grafite e alumínio,
- * azul para ações principais, verde para economia e aproveitamento,
- * vermelho reservado a erro e descarte.
+ * Cores tiradas do logotipo da marca: azul-marinho como cor principal,
+ * cinza-alumínio como neutro, vermelho como acento.
+ *
+ * ATENÇÃO ao vermelho. No logotipo ele é decorativo (a trena e a seta de
+ * reaproveitamento), mas na INTERFACE ele continua reservado a erro e
+ * descarte — nunca em botão de ação. Vermelho que às vezes significa
+ * "perigo" e às vezes "clique aqui" ensina o usuário a ignorar o aviso,
+ * e num depósito isso vira peça descartada por engano.
  *
  * Todas as cores da interface saem daqui. Nenhum componente deve usar
- * cor literal (bg-blue-500 e afins) — assim, quando a empresa definir
- * as cores dela, basta trocar este arquivo.
+ * cor literal (bg-blue-500 e afins).
  */
 
 @theme {
@@ -34,13 +38,19 @@
   --color-aluminio-400: oklch(0.72 0.014 230);
   --color-aluminio-500: oklch(0.62 0.016 230);
 
-  /* Azul — ações principais */
-  --color-acao-50: oklch(0.97 0.02 250);
-  --color-acao-100: oklch(0.93 0.045 250);
-  --color-acao-300: oklch(0.76 0.12 250);
-  --color-acao-500: oklch(0.58 0.19 250);
-  --color-acao-600: oklch(0.51 0.2 250);
-  --color-acao-700: oklch(0.44 0.18 250);
+  /*
+   * Azul-marinho do logotipo — ações principais.
+   * O 700 é o tom exato da marca (#2B3A5E). Os vizinhos foram construídos
+   * em volta dele para dar estados de foco, repouso e pressionado, mantendo
+   * contraste suficiente com texto branco.
+   */
+  --color-acao-50: oklch(0.96 0.015 258);
+  --color-acao-100: oklch(0.91 0.035 258);
+  --color-acao-300: oklch(0.7 0.08 258);
+  --color-acao-500: oklch(0.47 0.09 258);
+  --color-acao-600: oklch(0.4 0.085 258);
+  --color-acao-700: oklch(0.33 0.075 258);
+  --color-acao-800: oklch(0.27 0.06 258);
 
   /* Verde — economia, aproveitamento, disponível */
   --color-economia-50: oklch(0.96 0.03 155);
@@ -56,12 +66,19 @@
   --color-atencao-600: oklch(0.66 0.16 65);
   --color-atencao-700: oklch(0.55 0.14 55);
 
-  /* Vermelho — apenas erro e descarte */
-  --color-erro-50: oklch(0.96 0.02 25);
-  --color-erro-100: oklch(0.92 0.05 25);
-  --color-erro-500: oklch(0.58 0.21 25);
-  --color-erro-600: oklch(0.51 0.21 25);
-  --color-erro-700: oklch(0.44 0.19 25);
+  /*
+   * Vermelho do logotipo — na interface, APENAS erro e descarte.
+   * Nunca usar em botão de ação, por mais que a marca use vermelho:
+   * cor de alerta que também significa "clique aqui" deixa de alertar.
+   */
+  --color-erro-50: oklch(0.96 0.022 27);
+  --color-erro-100: oklch(0.91 0.055 27);
+  --color-erro-500: oklch(0.58 0.2 27);
+  --color-erro-600: oklch(0.52 0.21 27);
+  --color-erro-700: oklch(0.45 0.19 27);
+
+  /* Cinza do logotipo — usado no traço secundário da marca */
+  --color-marca-cinza: oklch(0.71 0.004 260);
 
   /* Alvos de toque — uso de depósito, com luvas e uma mão só */
   --spacing-toque: 3rem; /* 48px, mínimo confortável */
