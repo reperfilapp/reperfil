@@ -101,6 +101,9 @@ docs/
 | 7 | Painel, relatórios e PWA | Pendente |
 | 8 | Android (Capacitor) e documentação de publicação | Pendente |
 
+Itens combinados e ainda não implementados estão em `docs/pendencias.md` —
+foto da peça, fotos do desenho técnico do perfil e leitura de QR Code.
+
 As Fases 2, 3 e 4 estão descritas em `docs/backlog-fases.md` e **não devem ser
 implementadas** até a Fase 1 ser aprovada.
 
