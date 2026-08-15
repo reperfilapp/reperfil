@@ -10,6 +10,7 @@ import {
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { eAdministrador, podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
+import { SeloVersao } from '@/componentes/SeloVersao'
 
 /**
  * Menu de cadastros e configurações.
@@ -99,6 +100,8 @@ export default function Mais() {
         <LogOut aria-hidden="true" className="size-5" />
         Sair
       </Botao>
+
+      <SeloVersao className="mt-6" />
     </div>
   )
 }

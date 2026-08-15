@@ -6,6 +6,7 @@ import { Botao } from '@/componentes/ui/Botao'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { APLICACAO } from '@/config/aplicacao'
 import { MarcaRePerfil } from '@/componentes/MarcaRePerfil'
+import { SeloVersao } from '@/componentes/SeloVersao'
 
 export default function Entrar() {
   const { sessao, entrar } = useAutenticacao()
@@ -103,6 +104,8 @@ export default function Entrar() {
         O acesso é criado pelo administrador da sua empresa. Não há cadastro
         aberto.
       </p>
+
+      <SeloVersao />
     </main>
   )
 }
