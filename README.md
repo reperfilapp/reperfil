@@ -6,8 +6,9 @@ Aplicativo de controle de sobras de perfis de alumínio e orçamento de esquadri
 PWA instalável, web responsiva e Android (via Capacitor), a partir de uma única
 base de código.
 
-**Situação atual: Etapa 0 concluída — fundação do projeto.** Ainda não há
-funcionalidade de negócio; ver o plano de etapas mais abaixo.
+**Situação atual: versão 0.5.0 — Etapas 0 a 5 concluídas.** Já é possível
+cadastrar perfis, acabamentos, localizações e clientes, e lançar sobras no
+estoque. Publicado em https://reperfil.vercel.app.
 
 ## O problema que resolve
 
@@ -60,6 +61,10 @@ A aplicação sobe em `http://localhost:5173`.
 | `npm run test:cobertura` | Testes com relatório de cobertura |
 | `npm run format` | Formata o código (Prettier) |
 | `npm run verificar` | Lint + testes + build — rode antes de commitar |
+| `npm run banco:validar` | Confere a sintaxe dos arquivos SQL |
+| `npm run banco:consolidar` | Junta as migrations num arquivo só |
+| `npm run icones` | Regenera os ícones a partir de `public/logo.png` |
+| `npm run versao:etapa` | Sobe a versão ao concluir uma etapa |
 
 ## Organização das pastas
 
@@ -70,11 +75,22 @@ src/
   dominio/       Regras de negócio puras e testáveis (medidas, cortes, estoque)
   lib/           Utilitários genéricos
   testes/        Configuração da suíte de testes
+  autenticacao/  Sessão, papéis e proteção de rotas
+  dados/         Consultas e gravações, por entidade
+  paginas/       Uma pasta por tela
+  tipos/         Tipos espelhando as tabelas do banco
 docs/
+  banco-de-dados.md  Como aplicar e verificar o esquema
   backlog-fases.md   Escopo das Fases 2, 3 e 4 — não implementar agora
   decisoes.md        Decisões que divergem da especificação, com o motivo
+  pendencias.md      Itens combinados e ainda não implementados
+  publicacao-vercel.md  Como publicar
+  versoes.md         Histórico de versões
   prompt-inicial.txt Especificação original
   referencia/        PDFs de referência (fora do controle de versão)
+supabase/
+  migrations/    Esquema do banco, em ordem
+  testes/        Verificações de RLS e de cadastros
 ```
 
 ## Convenções
@@ -94,9 +110,9 @@ docs/
 | 0 | Fundação: scaffold, tokens, configuração, documentação | Concluída |
 | 1 | Banco: tabelas, RLS, funções transacionais, seeds | Concluída |
 | 2 | Núcleo de domínio testado: medidas, "cabe ou não cabe", estoque | Concluída |
-| 3 | Autenticação e perfis de acesso | Em andamento |
-| 4 | Cadastros: perfis, acabamentos, locais, clientes, configurações | Pendente |
-| 5 | Cadastro rápido de sobras | Pendente |
+| 3 | Autenticação e perfis de acesso | Concluída |
+| 4 | Cadastros: perfis, acabamentos, locais, clientes, configurações | Concluída |
+| 5 | Cadastro rápido de sobras | Concluída |
 | 6 | Pesquisa, reserva e corte | Pendente |
 | 7 | Painel, relatórios e PWA | Pendente |
 | 8 | Android (Capacitor) e documentação de publicação | Pendente |
