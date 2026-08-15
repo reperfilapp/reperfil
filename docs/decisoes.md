@@ -77,6 +77,20 @@ Conferindo o caso obrigatório, com margem de limpeza zero:
 1200 + 3 (serra) + 600 = 1803 mm > 1800 mm  →  não cabe  ✓
 ```
 
+**Refinamento descoberto na implementação.** A regra "`n − 1` passadas" só vale
+quando o último corte termina exatamente no fim da peça. Se sobrar material
+depois dele, foi preciso mais uma passada de serra para separar esse resto — e
+ignorar isso faria o sistema anunciar uma sobra maior do que a peça que está
+realmente no depósito.
+
+Exemplo: peça de 1.800 mm, um corte de 1.200 mm, serra de 3 mm. O corte cabe
+(não consome serra pelo critério acima), mas a sobra registrada é **597 mm**, não
+600 mm, porque o disco comeu 3 mm ao separá-la.
+
+Consequência adicional: quando a folga é menor que a própria espessura do disco,
+não sobra peça alguma — vira pó. O sistema registra resto zero, não uma sobra
+de 2 mm inexistente.
+
 **Parametrizável.** A tela de configurações (`configuracoes_aplicacao`) permite
 alternar para a convenção "toda peça cortada consome uma perda de serra", caso a
 prática da serralheria seja outra. O padrão é o descrito acima.
