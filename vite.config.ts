@@ -5,6 +5,11 @@ import path from 'node:path'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    // Expõe o servidor na rede local, para abrir o app no celular durante o
+    // desenvolvimento. Só vale dentro do Wi-Fi — não é acesso pela internet.
+    host: true,
+  },
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
