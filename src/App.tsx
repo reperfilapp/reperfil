@@ -9,6 +9,8 @@ import Entrar from '@/paginas/Entrar'
 import RecuperarSenha from '@/paginas/RecuperarSenha'
 import DefinirSenha from '@/paginas/DefinirSenha'
 import Inicio from '@/paginas/Inicio'
+import Sobras from '@/paginas/Sobras'
+import CadastrarSobra from '@/paginas/CadastrarSobra'
 import Mais from '@/paginas/Mais'
 import Configuracoes from '@/paginas/Configuracoes'
 import ModelosPerfil from '@/paginas/cadastros/ModelosPerfil'
@@ -42,6 +44,8 @@ export default function App() {
                 }
               >
                 <Route path="/" element={<Inicio />} />
+                <Route path="/sobras" element={<Sobras />} />
+                <Route path="/cadastrar" element={<CadastrarSobra />} />
                 <Route path="/perfis" element={<ModelosPerfil />} />
                 <Route path="/acabamentos" element={<Acabamentos />} />
                 <Route path="/localizacoes" element={<Localizacoes />} />

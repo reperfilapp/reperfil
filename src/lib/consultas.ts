@@ -29,6 +29,7 @@ export const clienteConsultas = new QueryClient({
  * `['acabamento']`, e a segunda nunca atualiza.
  */
 export const chaves = {
+  sobras: ['sobras'] as const,
   acabamentos: ['acabamentos'] as const,
   localizacoes: ['localizacoes'] as const,
   modelosPerfil: ['modelos-perfil'] as const,

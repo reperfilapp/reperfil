@@ -134,3 +134,42 @@ próprio do projeto, não o e-mail pessoal do responsável.
 **Motivo.** Separa faturamento, chaves e permissões da conta pessoal, e permite
 transferir a administração para outra pessoa da empresa sem entregar acesso
 pessoal.
+
+---
+
+## D8 — Conta de teste mantida durante o desenvolvimento
+
+**Decisão.** A conta `teste@reperfil.invalido`, com papel de administrador e
+senha conhecida, permanece ativa enquanto o sistema estiver em
+desenvolvimento. Risco assumido conscientemente pelo responsável.
+
+**Motivo.** Permite verificar as telas autenticadas a cada etapa, em vez de
+depender de teste manual para tudo. O ganho de qualidade é real e imediato.
+
+**Por que é aceitável hoje.** O banco contém apenas dados de demonstração. Uma
+invasão desta conta hoje daria acesso a perfis e sobras fictícios.
+
+> ### ⚠ Quando isto deixa de ser aceitável
+>
+> **No dia em que o primeiro cliente real for cadastrado.** A tabela
+> `clientes` guarda nome, CPF ou CNPJ, endereço e telefone — dado pessoal sob
+> a LGPD, de terceiros que não consentiram com nada. A partir daí, uma conta
+> de administrador com senha conhecida, num sistema exposto na internet, deixa
+> de ser risco assumido e passa a ser exposição de dado de terceiro.
+>
+> Antes disso, apagar:
+>
+> ```sql
+> delete from auth.users where email = 'teste@reperfil.invalido';
+> ```
+>
+> Se a conta já tiver gerado movimentações — que são imutáveis por decisão de
+> projeto — desativar em vez de apagar:
+>
+> ```sql
+> update perfis_usuario set ativo = false
+>  where email = 'teste@reperfil.invalido';
+> ```
+>
+> Este item está repetido na lista de verificação de
+> `docs/publicacao-play-store.md`, porque publicar na loja implica uso real.

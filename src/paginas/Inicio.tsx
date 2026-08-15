@@ -1,54 +1,105 @@
+import { Link } from 'react-router-dom'
+import { PackagePlus, Package, Clock, Ruler } from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
-import { Botao } from '@/componentes/ui/Botao'
+import { podeMovimentarEstoque } from '@/autenticacao/contexto'
+import { useResumoEstoque } from '@/dados/sobras'
+import { useConfiguracoes } from '@/dados/configuracoes'
 import { MarcaRePerfil } from '@/componentes/MarcaRePerfil'
-import { APLICACAO } from '@/config/aplicacao'
 
-/**
- * Tela inicial provisória. O painel de verdade — sobras disponíveis, metragem
- * total, reservados, cadastros recentes e o botão grande de cadastro rápido —
- * é a Etapa 7. Por ora ela serve para confirmar que a autenticação e o carregamento
- * do perfil funcionam de ponta a ponta.
- */
 export default function Inicio() {
-  const { perfil, sair } = useAutenticacao()
+  const { perfil } = useAutenticacao()
+  const { data: resumo, isPending } = useResumoEstoque()
+  const { data: config } = useConfiguracoes()
+
+  const metros =
+    resumo === undefined
+      ? null
+      : (resumo.milimetrosDisponiveis / 1000).toLocaleString('pt-BR', {
+          maximumFractionDigits: 1,
+        })
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col gap-8 px-6 py-10">
-      <header className="flex items-center gap-3">
-        <MarcaRePerfil className="text-acao-600 size-10" />
-        <div>
-          <h1 className="text-2xl font-bold">{APLICACAO.nome}</h1>
-          <p className="text-texto-suave text-sm">{APLICACAO.slogan}</p>
+    <div className="mx-auto w-full max-w-2xl px-5 py-6">
+      <header className="mb-6 flex items-center gap-3">
+        <MarcaRePerfil className="size-11" />
+        <div className="min-w-0">
+          <p className="truncate text-lg leading-tight font-bold">
+            Olá, {perfil?.nome.split(' ')[0]}
+          </p>
+          <p className="text-texto-suave truncate text-sm capitalize">
+            {perfil?.papel}
+          </p>
         </div>
       </header>
 
-      <section className="bg-superficie rounded-2xl p-6 shadow-sm">
-        <h2 className="mb-4 text-lg font-semibold">Você está conectado</h2>
+      {/* Aviso enquanto os parâmetros de corte não foram confirmados. Sem
+          isso, todo cálculo de aproveitamento usa números presumidos. */}
+      {config && !config.confirmado_pelo_administrador && (
+        <Link
+          to="/configuracoes"
+          className="bg-atencao-50 text-atencao-700 hover:bg-atencao-100 mb-5 block rounded-xl p-4 text-sm"
+        >
+          <strong>Confirme os parâmetros de corte.</strong> A espessura da serra
+          e o mínimo de sobra ainda são valores presumidos.
+        </Link>
+      )}
 
-        <dl className="grid gap-3 text-sm">
-          <div className="flex justify-between gap-4">
-            <dt className="text-texto-suave">Nome</dt>
-            <dd className="font-medium">{perfil?.nome}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-texto-suave">E-mail</dt>
-            <dd className="font-medium">{perfil?.email}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-texto-suave">Perfil de acesso</dt>
-            <dd className="font-medium capitalize">{perfil?.papel}</dd>
-          </div>
-        </dl>
+      <section
+        aria-label="Resumo do estoque"
+        className="mb-6 grid grid-cols-3 gap-3"
+      >
+        <Indicador
+          Icone={Package}
+          rotulo="Disponíveis"
+          valor={isPending ? '—' : String(resumo?.pecasDisponiveis ?? 0)}
+        />
+        <Indicador
+          Icone={Ruler}
+          rotulo="Metros"
+          valor={isPending ? '—' : (metros ?? '0')}
+        />
+        <Indicador
+          Icone={Clock}
+          rotulo="Reservadas"
+          valor={isPending ? '—' : String(resumo?.pecasReservadas ?? 0)}
+        />
       </section>
 
-      <p className="bg-superficie-2 text-texto-suave rounded-xl px-4 py-3 text-sm">
-        Etapa 3 — autenticação e perfis de acesso. O painel com estoque,
-        pesquisa e cadastro rápido vem nas próximas etapas.
-      </p>
+      {podeMovimentarEstoque(perfil) && (
+        <Link
+          to="/cadastrar"
+          className="bg-acao-600 hover:bg-acao-700 flex min-h-24 items-center justify-center gap-3 rounded-2xl px-6 text-xl font-bold text-white"
+        >
+          <PackagePlus aria-hidden="true" className="size-8" />
+          Cadastrar sobra
+        </Link>
+      )}
 
-      <Botao variante="contorno" onClick={() => void sair()}>
-        Sair
-      </Botao>
-    </main>
+      <Link
+        to="/sobras"
+        className="border-borda bg-superficie hover:bg-superficie-2 mt-3 flex min-h-16 items-center justify-center gap-2 rounded-2xl border-2 font-semibold"
+      >
+        <Package aria-hidden="true" className="size-5" />
+        Ver estoque de sobras
+      </Link>
+    </div>
+  )
+}
+
+function Indicador({
+  Icone,
+  rotulo,
+  valor,
+}: {
+  Icone: typeof Package
+  rotulo: string
+  valor: string
+}) {
+  return (
+    <div className="bg-superficie rounded-xl p-4 text-center shadow-sm">
+      <Icone aria-hidden="true" className="text-acao-600 mx-auto mb-1 size-5" />
+      <p className="text-2xl font-bold tabular-nums">{valor}</p>
+      <p className="text-texto-suave text-xs">{rotulo}</p>
+    </div>
   )
 }

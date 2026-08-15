@@ -1,5 +1,11 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Home, Layers, Users, Menu as MenuIcone } from 'lucide-react'
+import {
+  Home,
+  Package,
+  PackagePlus,
+  Users,
+  Menu as MenuIcone,
+} from 'lucide-react'
 import { MarcaRePerfil } from './MarcaRePerfil'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { APLICACAO } from '@/config/aplicacao'
@@ -12,15 +18,16 @@ import { cn } from '@/lib/utilitarios'
  * usado de pé no depósito e muitas vezes com uma mão só.
  * No computador: menu lateral, onde há espaço e o trabalho é administrativo.
  */
-// Sobras e Cadastrar entram nas Etapas 5 e 6, quando houver estoque para
-// listar e o fluxo de cadastro rápido existir. Colocar os itens antes disso
-// só produziria telas vazias.
 const ITENS_NAVEGACAO = [
   { para: '/', rotulo: 'Início', Icone: Home, exato: true },
-  { para: '/perfis', rotulo: 'Perfis', Icone: Layers, exato: false },
+  { para: '/sobras', rotulo: 'Sobras', Icone: Package, exato: false },
+  { para: '/cadastrar', rotulo: 'Cadastrar', Icone: PackagePlus, exato: false },
   { para: '/clientes', rotulo: 'Clientes', Icone: Users, exato: false },
   { para: '/mais', rotulo: 'Mais', Icone: MenuIcone, exato: false },
 ] as const
+
+/** O cadastro é a ação mais frequente, então ganha destaque na barra. */
+const ROTA_DESTACADA = '/cadastrar'
 
 export function LayoutApp() {
   const { perfil } = useAutenticacao()
@@ -68,24 +75,39 @@ export function LayoutApp() {
       {/* Navegação inferior — apenas no celular */}
       <nav
         aria-label="Navegação principal"
-        className="border-borda bg-superficie fixed inset-x-0 bottom-0 z-10 grid grid-cols-4 border-t md:hidden"
+        className="border-borda bg-superficie fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 border-t md:hidden"
       >
-        {ITENS_NAVEGACAO.map(({ para, rotulo, Icone, exato }) => (
-          <NavLink
-            key={para}
-            to={para}
-            end={exato}
-            className={({ isActive }) =>
-              cn(
-                'flex min-h-16 flex-col items-center justify-center gap-1 text-xs',
-                isActive ? 'text-acao-600' : 'text-texto-suave',
-              )
-            }
-          >
-            <Icone aria-hidden="true" className="size-6" />
-            {rotulo}
-          </NavLink>
-        ))}
+        {ITENS_NAVEGACAO.map(({ para, rotulo, Icone, exato }) => {
+          const destacado = para === ROTA_DESTACADA
+
+          return (
+            <NavLink
+              key={para}
+              to={para}
+              end={exato}
+              className={({ isActive }) =>
+                cn(
+                  'flex min-h-16 flex-col items-center justify-center gap-1 text-xs',
+                  destacado
+                    ? 'text-acao-600'
+                    : isActive
+                      ? 'text-acao-600'
+                      : 'text-texto-suave',
+                )
+              }
+            >
+              <Icone
+                aria-hidden="true"
+                className={cn(
+                  destacado
+                    ? 'bg-acao-600 size-9 rounded-full p-1.5 text-white'
+                    : 'size-6',
+                )}
+              />
+              {rotulo}
+            </NavLink>
+          )
+        })}
       </nav>
     </div>
   )
