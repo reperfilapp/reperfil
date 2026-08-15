@@ -1,0 +1,50 @@
+{
+  "name": "reperfil",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "RePerfil — Orce, projete e reaproveite. Estoque de sobras e orçamento para esquadrias de alumínio.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "oxlint",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cobertura": "vitest run --coverage",
+    "verificar": "npm run lint && npm run test && npm run build"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.95.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.31.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.13.1",
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.7",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.4.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "@vitest/coverage-v8": "^4.1.1",
+    "jsdom": "^29.1.1",
+    "oxlint": "^1.75.0",
+    "prettier": "^3.7.4",
+    "prettier-plugin-tailwindcss": "^0.7.1",
+    "tailwindcss": "^4.2.7",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0",
+    "vite-plugin-pwa": "^1.1.0",
+    "vitest": "^4.1.1"
+  }
+}

@@ -1,0 +1,151 @@
+@import 'tailwindcss';
+
+/*
+ * RePerfil — tokens de tema
+ *
+ * Identidade industrial, limpa e moderna: tons de grafite e alumínio,
+ * azul para ações principais, verde para economia e aproveitamento,
+ * vermelho reservado a erro e descarte.
+ *
+ * Todas as cores da interface saem daqui. Nenhum componente deve usar
+ * cor literal (bg-blue-500 e afins) — assim, quando a empresa definir
+ * as cores dela, basta trocar este arquivo.
+ */
+
+@theme {
+  /* Grafite — superfícies escuras e textos */
+  --color-grafite-50: oklch(0.97 0.002 250);
+  --color-grafite-100: oklch(0.93 0.004 250);
+  --color-grafite-200: oklch(0.86 0.006 250);
+  --color-grafite-300: oklch(0.74 0.008 250);
+  --color-grafite-400: oklch(0.6 0.01 250);
+  --color-grafite-500: oklch(0.48 0.012 250);
+  --color-grafite-600: oklch(0.39 0.013 250);
+  --color-grafite-700: oklch(0.31 0.013 250);
+  --color-grafite-800: oklch(0.24 0.012 250);
+  --color-grafite-900: oklch(0.18 0.01 250);
+  --color-grafite-950: oklch(0.13 0.008 250);
+
+  /* Alumínio — superfícies claras, bordas, frios metálicos */
+  --color-aluminio-50: oklch(0.98 0.003 230);
+  --color-aluminio-100: oklch(0.95 0.005 230);
+  --color-aluminio-200: oklch(0.9 0.008 230);
+  --color-aluminio-300: oklch(0.83 0.011 230);
+  --color-aluminio-400: oklch(0.72 0.014 230);
+  --color-aluminio-500: oklch(0.62 0.016 230);
+
+  /* Azul — ações principais */
+  --color-acao-50: oklch(0.97 0.02 250);
+  --color-acao-100: oklch(0.93 0.045 250);
+  --color-acao-300: oklch(0.76 0.12 250);
+  --color-acao-500: oklch(0.58 0.19 250);
+  --color-acao-600: oklch(0.51 0.2 250);
+  --color-acao-700: oklch(0.44 0.18 250);
+
+  /* Verde — economia, aproveitamento, disponível */
+  --color-economia-50: oklch(0.96 0.03 155);
+  --color-economia-100: oklch(0.92 0.06 155);
+  --color-economia-500: oklch(0.62 0.15 155);
+  --color-economia-600: oklch(0.54 0.15 155);
+  --color-economia-700: oklch(0.45 0.13 155);
+
+  /* Âmbar — reservado, atenção, pendente */
+  --color-atencao-50: oklch(0.97 0.03 85);
+  --color-atencao-100: oklch(0.93 0.07 85);
+  --color-atencao-500: oklch(0.75 0.16 75);
+  --color-atencao-600: oklch(0.66 0.16 65);
+  --color-atencao-700: oklch(0.55 0.14 55);
+
+  /* Vermelho — apenas erro e descarte */
+  --color-erro-50: oklch(0.96 0.02 25);
+  --color-erro-100: oklch(0.92 0.05 25);
+  --color-erro-500: oklch(0.58 0.21 25);
+  --color-erro-600: oklch(0.51 0.21 25);
+  --color-erro-700: oklch(0.44 0.19 25);
+
+  /* Alvos de toque — uso de depósito, com luvas e uma mão só */
+  --spacing-toque: 3rem; /* 48px, mínimo confortável */
+  --spacing-toque-grande: 4rem; /* 64px, botões primários */
+}
+
+/*
+ * Papéis semânticos. Componentes consomem estes, não a escala bruta.
+ * Tema claro por padrão; escuro redefine apenas os papéis.
+ */
+:root {
+  --cor-fundo: var(--color-aluminio-50);
+  --cor-superficie: white;
+  --cor-superficie-2: var(--color-aluminio-100);
+  --cor-borda: var(--color-aluminio-300);
+  --cor-texto: var(--color-grafite-900);
+  --cor-texto-suave: var(--color-grafite-600);
+  --cor-primaria: var(--color-acao-600);
+  --cor-primaria-texto: white;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema='claro']) {
+    --cor-fundo: var(--color-grafite-950);
+    --cor-superficie: var(--color-grafite-900);
+    --cor-superficie-2: var(--color-grafite-800);
+    --cor-borda: var(--color-grafite-700);
+    --cor-texto: var(--color-aluminio-50);
+    --cor-texto-suave: var(--color-aluminio-400);
+    --cor-primaria: var(--color-acao-500);
+    --cor-primaria-texto: white;
+  }
+}
+
+:root[data-tema='escuro'] {
+  --cor-fundo: var(--color-grafite-950);
+  --cor-superficie: var(--color-grafite-900);
+  --cor-superficie-2: var(--color-grafite-800);
+  --cor-borda: var(--color-grafite-700);
+  --cor-texto: var(--color-aluminio-50);
+  --cor-texto-suave: var(--color-aluminio-400);
+  --cor-primaria: var(--color-acao-500);
+  --cor-primaria-texto: white;
+}
+
+@theme inline {
+  --color-fundo: var(--cor-fundo);
+  --color-superficie: var(--cor-superficie);
+  --color-superficie-2: var(--cor-superficie-2);
+  --color-borda: var(--cor-borda);
+  --color-texto: var(--cor-texto);
+  --color-texto-suave: var(--cor-texto-suave);
+  --color-primaria: var(--cor-primaria);
+  --color-primaria-texto: var(--cor-primaria-texto);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--cor-fundo);
+    color: var(--cor-texto);
+    font-family:
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      Roboto,
+      sans-serif;
+    /* Evita zoom acidental ao tocar duas vezes no celular */
+    touch-action: manipulation;
+  }
+
+  /* Foco sempre visível — requisito de acessibilidade */
+  :focus-visible {
+    outline: 2px solid var(--cor-primaria);
+    outline-offset: 2px;
+  }
+
+  /* Campos numéricos sem as setas, que atrapalham na tela de toque */
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+}
