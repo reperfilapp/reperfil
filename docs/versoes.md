@@ -45,6 +45,27 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 0.6.0 — 15/08/2026
+
+**Fotos e leitura de QR Code.**
+
+- Foto da peça no cadastro de sobras, pela câmera traseira do celular ou pela
+  galeria no computador. Comprimida antes de enviar: no teste, 1.438 KB
+  viraram 27 KB
+- Galeria de desenhos técnicos por perfil, com legenda por imagem e
+  visualizador ampliado para ler as cotas
+- Leitura de QR Code na pesquisa de sobras, com saída pelo teclado sempre
+  visível
+- Etiqueta imprimível com QR e código curto
+
+Armazenamento em baldes privados, isolados por organização. Verificado: acesso
+público direto é recusado, link assinado funciona e a pasta de outra empresa
+vem vazia.
+
+Corrigido: a consulta que descobre a organização do usuário usava `single()`
+sem filtrar por conta. Como o RLS permite enxergar os colegas da mesma
+empresa, quebrou assim que a organização ganhou uma segunda conta.
+
 ## 0.5.0 — 15/08/2026
 
 **Etapa 5: cadastro rápido de sobras.**

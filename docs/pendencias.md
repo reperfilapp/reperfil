@@ -1,11 +1,17 @@
-# Pendências — a fazer quando retomarmos
+# Pendências
 
-Itens combinados com o Fernando e ainda **não implementados**. Registrados em
-15/08/2026, ao encerrar a Etapa 5.
-
-Ordem sugerida: os três primeiros formam um bloco coerente (tudo depende de
-câmera e de armazenamento de imagem), então vale fazê-los juntos, antes ou
-logo depois da Etapa 6.
+> **P1, P2 e P3 foram implementados na versão 0.6.0**, em 15/08/2026, e
+> verificados no navegador contra o banco real. O texto abaixo fica como
+> registro do que foi combinado e por quê.
+>
+> O que ficou de fora, e vale considerar depois:
+>
+> - **Importação de sobras por CSV**, para lançamento administrativo em lote.
+>   Faz mais sentido junto com os relatórios da Etapa 7.
+> - **Impressão de etiquetas em lote**, hoje uma a uma. Só vale a pena quando
+>   houver volume de estoque para justificar.
+> - **Reconhecimento de perfil por fotografia**, previsto na especificação. As
+>   fotos do P1 e do P2 são o acervo que tornaria isso possível.
 
 ---
 
