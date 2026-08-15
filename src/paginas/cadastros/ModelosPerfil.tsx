@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Plus, Pencil, Search } from 'lucide-react'
+import { Plus, Pencil, Search, Images } from 'lucide-react'
 import {
   useModelosPerfil,
   useCriarModeloPerfil,
@@ -11,6 +11,7 @@ import {
 import { Botao } from '@/componentes/ui/Botao'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { Modal } from '@/componentes/ui/Modal'
+import { GaleriaDesenhos } from '@/componentes/GaleriaDesenhos'
 import { formatarComprimento } from '@/dominio/medidas'
 import type { ModeloPerfil } from '@/tipos/banco'
 
@@ -38,6 +39,7 @@ export default function ModelosPerfil() {
   const [editando, setEditando] = useState<ModeloPerfil | null>(null)
   const [form, setForm] = useState<DadosModeloPerfil>(VAZIO)
   const [erro, setErro] = useState<string | null>(null)
+  const [galeriaDe, setGaleriaDe] = useState<ModeloPerfil | null>(null)
 
   const visiveis = filtrarModelos(modelos ?? [], busca)
 
@@ -153,6 +155,14 @@ export default function ModelosPerfil() {
                 barra de {formatarComprimento(modelo.comprimento_barra_mm)}
               </p>
             </div>
+
+            <Botao
+              variante="secundaria"
+              onClick={() => setGaleriaDe(modelo)}
+              aria-label={`Desenhos técnicos de ${modelo.codigo}`}
+            >
+              <Images aria-hidden="true" className="size-4" />
+            </Botao>
 
             <Botao
               variante="secundaria"
@@ -276,6 +286,14 @@ export default function ModelosPerfil() {
             </Botao>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        aberto={galeriaDe !== null}
+        aoFechar={() => setGaleriaDe(null)}
+        titulo={galeriaDe ? `Desenhos — ${galeriaDe.codigo}` : 'Desenhos'}
+      >
+        {galeriaDe && <GaleriaDesenhos modelo={galeriaDe} />}
       </Modal>
     </div>
   )

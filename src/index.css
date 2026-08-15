@@ -166,3 +166,35 @@
     margin: 0;
   }
 }
+
+/*
+ * Impressão de etiqueta.
+ *
+ * Ao imprimir, só a etiqueta aparece: sem menu, sem botões, sem barra de
+ * navegação. Sem isto, a impressora cospe uma página inteira do aplicativo
+ * com a etiqueta perdida no meio.
+ */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #etiqueta-impressao,
+  #etiqueta-impressao * {
+    visibility: visible;
+  }
+
+  #etiqueta-impressao {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 90mm;
+    border: 1px solid #000 !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  @page {
+    margin: 8mm;
+  }
+}

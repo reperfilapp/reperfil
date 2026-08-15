@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, PackagePlus } from 'lucide-react'
+import { Search, PackagePlus, ScanLine, Tag } from 'lucide-react'
 import { useSobras, type SobraDetalhada } from '@/dados/sobras'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { formatarComprimento } from '@/dominio/medidas'
+import { LeitorQrCode } from '@/componentes/LeitorQrCode'
+import { EtiquetaSobra } from '@/componentes/EtiquetaSobra'
 import type { StatusLote } from '@/tipos/banco'
 
 const ROTULO_STATUS: Record<StatusLote, string> = {
@@ -43,6 +45,8 @@ export default function Sobras() {
   const { data: sobras, isPending } = useSobras()
   const { perfil } = useAutenticacao()
   const [busca, setBusca] = useState('')
+  const [lendoQr, setLendoQr] = useState(false)
+  const [etiqueta, setEtiqueta] = useState<SobraDetalhada | null>(null)
 
   const visiveis = (sobras ?? []).filter((sobra) => combina(sobra, busca))
 
@@ -61,19 +65,30 @@ export default function Sobras() {
         )}
       </header>
 
-      <div className="relative mb-4">
-        <Search
-          aria-hidden="true"
-          className="text-texto-suave pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2"
-        />
-        <input
-          type="search"
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          placeholder="Código, perfil, acabamento ou local"
-          aria-label="Buscar sobra"
-          className="border-borda bg-superficie min-h-12 w-full rounded-xl border-2 pr-4 pl-12"
-        />
+      <div className="mb-4 flex gap-2">
+        <div className="relative flex-1">
+          <Search
+            aria-hidden="true"
+            className="text-texto-suave pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2"
+          />
+          <input
+            type="search"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Código, perfil, acabamento ou local"
+            aria-label="Buscar sobra"
+            className="border-borda bg-superficie min-h-12 w-full rounded-xl border-2 pr-4 pl-12"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setLendoQr(true)}
+          aria-label="Ler código pela câmera"
+          className="border-borda bg-superficie flex min-h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2"
+        >
+          <ScanLine aria-hidden="true" className="size-5" />
+        </button>
       </div>
 
       {isPending && <p className="text-texto-suave">Carregando…</p>}
@@ -110,11 +125,21 @@ export default function Sobras() {
                   </p>
                 </div>
 
-                <span
-                  className={`shrink-0 rounded px-2 py-1 text-xs font-medium ${COR_STATUS[sobra.status]}`}
-                >
-                  {ROTULO_STATUS[sobra.status]}
-                </span>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span
+                    className={`rounded px-2 py-1 text-xs font-medium ${COR_STATUS[sobra.status]}`}
+                  >
+                    {ROTULO_STATUS[sobra.status]}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setEtiqueta(sobra)}
+                    aria-label={`Etiqueta da sobra ${sobra.codigo}`}
+                    className="hover:bg-superficie-2 rounded-lg p-2"
+                  >
+                    <Tag aria-hidden="true" className="size-4" />
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-baseline gap-4">
@@ -131,6 +156,17 @@ export default function Sobras() {
           )
         })}
       </ul>
+
+      <LeitorQrCode
+        aberto={lendoQr}
+        aoFechar={() => setLendoQr(false)}
+        aoLer={(codigo) => {
+          setBusca(codigo)
+          setLendoQr(false)
+        }}
+      />
+
+      <EtiquetaSobra sobra={etiqueta} aoFechar={() => setEtiqueta(null)} />
     </div>
   )
 }

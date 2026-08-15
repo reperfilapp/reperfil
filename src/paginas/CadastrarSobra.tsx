@@ -6,12 +6,18 @@ import { useLocalizacoes, descreverLocalizacao } from '@/dados/localizacoes'
 import { SeletorPerfil } from '@/componentes/SeletorPerfil'
 import { CampoMedida } from '@/componentes/ui/CampoMedida'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
+import { CampoFoto } from '@/componentes/ui/CampoFoto'
 import { Botao } from '@/componentes/ui/Botao'
 import {
   formatarComprimento,
   interpretarMedidaDigitada,
 } from '@/dominio/medidas'
 import { cn } from '@/lib/utilitarios'
+import {
+  enviarFotoSobra,
+  obterLinkTemporario,
+  BALDE_FOTOS,
+} from '@/lib/armazenamento'
 import type { UnidadeMedida } from '@/config/aplicacao'
 import type { EstadoConservacao, ModeloPerfil } from '@/tipos/banco'
 
@@ -60,6 +66,13 @@ export default function CadastrarSobra() {
   const [origem, setOrigem] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [ultimo, setUltimo] = useState<UltimoLancamento | null>(null)
+  const [fotoCaminho, setFotoCaminho] = useState<string | null>(null)
+  const [fotoPrevia, setFotoPrevia] = useState<string | null>(null)
+
+  async function fotoEnviada(caminho: string) {
+    setFotoCaminho(caminho)
+    setFotoPrevia(await obterLinkTemporario(BALDE_FOTOS, caminho))
+  }
 
   const prontoParaSalvar =
     modelo !== null &&
@@ -82,6 +95,7 @@ export default function CadastrarSobra() {
       estado,
       origem: origem.trim() === '' ? null : origem.trim(),
       observacoes: null,
+      foto_url: fotoCaminho,
     }
 
     try {
@@ -94,10 +108,15 @@ export default function CadastrarSobra() {
         // sobras de uma obra repete esses campos peça após peça.
         setTextoMedida('')
         setQuantidade(1)
+        // A foto é da peça, não do lote: nunca deve ser reaproveitada.
+        setFotoCaminho(null)
+        setFotoPrevia(null)
       } else {
         setModelo(null)
         setTextoMedida('')
         setQuantidade(1)
+        setFotoCaminho(null)
+        setFotoPrevia(null)
       }
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível salvar.')
@@ -248,6 +267,25 @@ export default function CadastrarSobra() {
                   </option>
                 ))}
               </CampoSelecao>
+            </section>
+
+            {/* 6 — Foto, opcional */}
+            <section>
+              <h2 className="mb-2 font-semibold">
+                6. Foto da peça{' '}
+                <span className="text-texto-suave font-normal">(opcional)</span>
+              </h2>
+              <CampoFoto
+                ajuda="Ajuda a reconhecer a peça na prateleira e a conferir o estado."
+                aoEnviar={enviarFotoSobra}
+                caminho={fotoCaminho}
+                previa={fotoPrevia}
+                aoRemover={() => {
+                  setFotoCaminho(null)
+                  setFotoPrevia(null)
+                }}
+                aoConcluir={(c) => void fotoEnviada(c)}
+              />
             </section>
 
             {/* Resumo: última chance de ver a vírgula no lugar errado */}

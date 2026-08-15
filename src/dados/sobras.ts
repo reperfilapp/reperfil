@@ -19,6 +19,8 @@ export interface DadosNovaSobra {
   estado: EstadoConservacao
   origem: string | null
   observacoes: string | null
+  /** Caminho no Storage, não endereço público: o balde é privado. */
+  foto_url: string | null
 }
 
 /**
@@ -72,6 +74,7 @@ export function useCadastrarSobra() {
         p_estado: dados.estado,
         p_origem: dados.origem,
         p_observacoes: dados.observacoes,
+        p_foto_url: dados.foto_url,
       })
 
       if (error) throw new Error(error.message)
