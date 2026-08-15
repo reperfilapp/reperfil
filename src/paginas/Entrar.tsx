@@ -41,14 +41,17 @@ export default function Entrar() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-8 px-6 py-12">
-      <header className="flex flex-col items-center gap-3 text-center">
-        <MarcaRePerfil className="size-16" />
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {APLICACAO.nome}
-          </h1>
-          <p className="text-texto-suave">{APLICACAO.slogan}</p>
-        </div>
+      <header className="flex flex-col items-center gap-4 text-center">
+        {/* O logotipo já traz o nome e a assinatura, então repeti-los em
+            texto ao lado seria redundante. O título fica só para leitores
+            de tela. */}
+        <MarcaRePerfil
+          variante="completa"
+          className="max-w-56 rounded-xl bg-white p-4"
+        />
+        <h1 className="sr-only">
+          {APLICACAO.nome} — {APLICACAO.slogan}
+        </h1>
       </header>
 
       <form onSubmit={aoEnviar} className="flex flex-col gap-5" noValidate>

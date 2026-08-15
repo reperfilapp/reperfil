@@ -16,7 +16,8 @@
     "test:cobertura": "vitest run --coverage",
     "verificar": "npm run lint && npm run test && npm run build",
     "banco:consolidar": "node scripts/consolidar-banco.mjs",
-    "banco:validar": "node scripts/validar-sql.mjs"
+    "banco:validar": "node scripts/validar-sql.mjs",
+    "icones": "node scripts/gerar-icones.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.0",
@@ -45,6 +46,7 @@
     "pg-query-emscripten": "^5.1.0",
     "prettier": "^3.7.4",
     "prettier-plugin-tailwindcss": "^0.7.1",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4.2.7",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
