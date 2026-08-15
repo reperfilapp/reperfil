@@ -126,18 +126,35 @@ export function validarComprimento(milimetros: number): ValidacaoComprimento {
 }
 
 /**
- * Formata um comprimento para leitura, escolhendo a unidade que resulta no
- * texto mais curto e legível. 6000 vira "6 m"; 850 vira "850 mm".
+ * Formata um comprimento para leitura.
+ *
+ * Metros só quando o valor é redondo em centímetros: 6000 vira "6 m" e 1800
+ * vira "1,8 m", que é como se fala na oficina. Qualquer valor com milímetro
+ * quebrado sai em milímetros — 1803 vira "1.803 mm", nunca "1,803 m".
+ *
+ * O motivo é evitar confusão de vírgula, o mesmo perigo que faz o sistema
+ * guardar tudo como inteiro. Escrito "1,803 m", o número é lido como mil e
+ * oitocentos e três por quem está acostumado a ver medida em milímetro — e
+ * a diferença entre 1.803 mm e 1,803 mm é a peça inteira.
  */
 export function formatarComprimento(milimetros: number): string {
-  if (milimetros >= 1000 && milimetros % 1000 === 0) {
+  const emMilimetros = `${milimetros.toLocaleString('pt-BR')} mm`
+
+  if (milimetros < 1000) {
+    return emMilimetros
+  }
+
+  // Milímetro quebrado: mostrar em metros esconderia a precisão que importa
+  // na hora de cortar.
+  if (milimetros % 10 !== 0) {
+    return emMilimetros
+  }
+
+  if (milimetros % 1000 === 0) {
     return `${milimetros / 1000} m`
   }
 
-  if (milimetros >= 1000) {
-    const metros = (milimetros / 1000).toFixed(3).replace(/0+$/, '')
-    return `${metros.replace('.', ',')} m`
-  }
+  const metros = (milimetros / 1000).toFixed(2).replace(/0$/, '')
 
-  return `${milimetros} mm`
+  return `${metros.replace('.', ',')} m`
 }

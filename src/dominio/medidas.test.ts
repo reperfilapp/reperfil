@@ -122,7 +122,7 @@ describe('formatarComprimento', () => {
     expect(formatarComprimento(2000)).toBe('2 m')
   })
 
-  it('usa metros com vírgula quando há fração', () => {
+  it('usa metros com vírgula quando fecha em centímetro', () => {
     expect(formatarComprimento(1800)).toBe('1,8 m')
     expect(formatarComprimento(2450)).toBe('2,45 m')
   })
@@ -130,5 +130,18 @@ describe('formatarComprimento', () => {
   it('usa milímetros abaixo de um metro', () => {
     expect(formatarComprimento(850)).toBe('850 mm')
     expect(formatarComprimento(120)).toBe('120 mm')
+  })
+
+  it('mantém milímetro quebrado em milímetros, para não confundir a vírgula', () => {
+    // "1,803 m" seria lido como 1.803 mm por quem trabalha em milímetro,
+    // e a diferença entre os dois é a peça inteira.
+    expect(formatarComprimento(1803)).toBe('1.803 mm')
+    expect(formatarComprimento(597)).toBe('597 mm')
+    expect(formatarComprimento(3997)).toBe('3.997 mm')
+  })
+
+  it('separa milhar no padrão brasileiro', () => {
+    expect(formatarComprimento(1234)).toBe('1.234 mm')
+    expect(formatarComprimento(12345)).toBe('12.345 mm')
   })
 })
