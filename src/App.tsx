@@ -4,6 +4,7 @@ import { GuardaConexao } from '@/componentes/GuardaConexao'
 import { ProvedorAutenticacao } from '@/autenticacao/ContextoAutenticacao'
 import { RotaProtegida } from '@/autenticacao/RotaProtegida'
 import { LayoutApp } from '@/componentes/LayoutApp'
+import { AvisoNovaVersao } from '@/componentes/AvisoNovaVersao'
 import { clienteConsultas } from '@/lib/consultas'
 import Entrar from '@/paginas/Entrar'
 import RecuperarSenha from '@/paginas/RecuperarSenha'
@@ -15,6 +16,7 @@ import PesquisarSobras from '@/paginas/PesquisarSobras'
 import Reservas from '@/paginas/Reservas'
 import Mais from '@/paginas/Mais'
 import Configuracoes from '@/paginas/Configuracoes'
+import Relatorios from '@/paginas/Relatorios'
 import ModelosPerfil from '@/paginas/cadastros/ModelosPerfil'
 import Acabamentos from '@/paginas/cadastros/Acabamentos'
 import Localizacoes from '@/paginas/cadastros/Localizacoes'
@@ -55,11 +57,14 @@ export default function App() {
                 <Route path="/localizacoes" element={<Localizacoes />} />
                 <Route path="/clientes" element={<Clientes />} />
                 <Route path="/mais" element={<Mais />} />
+                <Route path="/relatorios" element={<Relatorios />} />
                 <Route path="/configuracoes" element={<Configuracoes />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+
+            <AvisoNovaVersao />
           </BrowserRouter>
         </ProvedorAutenticacao>
       </QueryClientProvider>

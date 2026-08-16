@@ -1,7 +1,7 @@
 {
   "name": "reperfil",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "description": "RePerfil — Orce, projete e reaproveite. Estoque de sobras e orçamento para esquadrias de alumínio.",
   "scripts": {
@@ -20,7 +20,8 @@
     "icones": "node scripts/gerar-icones.mjs",
     "versao:correcao": "node scripts/subir-versao.mjs correcao",
     "versao:etapa": "node scripts/subir-versao.mjs etapa",
-    "versao:fase": "node scripts/subir-versao.mjs fase"
+    "versao:fase": "node scripts/subir-versao.mjs fase",
+    "lighthouse": "vite build && vite preview --port 4173"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.0",

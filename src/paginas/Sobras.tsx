@@ -1,12 +1,26 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Search, PackagePlus, ScanLine, Tag } from 'lucide-react'
 import { useSobras, type SobraDetalhada } from '@/dados/sobras'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { formatarComprimento } from '@/dominio/medidas'
-import { LeitorQrCode } from '@/componentes/LeitorQrCode'
-import { EtiquetaSobra } from '@/componentes/EtiquetaSobra'
+/*
+ * Carregamento tardio: o leitor de QR traz a biblioteca de decodificação e a
+ * etiqueta traz a de geração — juntas, boa parte do JavaScript da aplicação.
+ * Nenhuma das duas é usada ao abrir a tela, e o Lighthouse apontou esse peso
+ * como JavaScript não utilizado no carregamento inicial.
+ */
+const LeitorQrCode = lazy(() =>
+  import('@/componentes/LeitorQrCode').then((m) => ({
+    default: m.LeitorQrCode,
+  })),
+)
+const EtiquetaSobra = lazy(() =>
+  import('@/componentes/EtiquetaSobra').then((m) => ({
+    default: m.EtiquetaSobra,
+  })),
+)
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import type { StatusLote } from '@/tipos/banco'
 
@@ -160,16 +174,22 @@ export default function Sobras() {
         })}
       </ul>
 
-      <LeitorQrCode
-        aberto={lendoQr}
-        aoFechar={() => setLendoQr(false)}
-        aoLer={(codigo) => {
-          setBusca(codigo)
-          setLendoQr(false)
-        }}
-      />
+      <Suspense fallback={null}>
+        {lendoQr && (
+          <LeitorQrCode
+            aberto={lendoQr}
+            aoFechar={() => setLendoQr(false)}
+            aoLer={(codigo) => {
+              setBusca(codigo)
+              setLendoQr(false)
+            }}
+          />
+        )}
 
-      <EtiquetaSobra sobra={etiqueta} aoFechar={() => setEtiqueta(null)} />
+        {etiqueta && (
+          <EtiquetaSobra sobra={etiqueta} aoFechar={() => setEtiqueta(null)} />
+        )}
+      </Suspense>
     </div>
   )
 }

@@ -45,6 +45,26 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 0.8.0 — 15/08/2026
+
+**Etapa 7: relatórios e PWA.**
+
+- Relatórios de estoque por perfil, acabamento e localização; sobras paradas
+  há mais de 90 dias; movimentações e descartes por período
+- Exportação em CSV que abre certo no Excel brasileiro: ponto e vírgula como
+  separador, vírgula decimal e marca de bytes para os acentos não quebrarem
+- PWA instalável, com manifesto, ícones, atalhos e aviso de nova versão
+- O service worker guarda só o esqueleto da aplicação; nenhuma resposta do
+  Supabase entra em cache, conforme a decisão D3
+
+Lighthouse no build de produção: desempenho 95–97, acessibilidade 100, boas
+práticas 100. A primeira medição deu desempenho 72, por causa do logotipo de
+614 KB e das bibliotecas de QR carregando sempre. Ver `docs/lighthouse.md`.
+
+O SEO é 66 de propósito: o `robots.txt` bloqueia buscadores, e o Lighthouse
+desconta por isso. Subir a nota exigiria expor a tela de entrada em
+resultados de pesquisa, o que pioraria o produto.
+
 ## 0.7.0 — 15/08/2026
 
 **Etapa 6: pesquisa, reserva e corte.**

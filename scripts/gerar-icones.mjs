@@ -89,10 +89,35 @@ for (const { arquivo, tamanho, folga, recorte } of TAMANHOS) {
   console.log(`gerado ${DESTINO}/${arquivo} (${tamanho}x${tamanho})`)
 }
 
-// Versão só do símbolo, em alta, para uso dentro da interface.
+// Versão só do símbolo, para uso dentro da interface.
 await sharp(simbolo)
-  .resize(512, null, { fit: 'contain' })
-  .png()
+  .resize(256, null, { fit: 'contain' })
+  .png({ compressionLevel: 9 })
   .toFile('public/marca-rp.png')
 
 console.log('gerado public/marca-rp.png')
+
+/*
+ * Logotipo completo, otimizado para a tela de entrada.
+ *
+ * O arquivo original tem 614 KB, e o Lighthouse mostrou que ele sozinho
+ * empurrava o "maior conteúdo visível" para 6,2 segundos — numa tela que
+ * mostra a logo e mais nada. Como ela aparece com cerca de 224 px de largura,
+ * 560 px cobrem telas de alta densidade com folga.
+ *
+ * WebP para quem aceita, PNG para o resto. O original permanece em
+ * public/logo.png, intocado, como fonte para gerar tudo isto.
+ */
+const LARGURA_EXIBICAO = 560
+
+await sharp(ORIGEM)
+  .resize(LARGURA_EXIBICAO, null, { fit: 'inside' })
+  .webp({ quality: 88 })
+  .toFile('public/logo-otimizada.webp')
+
+await sharp(ORIGEM)
+  .resize(LARGURA_EXIBICAO, null, { fit: 'inside' })
+  .png({ compressionLevel: 9, palette: true })
+  .toFile('public/logo-otimizada.png')
+
+console.log('gerado public/logo-otimizada.webp e .png')

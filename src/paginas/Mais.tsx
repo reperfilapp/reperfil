@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Package,
   Users,
+  FileSpreadsheet,
 } from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { eAdministrador, podeMovimentarEstoque } from '@/autenticacao/contexto'
@@ -59,6 +60,13 @@ export default function Mais() {
       rotulo: 'Localizações',
       descricao: 'Onde as peças ficam no depósito',
       Icone: MapPin,
+      visivel: true,
+    },
+    {
+      para: '/relatorios',
+      rotulo: 'Relatórios',
+      descricao: 'Estoque, sobras paradas e movimentações em CSV',
+      Icone: FileSpreadsheet,
       visivel: true,
     },
     {

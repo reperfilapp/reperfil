@@ -51,6 +51,9 @@ Thumbs.db
 *.sln
 *.sw?
 
+# --- Relatórios gerados ---
+relatorio-lighthouse.json
+
 # --- Testes ---
 playwright-report/
 test-results/

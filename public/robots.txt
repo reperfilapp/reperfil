@@ -1,0 +1,11 @@
+# RePerfil — sistema interno de controle de estoque.
+#
+# Não há conteúdo público a indexar: tudo exige autenticação. Bloquear os
+# buscadores evita que a tela de entrada apareça em resultados de pesquisa e
+# que endereços internos sejam rastreados.
+#
+# Isto não é medida de segurança — quem protege os dados é a autenticação e o
+# Row Level Security no banco. É apenas higiene.
+
+User-agent: *
+Disallow: /
