@@ -57,7 +57,8 @@ Etapa 8: aplicativo Android via Capacitor.
   como opcional, para o app continuar instalável em aparelho sem ela
 - Versão e versionCode vêm do `package.json`, para não existirem dois lugares
   dizendo em que versão o aplicativo está
-- **APK de depuração compilado com sucesso**, 8,4 MB
+- **APK de depuração compilado, instalado e validado** num aparelho Android
+  real, 8,4 MB
 - `docs/publicacao-play-store.md` com o caminho até a loja
 
 Nenhuma chave de assinatura de produção foi gerada, e o aplicativo **não está
