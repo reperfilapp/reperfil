@@ -169,18 +169,18 @@ export default function PesquisarSobras() {
               type="button"
               onClick={() => setQuantidade((q) => Math.max(1, q - 1))}
               aria-label="Diminuir quantidade"
-              className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-14 w-14 rounded-xl border-2 text-2xl font-bold"
+              className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-14 w-14 shrink-0 rounded-xl border-2 text-2xl font-bold"
             >
               −
             </button>
-            <span className="min-h-14 flex-1 content-center text-center text-2xl font-semibold tabular-nums">
+            <span className="min-h-14 min-w-0 flex-1 content-center text-center text-2xl font-semibold tabular-nums">
               {quantidade}
             </span>
             <button
               type="button"
               onClick={() => setQuantidade((q) => Math.min(999, q + 1))}
               aria-label="Aumentar quantidade"
-              className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-14 w-14 rounded-xl border-2 text-2xl font-bold"
+              className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-14 w-14 shrink-0 rounded-xl border-2 text-2xl font-bold"
             >
               +
             </button>

@@ -166,6 +166,23 @@
     -webkit-text-size-adjust: 100%;
   }
 
+  /*
+   * Trava de segurança contra rolagem lateral.
+   *
+   * A tela é para uso de pé, com uma mão, às vezes de luva — só rola para
+   * cima e para baixo. Se algum layout futuro calcular largura errado (um
+   * botão que não encolhe, um texto que não quebra), o conteúdo deve ser
+   * cortado, nunca abrir uma barra de rolagem horizontal na página inteira.
+   *
+   * Não afeta galerias de imagem que rolam de propósito (`overflow-x-auto`
+   * num container específico) — a trava é só no documento como um todo.
+   */
+  html,
+  body {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
   body {
     background-color: var(--cor-fundo);
     color: var(--cor-texto);

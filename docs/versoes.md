@@ -45,6 +45,31 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.3 — 16/08/2026
+
+**Trava contra rolagem horizontal.**
+
+Em tela estreita, o passo "4. Quantas peças iguais?" da tela "Cadastrar
+sobra" cortava o botão de "+" e abria uma barra de rolagem lateral na
+página inteira — o layout usava `flex-1` num campo de texto sem
+`min-w-0`, e o navegador, sem conseguir encolher o campo, encolhia os
+botões de lado até ficarem espremidos, e ainda assim sobrava largura
+demais. O mesmo padrão existia na tela "Procurar sobra".
+
+Corrigido nos dois lugares, seguindo o padrão que já funcionava no campo
+de comprimento (`CampoMedida`): o campo do meio ganha `min-w-0` para
+poder encolher, e os botões ganham `shrink-0` para nunca perderem o
+tamanho. Além disso, adicionada uma trava global em `index.css`
+(`overflow-x: hidden` em `html` e `body`): se algum layout futuro
+calcular a largura errado, o conteúdo é cortado, mas a página nunca mais
+abre rolagem lateral. Galerias que rolam de propósito (fotos, desenhos)
+continuam rolando normalmente, pois usam `overflow-x-auto` no próprio
+container.
+
+Verificado no navegador em 375px e 320px de largura: sem barra de
+rolagem horizontal em nenhum dos dois; botão de "+" sempre com a largura
+cheia (64px/56px), mesmo com o campo mostrando "9999".
+
 ## 1.6.2 — 16/08/2026
 
 **Card do perfil escolhido: texto completo e clicável.**
