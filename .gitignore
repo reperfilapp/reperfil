@@ -30,6 +30,9 @@ build
 coverage
 *.local
 
+# Fontes de ícone geradas a partir de public/logo.png
+recursos/
+
 # --- Capacitor / Android ---
 android/app/build/
 android/build/

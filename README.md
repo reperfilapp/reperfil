@@ -6,10 +6,14 @@ Aplicativo de controle de sobras de perfis de alumínio e orçamento de esquadri
 PWA instalável, web responsiva e Android (via Capacitor), a partir de uma única
 base de código.
 
-**Situação atual: versão 0.8.0 — Etapas 0 a 7 concluídas.** O ciclo completo
-funciona: cadastrar sobras com foto, procurar a peça que serve para um corte,
-reservar, retirar, confirmar o corte, e exportar relatórios em CSV. Instalável
-como aplicativo. Publicado em https://reperfil.vercel.app.
+**Situação atual: versão 1.0.0 — Fase 1 completa.** O ciclo do estoque
+funciona de ponta a ponta: cadastrar sobras com foto, procurar a peça que
+serve para um corte, reservar, retirar, confirmar o corte, e exportar
+relatórios. Instalável como aplicativo, com projeto Android compilando.
+Publicado em https://reperfil.vercel.app.
+
+As Fases 2 (desenho paramétrico), 3 (orçamentos e PDF) e 4 (obras e plano de
+corte) ainda não foram construídas — ver `docs/backlog-fases.md`.
 
 ## O problema que resolve
 
@@ -66,6 +70,9 @@ A aplicação sobe em `http://localhost:5173`.
 | `npm run banco:consolidar` | Junta as migrations num arquivo só |
 | `npm run icones` | Regenera ícones e logotipo a partir de `public/logo.png` |
 | `npm run lighthouse` | Build e servidor local para auditoria |
+| `npm run android:apk` | Gera o APK de depuração |
+| `npm run android:instalar` | Instala no celular ligado por USB |
+| `npm run android:estudio` | Abre o projeto no Android Studio |
 | `npm run versao:etapa` | Sobe a versão ao concluir uma etapa |
 
 ## Organização das pastas
@@ -84,6 +91,7 @@ src/
 docs/
   banco-de-dados.md  Como aplicar e verificar o esquema
   lighthouse.md      Pontuações reais medidas, e o que foi corrigido
+  publicacao-play-store.md  Caminho até a Google Play
   backlog-fases.md   Escopo das Fases 2, 3 e 4 — não implementar agora
   decisoes.md        Decisões que divergem da especificação, com o motivo
   pendencias.md      Itens combinados e ainda não implementados
@@ -118,7 +126,7 @@ supabase/
 | 5 | Cadastro rápido de sobras | Concluída |
 | 6 | Pesquisa, reserva e corte | Concluída |
 | 7 | Painel, relatórios e PWA | Concluída |
-| 8 | Android (Capacitor) e documentação de publicação | Pendente |
+| 8 | Android (Capacitor) e documentação de publicação | Concluída |
 
 Itens combinados e ainda não implementados estão em `docs/pendencias.md`.
 

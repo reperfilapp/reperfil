@@ -45,6 +45,25 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.0.0 — 15/08/2026
+
+**Fase 1 completa.**
+
+Etapa 8: aplicativo Android via Capacitor.
+
+- Projeto Android configurado: pacote `br.com.reperfil.app`, SDK alvo 36,
+  ícone adaptativo e tela de abertura gerados da logo da empresa
+- Permissões mínimas: internet, estado da rede e câmera. A câmera é declarada
+  como opcional, para o app continuar instalável em aparelho sem ela
+- Versão e versionCode vêm do `package.json`, para não existirem dois lugares
+  dizendo em que versão o aplicativo está
+- **APK de depuração compilado com sucesso**, 8,4 MB
+- `docs/publicacao-play-store.md` com o caminho até a loja
+
+Nenhuma chave de assinatura de produção foi gerada, e o aplicativo **não está
+publicado** — ambas as coisas dependem da conta de desenvolvedor e devem ficar
+com o dono do aplicativo.
+
 ## 0.8.0 — 15/08/2026
 
 **Etapa 7: relatórios e PWA.**

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+
+    <!--
+        PERMISSÕES — apenas o mínimo necessário.
+
+        Cada permissão a mais aparece para o usuário na instalação e precisa
+        ser justificada à Google Play. Pedir o que não se usa reduz a
+        confiança e atrasa a aprovação.
+    -->
+
+    <!-- O aplicativo exige conexão: todo o estoque vive no servidor. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Para mostrar a tela de "aguardando conexão" em vez de erro cru. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Foto da peça e leitura do QR Code da etiqueta. Nada além disso. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!--
+        A câmera é opcional: aparelho sem câmera continua instalando e
+        funcionando, porque sempre há a alternativa de digitar o código.
+        Sem esta linha, a Play Store esconderia o aplicativo desses
+        aparelhos.
+    -->
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+</manifest>
