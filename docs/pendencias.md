@@ -15,6 +15,33 @@
 
 ---
 
+## Ambiente para a Etapa 8 (Android) — já resolvido
+
+Verificado em 15/08/2026, na máquina do Fernando. **Não é preciso instalar
+nada.**
+
+| O que | Onde | Situação |
+| --- | --- | --- |
+| JDK 21 | `C:\Program Files\Android\Android Studio\jbr` | Presente, com `javac` |
+| Android SDK | `%LOCALAPPDATA%\Android\Sdk` | Plataforma `android-36.1` |
+| Build tools | idem | 36.1.0 e 37.0.0 |
+
+O `java -version` do sistema responde 8 porque o PATH aponta para um **JRE**
+1.8, que executa programas mas não compila. O JDK está embutido no Android
+Studio, apenas não é o padrão do sistema.
+
+**Não alterar o `JAVA_HOME` do Windows.** Mudaria o Java padrão para todos os
+programas da máquina, e algo que dependa do 8 quebraria sem ligação aparente
+com o que fizemos. O caminho é apontar o JDK apenas no comando de compilação:
+
+```bash
+JAVA_HOME="/c/Program Files/Android/Android Studio/jbr" npx cap sync android
+```
+
+Se o Gradle reclamar de versão de Java, é aí que se olha — não antes.
+
+---
+
 ## P1 — Foto real da peça no cadastro de sobras
 
 **O que é.** No cadastro rápido de sobras, permitir tirar ou anexar uma foto da
