@@ -71,6 +71,8 @@ export interface ModeloPerfil {
   fabricante: string | null
   linha: string | null
   categoria: string | null
+  /** Onde o perfil é usado na esquadria: "lateral da porta", "montante". */
+  aplicacao: string | null
   imagem_url: string | null
   codigo_barras: string | null
   comprimento_barra_mm: number

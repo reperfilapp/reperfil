@@ -9,6 +9,7 @@ export interface DadosModeloPerfil {
   fabricante: string | null
   linha: string | null
   categoria: string | null
+  aplicacao: string | null
   comprimento_barra_mm: number
   peso_por_metro_g: number | null
   preco_por_metro_centavos: number | null
@@ -36,6 +37,38 @@ export function useModelosPerfil(incluirInativos = false) {
 }
 
 /**
+ * Aplicações já usadas em algum perfil desta organização, sem repetir.
+ *
+ * Autoexpansível de propósito: em vez de um cadastro à parte para
+ * administrar, a lista de sugestões cresce sozinha conforme as pessoas
+ * digitam. Ninguém precisa lembrar de cadastrar "peitoril" antes de usar —
+ * usa uma vez, e a partir da segunda vez ela já sugere.
+ */
+export function useAplicacoesUsadas() {
+  return useQuery({
+    queryKey: [...chaves.modelosPerfil, 'aplicacoes-usadas'],
+    queryFn: async (): Promise<string[]> => {
+      const { data, error } = await supabase
+        .from('modelos_perfil')
+        .select('aplicacao')
+        .not('aplicacao', 'is', null)
+
+      if (error) throw new Error(error.message)
+
+      const distintas = new Set(
+        (data as { aplicacao: string }[])
+          .map((linha) => linha.aplicacao.trim())
+          .filter((valor) => valor !== ''),
+      )
+
+      return [...distintas].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+    },
+    // Muda pouco; não vale revalidar a cada troca de tela.
+    staleTime: 5 * 60_000,
+  })
+}
+
+/**
  * Filtra modelos por código ou descrição, sem ir ao servidor.
  *
  * O catálogo de perfis de uma serralheria tem dezenas a poucas centenas de
@@ -58,7 +91,8 @@ export function filtrarModelos(
     (modelo) =>
       modelo.codigo.toLowerCase().includes(busca) ||
       modelo.descricao.toLowerCase().includes(busca) ||
-      (modelo.linha?.toLowerCase().includes(busca) ?? false),
+      (modelo.linha?.toLowerCase().includes(busca) ?? false) ||
+      (modelo.aplicacao?.toLowerCase().includes(busca) ?? false),
   )
 }
 

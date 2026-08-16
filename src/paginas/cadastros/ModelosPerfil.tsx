@@ -6,6 +6,7 @@ import {
   useCriarModeloPerfil,
   useEditarModeloPerfil,
   useDesativarModeloPerfil,
+  useAplicacoesUsadas,
   filtrarModelos,
   type DadosModeloPerfil,
 } from '@/dados/modelosPerfil'
@@ -24,6 +25,7 @@ const VAZIO: DadosModeloPerfil = {
   fabricante: null,
   linha: null,
   categoria: null,
+  aplicacao: null,
   comprimento_barra_mm: 6000,
   peso_por_metro_g: null,
   preco_por_metro_centavos: null,
@@ -31,12 +33,52 @@ const VAZIO: DadosModeloPerfil = {
   observacoes: null,
 }
 
+/**
+ * Sugestões iniciais para o campo Aplicação.
+ *
+ * O campo é texto livre — a nomenclatura varia entre fabricantes e entre
+ * empresas, então travar numa lista fechada obrigaria a digitar "outro" toda
+ * hora. A `datalist` sugere sem impedir: digitar algo fora da lista continua
+ * funcionando normalmente.
+ *
+ * Esta lista é só o ponto de partida, para quem ainda não cadastrou nada.
+ * A partir daí a lista de sugestões passa a crescer sozinha: ver
+ * `useAplicacoesUsadas`, que traz o que a própria empresa já digitou. Não há
+ * uma tela de administração porque não precisa — usar uma aplicação nova já
+ * é o cadastro dela.
+ */
+const SUGESTOES_INICIAIS = [
+  'Lateral da porta',
+  'Base da janela',
+  'Travessa superior',
+  'Travessa inferior',
+  'Montante',
+  'Marco',
+  'Contramarco',
+  'Folha móvel',
+  'Folha fixa',
+  'Batente',
+  'Requadro',
+  'Soleira',
+  'Peitoril',
+  'Puxador',
+  'Trilho de correr',
+  'Perfil de vedação',
+] as const
+
 export default function ModelosPerfil() {
   const { data: modelos, isPending } = useModelosPerfil(true)
   const criar = useCriarModeloPerfil()
   const editar = useEditarModeloPerfil()
   const desativar = useDesativarModeloPerfil()
   const { data: capas } = useCapasDesenhos()
+  const { data: aplicacoesUsadas } = useAplicacoesUsadas()
+
+  // As 16 iniciais aparecem sempre, para quem ainda não usou nenhuma; o que
+  // a empresa já digitou entra junto, sem repetir.
+  const sugestoesAplicacao = [
+    ...new Set([...SUGESTOES_INICIAIS, ...(aplicacoesUsadas ?? [])]),
+  ].sort((a, b) => a.localeCompare(b, 'pt-BR'))
 
   const [busca, setBusca] = useState('')
   const [aberto, setAberto] = useState(false)
@@ -62,6 +104,7 @@ export default function ModelosPerfil() {
       fabricante: modelo.fabricante,
       linha: modelo.linha,
       categoria: modelo.categoria,
+      aplicacao: modelo.aplicacao,
       comprimento_barra_mm: modelo.comprimento_barra_mm,
       peso_por_metro_g: modelo.peso_por_metro_g,
       preco_por_metro_centavos: modelo.preco_por_metro_centavos,
@@ -122,7 +165,7 @@ export default function ModelosPerfil() {
           type="search"
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          placeholder="Buscar por código, descrição ou linha"
+          placeholder="Buscar por código, descrição, linha ou aplicação"
           aria-label="Buscar perfil"
           className="border-borda bg-superficie min-h-12 w-full rounded-xl border-2 pr-4 pl-12"
         />
@@ -173,6 +216,7 @@ export default function ModelosPerfil() {
                 <span className="text-texto-suave block truncate text-sm">
                   {modelo.linha && `${modelo.linha} · `}
                   barra de {formatarComprimento(modelo.comprimento_barra_mm)}
+                  {modelo.aplicacao && ` · ${modelo.aplicacao}`}
                 </span>
               </span>
             </Link>
@@ -245,6 +289,21 @@ export default function ModelosPerfil() {
               }
             />
           </div>
+
+          <CampoTexto
+            rotulo="Aplicação"
+            list="sugestoes-aplicacao"
+            value={form.aplicacao ?? ''}
+            onChange={(e) =>
+              setForm({ ...form, aplicacao: e.target.value || null })
+            }
+            ajuda="Onde este perfil é usado na esquadria: lateral da porta, base da janela, montante…"
+          />
+          <datalist id="sugestoes-aplicacao">
+            {sugestoesAplicacao.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
 
           <CampoTexto
             rotulo="Comprimento da barra nova (mm)"

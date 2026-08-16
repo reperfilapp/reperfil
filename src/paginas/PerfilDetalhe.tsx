@@ -95,6 +95,11 @@ export default function PerfilDetalhe() {
         {modelo.linha && (
           <p className="text-texto-suave mt-1">{modelo.linha}</p>
         )}
+        {modelo.aplicacao && (
+          <p className="text-acao-700 bg-acao-50 mt-2 inline-block rounded-lg px-2 py-1 text-sm">
+            {modelo.aplicacao}
+          </p>
+        )}
       </header>
 
       {/* Desenhos primeiro: é o que identifica a peça. */}
@@ -226,6 +231,9 @@ export default function PerfilDetalhe() {
 
           <dt className="text-texto-suave">Linha</dt>
           <dd className="text-right">{modelo.linha ?? '—'}</dd>
+
+          <dt className="text-texto-suave">Aplicação</dt>
+          <dd className="text-right">{modelo.aplicacao ?? '—'}</dd>
 
           <dt className="text-texto-suave">Fabricante</dt>
           <dd className="text-right">{modelo.fabricante ?? '—'}</dd>

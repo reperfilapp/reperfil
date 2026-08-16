@@ -45,6 +45,19 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.1 — 16/08/2026
+
+**Sugestões de aplicação autoexpansíveis.**
+
+O campo "Aplicação" do cadastro de perfil (versão 1.6.0) tinha 16 sugestões
+fixas no código. Agora a lista de sugestões cresce sozinha: soma as 16
+iniciais com tudo que a própria organização já digitou em algum perfil. Usar
+uma aplicação nova já é o cadastro dela — sem tela de administração.
+
+Verificado no navegador: cadastrado um perfil com "Aplicação Personalizada
+XYZ" (fora da lista inicial), recarregada a página, e o termo apareceu como
+sugestão no próximo cadastro, ordenado junto com as demais.
+
 ## 1.6.0 — 16/08/2026
 
 **Toda linha de lista abre uma tela de detalhe.**
