@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { Search, Check } from 'lucide-react'
+import { Search, Check, ZoomIn, X } from 'lucide-react'
 import { useModelosPerfil, filtrarModelos } from '@/dados/modelosPerfil'
+import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
+import { MiniaturaPerfil } from './MiniaturaPerfil'
 import { cn } from '@/lib/utilitarios'
 import type { ModeloPerfil } from '@/tipos/banco'
 
@@ -10,41 +12,111 @@ interface PropsSeletorPerfil {
 }
 
 /**
- * Escolha do modelo de perfil, com busca por código, descrição ou linha.
+ * Escolha do modelo de perfil, com busca e desenho técnico.
  *
- * A busca filtra a lista já carregada, sem ir ao servidor a cada tecla: o
- * catálogo de uma serralheria cabe na memória, e resposta instantânea importa
- * mais do que economia de memória quando a pessoa está de pé no depósito com
- * a peça na mão.
+ * O desenho aparece em dois momentos, e cada um tem uma função:
+ *
+ * • Na LISTA, como miniatura — ajuda a achar o perfil certo entre códigos
+ *   parecidos, que numa serralheria são a regra (25-002, 25-016, 25-026…).
+ *
+ * • No SELECIONADO, grande — é a conferência final. O serralheiro compara a
+ *   seção do desenho com a ponta que tem na mão antes de gravar. Cadastrar a
+ *   peça no perfil errado é pior do que não cadastrar: ela vai aparecer em
+ *   buscas de outro perfil e mandar alguém à prateleira à toa.
  */
 export function SeletorPerfil({
   selecionado,
   aoSelecionar,
 }: PropsSeletorPerfil) {
   const { data: modelos, isPending } = useModelosPerfil()
+  const { data: capas } = useCapasDesenhos()
   const [busca, setBusca] = useState('')
+  const [ampliado, setAmpliado] = useState<string | null>(null)
 
   const encontrados = filtrarModelos(modelos ?? [], busca)
 
   if (selecionado) {
+    const desenho = capas?.get(selecionado.id)
+
     return (
-      <div className="border-economia-500 bg-economia-50 flex items-center gap-3 rounded-xl border-2 p-4">
-        <Check
-          aria-hidden="true"
-          className="text-economia-700 size-6 shrink-0"
-        />
-        <div className="min-w-0 flex-1">
-          <p className="text-grafite-900 truncate font-semibold">
-            <span className="font-mono">{selecionado.codigo}</span>{' '}
-            {selecionado.descricao}
-          </p>
-          {selecionado.linha && (
-            <p className="text-grafite-600 truncate text-sm">
-              {selecionado.linha}
-            </p>
+      <>
+        <div className="border-economia-500 bg-economia-50 flex items-start gap-3 rounded-xl border-2 p-3">
+          {desenho ? (
+            <button
+              type="button"
+              onClick={() => setAmpliado(desenho)}
+              className="border-borda relative shrink-0 overflow-hidden rounded-lg border bg-white"
+              aria-label="Ampliar desenho técnico"
+            >
+              <img
+                src={desenho}
+                alt={`Desenho técnico do perfil ${selecionado.codigo}`}
+                className="size-24 object-contain p-1"
+              />
+              <span className="bg-grafite-900/70 absolute right-1 bottom-1 rounded-full p-1 text-white">
+                <ZoomIn aria-hidden="true" className="size-3" />
+              </span>
+            </button>
+          ) : (
+            <MiniaturaPerfil
+              link={null}
+              codigo={selecionado.codigo}
+              className="size-24"
+            />
           )}
+
+          <div className="min-w-0 flex-1">
+            <div className="mb-1 flex items-center gap-1.5">
+              <Check
+                aria-hidden="true"
+                className="text-economia-700 size-5 shrink-0"
+              />
+              <span className="text-economia-700 text-sm font-medium">
+                Perfil escolhido
+              </span>
+            </div>
+
+            <p className="text-grafite-900 font-mono font-bold">
+              {selecionado.codigo}
+            </p>
+            <p className="text-grafite-800 text-sm">{selecionado.descricao}</p>
+            {selecionado.linha && (
+              <p className="text-grafite-600 truncate text-sm">
+                {selecionado.linha}
+              </p>
+            )}
+
+            {desenho && (
+              <p className="text-grafite-600 mt-1 text-xs">
+                Confira o desenho antes de salvar.
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+
+        {ampliado && (
+          <div
+            role="dialog"
+            aria-label="Desenho ampliado"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+            onClick={() => setAmpliado(null)}
+          >
+            <img
+              src={ampliado}
+              alt="Desenho técnico ampliado"
+              className="max-h-full max-w-full object-contain"
+            />
+            <button
+              type="button"
+              onClick={() => setAmpliado(null)}
+              aria-label="Fechar"
+              className="text-grafite-900 absolute top-4 right-4 rounded-full bg-white/90 p-3"
+            >
+              <X aria-hidden="true" className="size-5" />
+            </button>
+          </div>
+        )}
+      </>
     )
   }
 
@@ -76,7 +148,7 @@ export function SeletorPerfil({
         </p>
       )}
 
-      <ul className="flex max-h-80 flex-col gap-2 overflow-y-auto">
+      <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto">
         {encontrados.map((modelo) => (
           <li key={modelo.id}>
             <button
@@ -84,9 +156,14 @@ export function SeletorPerfil({
               onClick={() => aoSelecionar(modelo)}
               className={cn(
                 'border-borda flex min-h-16 w-full items-center gap-3 rounded-xl border-2',
-                'bg-superficie hover:border-acao-500 hover:bg-superficie-2 px-4 text-left',
+                'bg-superficie hover:border-acao-500 hover:bg-superficie-2 p-2 text-left',
               )}
             >
+              <MiniaturaPerfil
+                link={capas?.get(modelo.id)}
+                codigo={modelo.codigo}
+              />
+
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-semibold">
                   <span className="text-acao-600 font-mono">

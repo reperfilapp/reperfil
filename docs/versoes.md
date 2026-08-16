@@ -45,6 +45,16 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.3.0 — 15/08/2026
+
+**Desenho técnico no cadastro e ajuste de medida por botões.**
+
+- O seletor de perfil mostra o desenho: miniatura em cada opção da busca, e
+  em tamanho maior no perfil escolhido, ampliável. É a conferência que o
+  serralheiro faz comparando a seção com a ponta na mão
+- Botões de mais e menos no campo de comprimento, com passo por unidade:
+  10 mm, 1 cm ou 1 m
+
 ## 1.2.0 — 15/08/2026
 
 **Desenho técnico visível nas listas e ficha do perfil.**
