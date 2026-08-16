@@ -110,9 +110,13 @@ export function SeletorPerfil({
               </p>
             )}
 
-            {desenho && (
+            {(desenho || foto) && (
               <p className="text-grafite-600 mt-1 text-xs">
-                Confira o desenho antes de salvar.
+                {desenho && foto
+                  ? 'Compare o desenho e a foto com a peça antes de salvar.'
+                  : desenho
+                    ? 'Confira o desenho antes de salvar.'
+                    : 'Confira a foto antes de salvar.'}
               </p>
             )}
           </div>
