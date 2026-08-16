@@ -211,6 +211,9 @@ export default function CadastrarSobra() {
               <h2 className="mb-2 font-semibold">3. Quanto mede?</h2>
               <CampoMedida
                 rotulo="Comprimento da peça"
+                // A barra do perfil escolhido é o teto: não existe sobra
+                // maior do que a peça de onde ela saiu.
+                maximoMm={modelo.comprimento_barra_mm}
                 texto={textoMedida}
                 unidade={unidade}
                 aoMudarTexto={setTextoMedida}

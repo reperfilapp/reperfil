@@ -89,14 +89,20 @@ export type ValidacaoComprimento =
   { valido: true } | { valido: false; erro: ErroComprimento; mensagem: string }
 
 /**
- * Valida um comprimento em milímetros contra os limites físicos de sanidade.
+ * Valida um comprimento em milímetros.
  *
- * Estes limites não são regra de negócio configurável — servem para barrar
- * erro de digitação (um zero a mais) e valor impossível. O comprimento
- * mínimo de sobra APROVEITÁVEL é outra coisa, é configurável pelo
- * administrador, e vive em `configuracoes_aplicacao`.
+ * `maximoMm` permite validar contra a barra do perfil escolhido, e não contra
+ * o limite geral. A regra é física: uma sobra é o que restou de uma barra, e
+ * não existe resto maior do que a peça de onde veio. Sem o argumento, vale o
+ * limite geral de 6 metros.
+ *
+ * O comprimento mínimo de sobra APROVEITÁVEL é outra coisa — é configurável
+ * pelo administrador e vive em `configuracoes_aplicacao`.
  */
-export function validarComprimento(milimetros: number): ValidacaoComprimento {
+export function validarComprimento(
+  milimetros: number,
+  maximoMm: number = LIMITES.comprimentoMaximoMm,
+): ValidacaoComprimento {
   if (!Number.isInteger(milimetros)) {
     return {
       valido: false,
@@ -113,12 +119,13 @@ export function validarComprimento(milimetros: number): ValidacaoComprimento {
     }
   }
 
-  if (milimetros > LIMITES.comprimentoMaximoMm) {
-    const maximoEmMetros = LIMITES.comprimentoMaximoMm / 1000
+  if (milimetros > maximoMm) {
+    const emMetros = String(maximoMm / 1000).replace('.', ',')
+
     return {
       valido: false,
       erro: 'acima-do-limite',
-      mensagem: `Comprimento acima do limite de ${maximoEmMetros} m. Confira se digitou um zero a mais.`,
+      mensagem: `A barra inteira tem ${emMetros} m — não existe sobra maior que isso.`,
     }
   }
 

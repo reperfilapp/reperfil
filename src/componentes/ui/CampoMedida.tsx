@@ -10,6 +10,11 @@ import { UNIDADES_MEDIDA, type UnidadeMedida } from '@/config/aplicacao'
 
 interface PropsCampoMedida {
   rotulo: string
+  /**
+   * Maior comprimento aceito, em milímetros. Informar a barra do perfil
+   * escolhido, quando houver: sobra maior que a barra de origem não existe.
+   */
+  maximoMm?: number
   /** Texto cru digitado. O componente não guarda estado próprio. */
   texto: string
   unidade: UnidadeMedida
@@ -79,6 +84,7 @@ function aplicarPasso(
  */
 export function CampoMedida({
   rotulo,
+  maximoMm,
   texto,
   unidade,
   aoMudarTexto,
@@ -89,7 +95,8 @@ export function CampoMedida({
   const idAjuda = `${idCampo}-ajuda`
 
   const valorMm = interpretarMedidaDigitada(texto, unidade)
-  const validacao = valorMm === null ? null : validarComprimento(valorMm)
+  const validacao =
+    valorMm === null ? null : validarComprimento(valorMm, maximoMm)
   const erro =
     validacao !== null && !validacao.valido ? validacao.mensagem : undefined
   const textoNaoNumerico = texto.trim() !== '' && valorMm === null

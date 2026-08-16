@@ -45,6 +45,18 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.4.0 — 15/08/2026
+
+**Sobra não pode ser maior que a barra.**
+
+O limite de comprimento passou de 18 m para o comprimento da barra do perfil
+escolhido — 6 m em todos os perfis de hoje. Uma sobra é o que restou de uma
+barra, e não existe resto maior do que a peça de onde veio.
+
+A regra vale nos dois lados: a tela avisa na hora, e a função `cadastrar_sobra`
+recusa no banco. Precisa aplicar a migration
+`20260815180000_limite_comprimento_barra.sql`.
+
 ## 1.3.0 — 15/08/2026
 
 **Desenho técnico no cadastro e ajuste de medida por botões.**

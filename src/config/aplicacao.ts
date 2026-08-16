@@ -55,16 +55,21 @@ export const UNIDADES_MEDIDA = ['mm', 'cm', 'm'] as const
 export type UnidadeMedida = (typeof UNIDADES_MEDIDA)[number]
 
 /**
- * Limites físicos de sanidade, independentes de configuração do usuário.
- * A barra padrão é 6.000 mm, mas perfis especiais podem ser maiores —
- * por isso o teto é generoso. O objetivo aqui é barrar erro de digitação
- * (um zero a mais), não impor regra de negócio.
+ * Limites físicos de sanidade.
+ *
+ * O teto é o comprimento da barra: uma sobra é o que restou de uma barra, e
+ * não existe resto maior do que a peça de onde ele veio. Barra de alumínio é
+ * vendida em 6 metros, então nada no estoque passa disso.
+ *
+ * Quando um perfil tem barra de comprimento diferente, o limite que vale é o
+ * dele — ver `comprimentoMaximoDoPerfil`. Este valor aqui é a última barreira,
+ * para o caso de não haver perfil escolhido ainda.
  */
 export const LIMITES = {
   /** Nenhuma peça útil tem menos de 1 mm. */
   comprimentoMinimoMm: 1,
-  /** 18 metros: acima disso é certamente erro de digitação. */
-  comprimentoMaximoMm: 18_000,
+  /** 6 metros: o comprimento da barra inteira. */
+  comprimentoMaximoMm: 6_000,
   quantidadeMinima: 1,
   quantidadeMaxima: 9_999,
 } as const

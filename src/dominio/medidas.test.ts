@@ -103,10 +103,33 @@ describe('validarComprimento', () => {
     )
   })
 
-  it('recusa valor acima do limite, que denuncia zero digitado a mais', () => {
-    const resultado = validarComprimento(60000)
+  it('recusa comprimento maior que a barra inteira', () => {
+    // Uma sobra é o que restou de uma barra; não existe resto maior do que a
+    // peça de onde ele veio.
+    const resultado = validarComprimento(6001)
+
     expect(resultado.valido).toBe(false)
     expect(resultado.valido === false && resultado.erro).toBe('acima-do-limite')
+  })
+
+  it('aceita exatamente o comprimento da barra', () => {
+    // Barra inteira ainda não cortada é estoque legítimo.
+    expect(validarComprimento(6000).valido).toBe(true)
+  })
+
+  it('respeita a barra do perfil quando informada', () => {
+    // Perfil com barra de 3 m: uma peça de 4 m não pode ter vindo dele.
+    expect(validarComprimento(4000, 3000).valido).toBe(false)
+    expect(validarComprimento(3000, 3000).valido).toBe(true)
+
+    // E um perfil de barra maior aceita mais que o limite geral.
+    expect(validarComprimento(7000, 8000).valido).toBe(true)
+  })
+
+  it('diz na mensagem qual é o limite', () => {
+    const resultado = validarComprimento(6500, 6000)
+
+    expect(resultado.valido === false && resultado.mensagem).toContain('6 m')
   })
 
   it('recusa comprimento fracionário', () => {
