@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { Plus, Pencil, Search, Images } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Plus, Pencil, Search, Images, ChevronRight } from 'lucide-react'
 import {
   useModelosPerfil,
   useCriarModeloPerfil,
@@ -12,6 +13,8 @@ import { Botao } from '@/componentes/ui/Botao'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { Modal } from '@/componentes/ui/Modal'
 import { GaleriaDesenhos } from '@/componentes/GaleriaDesenhos'
+import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
+import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
 import { formatarComprimento } from '@/dominio/medidas'
 import type { ModeloPerfil } from '@/tipos/banco'
 
@@ -33,6 +36,7 @@ export default function ModelosPerfil() {
   const criar = useCriarModeloPerfil()
   const editar = useEditarModeloPerfil()
   const desativar = useDesativarModeloPerfil()
+  const { data: capas } = useCapasDesenhos()
 
   const [busca, setBusca] = useState('')
   const [aberto, setAberto] = useState(false)
@@ -140,21 +144,38 @@ export default function ModelosPerfil() {
             key={modelo.id}
             className="bg-superficie flex items-center gap-3 rounded-xl p-4 shadow-sm"
           >
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">
-                <span className="text-acao-600 font-mono">{modelo.codigo}</span>{' '}
-                {modelo.descricao}
-                {!modelo.ativo && (
-                  <span className="bg-superficie-2 text-texto-suave ml-2 rounded px-2 py-0.5 text-xs">
-                    inativo
-                  </span>
-                )}
-              </p>
-              <p className="text-texto-suave truncate text-sm">
-                {modelo.linha && `${modelo.linha} · `}
-                barra de {formatarComprimento(modelo.comprimento_barra_mm)}
-              </p>
-            </div>
+            <Link
+              to={`/perfis/${modelo.id}`}
+              className="flex min-w-0 flex-1 items-center gap-3"
+              aria-label={`Ver ficha do perfil ${modelo.codigo}`}
+            >
+              <MiniaturaPerfil
+                link={capas?.get(modelo.id)}
+                codigo={modelo.codigo}
+              />
+
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-1 truncate font-medium">
+                  <span className="text-acao-600 font-mono">
+                    {modelo.codigo}
+                  </span>{' '}
+                  {modelo.descricao}
+                  {!modelo.ativo && (
+                    <span className="bg-superficie-2 text-texto-suave ml-2 rounded px-2 py-0.5 text-xs">
+                      inativo
+                    </span>
+                  )}
+                  <ChevronRight
+                    aria-hidden="true"
+                    className="text-texto-suave size-4 shrink-0"
+                  />
+                </span>
+                <span className="text-texto-suave block truncate text-sm">
+                  {modelo.linha && `${modelo.linha} · `}
+                  barra de {formatarComprimento(modelo.comprimento_barra_mm)}
+                </span>
+              </span>
+            </Link>
 
             <Botao
               variante="secundaria"

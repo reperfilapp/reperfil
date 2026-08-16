@@ -133,3 +133,53 @@ export function useRemoverDesenho() {
     },
   })
 }
+
+/**
+ * Capa (primeiro desenho) de TODOS os perfis, numa consulta só.
+ *
+ * Buscar o desenho perfil a perfil na lista de estoque geraria uma ida ao
+ * servidor por linha — dezenas por tela, na rede do depósito. Aqui é uma
+ * consulta para os registros e um único pedido de links assinados para o
+ * lote inteiro de imagens.
+ */
+export function useCapasDesenhos() {
+  return useQuery({
+    queryKey: ['desenhos-tecnicos', 'capas'],
+    queryFn: async (): Promise<Map<string, string>> => {
+      const { data, error } = await supabase
+        .from('arquivos_vetoriais')
+        .select('modelo_perfil_id, arquivo_url, ordem')
+        .eq('tipo', 'imagem')
+        .order('ordem')
+
+      if (error) throw new Error(error.message)
+
+      const registros = data as {
+        modelo_perfil_id: string | null
+        arquivo_url: string
+      }[]
+
+      // Primeiro desenho de cada perfil; os demais ficam para a galeria.
+      const primeiroDeCada = new Map<string, string>()
+      for (const r of registros) {
+        if (r.modelo_perfil_id && !primeiroDeCada.has(r.modelo_perfil_id)) {
+          primeiroDeCada.set(r.modelo_perfil_id, r.arquivo_url)
+        }
+      }
+
+      const links = await obterLinksTemporarios(BALDE_DESENHOS, [
+        ...primeiroDeCada.values(),
+      ])
+
+      const capas = new Map<string, string>()
+      for (const [perfilId, caminho] of primeiroDeCada) {
+        const link = links.get(caminho)
+        if (link) capas.set(perfilId, link)
+      }
+
+      return capas
+    },
+    // O link assinado vale uma hora; renovar antes evita imagem quebrada.
+    staleTime: 45 * 60_000,
+  })
+}

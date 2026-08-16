@@ -45,6 +45,18 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.2.0 — 15/08/2026
+
+**Desenho técnico visível nas listas e ficha do perfil.**
+
+- Miniatura do desenho em cada linha do estoque e do catálogo de perfis
+- Tocar na linha abre a ficha do perfil: desenhos ampliáveis, estoque
+  disponível agrupado por acabamento e comprimento, e ficha técnica com peso
+  por metro, peso da barra e link do fabricante
+
+As miniaturas usam uma consulta só para todos os perfis, com um único pedido
+de links assinados, e carregamento tardio — só baixa o que entra na tela.
+
 ## 1.1.0 — 15/08/2026
 
 **Importação da planilha de inventário.**

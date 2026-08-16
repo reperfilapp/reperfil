@@ -18,6 +18,7 @@ import Mais from '@/paginas/Mais'
 import Configuracoes from '@/paginas/Configuracoes'
 import Relatorios from '@/paginas/Relatorios'
 import ModelosPerfil from '@/paginas/cadastros/ModelosPerfil'
+import PerfilDetalhe from '@/paginas/PerfilDetalhe'
 import Acabamentos from '@/paginas/cadastros/Acabamentos'
 import Localizacoes from '@/paginas/cadastros/Localizacoes'
 import Clientes from '@/paginas/cadastros/Clientes'
@@ -53,6 +54,7 @@ export default function App() {
                 <Route path="/procurar" element={<PesquisarSobras />} />
                 <Route path="/reservas" element={<Reservas />} />
                 <Route path="/perfis" element={<ModelosPerfil />} />
+                <Route path="/perfis/:id" element={<PerfilDetalhe />} />
                 <Route path="/acabamentos" element={<Acabamentos />} />
                 <Route path="/localizacoes" element={<Localizacoes />} />
                 <Route path="/clientes" element={<Clientes />} />

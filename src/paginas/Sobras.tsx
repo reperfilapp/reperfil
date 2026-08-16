@@ -1,7 +1,9 @@
 import { lazy, Suspense, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, PackagePlus, ScanLine, Tag } from 'lucide-react'
+import { Search, PackagePlus, ScanLine, Tag, ChevronRight } from 'lucide-react'
 import { useSobras, type SobraDetalhada } from '@/dados/sobras'
+import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
+import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { formatarComprimento } from '@/dominio/medidas'
@@ -58,6 +60,7 @@ function combina(sobra: SobraDetalhada, termo: string): boolean {
 
 export default function Sobras() {
   const { data: sobras, isPending, error, refetch } = useSobras()
+  const { data: capas } = useCapasDesenhos()
   const { perfil } = useAutenticacao()
   const [busca, setBusca] = useState('')
   const [lendoQr, setLendoQr] = useState(false)
@@ -128,19 +131,35 @@ export default function Sobras() {
               className="bg-superficie rounded-xl p-4 shadow-sm"
             >
               <div className="mb-2 flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold">
-                    <span className="text-acao-600 font-mono">
-                      {sobra.modelo?.codigo}
-                    </span>{' '}
-                    {sobra.modelo?.descricao}
-                  </p>
-                  <p className="text-texto-suave truncate text-sm">
-                    <span className="font-mono">{sobra.codigo}</span>
-                    {sobra.acabamento && ` · ${sobra.acabamento.nome}`}
-                    {sobra.localizacao && ` · ${sobra.localizacao.codigo}`}
-                  </p>
-                </div>
+                {/* O desenho identifica a peça mais rápido que o código. */}
+                <Link
+                  to={`/perfis/${sobra.modelo_perfil_id}`}
+                  className="flex min-w-0 flex-1 items-start gap-3"
+                  aria-label={`Ver ficha do perfil ${sobra.modelo?.codigo}`}
+                >
+                  <MiniaturaPerfil
+                    link={capas?.get(sobra.modelo_perfil_id)}
+                    codigo={sobra.modelo?.codigo ?? ''}
+                  />
+
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-1 truncate font-semibold">
+                      <span className="text-acao-600 font-mono">
+                        {sobra.modelo?.codigo}
+                      </span>{' '}
+                      {sobra.modelo?.descricao}
+                      <ChevronRight
+                        aria-hidden="true"
+                        className="text-texto-suave size-4 shrink-0"
+                      />
+                    </span>
+                    <span className="text-texto-suave block truncate text-sm">
+                      <span className="font-mono">{sobra.codigo}</span>
+                      {sobra.acabamento && ` · ${sobra.acabamento.nome}`}
+                      {sobra.localizacao && ` · ${sobra.localizacao.codigo}`}
+                    </span>
+                  </span>
+                </Link>
 
                 <div className="flex shrink-0 items-center gap-2">
                   <span
