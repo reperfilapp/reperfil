@@ -1,5 +1,13 @@
 import { useState } from 'react'
-import { Clock, PackageOpen, Scissors, X, MapPin } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import {
+  Clock,
+  PackageOpen,
+  Scissors,
+  X,
+  MapPin,
+  ChevronRight,
+} from 'lucide-react'
 import {
   useReservas,
   useCancelarReserva,
@@ -155,19 +163,31 @@ export default function Reservas() {
             className="bg-superficie rounded-xl p-4 shadow-sm"
           >
             <div className="mb-3 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-mono font-bold">{reserva.lote?.codigo}</p>
-                <p className="truncate text-sm">
-                  {reserva.lote?.modelo?.codigo} ·{' '}
-                  {reserva.lote?.acabamento?.nome}
-                </p>
-                {reserva.lote?.localizacao && (
-                  <p className="text-texto-suave flex items-center gap-1 text-sm">
-                    <MapPin aria-hidden="true" className="size-3.5" />
-                    {reserva.lote.localizacao.codigo}
-                  </p>
-                )}
-              </div>
+              <Link
+                to={`/sobras/${reserva.lote_id}`}
+                className="flex min-w-0 items-center gap-2"
+                aria-label={`Ver detalhes da sobra ${reserva.lote?.codigo}`}
+              >
+                <span className="min-w-0">
+                  <span className="block font-mono font-bold">
+                    {reserva.lote?.codigo}
+                  </span>
+                  <span className="block truncate text-sm">
+                    {reserva.lote?.modelo?.codigo} ·{' '}
+                    {reserva.lote?.acabamento?.nome}
+                  </span>
+                  {reserva.lote?.localizacao && (
+                    <span className="text-texto-suave flex items-center gap-1 text-sm">
+                      <MapPin aria-hidden="true" className="size-3.5" />
+                      {reserva.lote.localizacao.codigo}
+                    </span>
+                  )}
+                </span>
+                <ChevronRight
+                  aria-hidden="true"
+                  className="text-texto-suave size-4 shrink-0"
+                />
+              </Link>
 
               <div className="shrink-0 text-right">
                 <p className="text-lg font-bold tabular-nums">

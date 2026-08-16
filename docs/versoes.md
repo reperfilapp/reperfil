@@ -45,6 +45,18 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.0 — 16/08/2026
+
+**Toda linha de lista abre uma tela de detalhe.**
+
+Padrão adotado como convenção do projeto (decisão D9). Telas novas para
+sobra, cliente, acabamento e localização, somando-se à do perfil.
+
+Cada uma mostra o que não cabia na lista: a sobra ganha histórico de
+movimentações e foto; o cliente, botões de ligar e WhatsApp; o acabamento,
+quanto existe nessa cor e em quais perfis; a localização, a lista do que
+está guardado ali.
+
 ## 1.5.0 — 16/08/2026
 
 **Fotos do perfil e destaque nos botões de incremento.**

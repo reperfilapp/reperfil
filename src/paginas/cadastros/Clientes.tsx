@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { Plus, Pencil, Search } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Plus, Pencil, Search, ChevronRight } from 'lucide-react'
 import {
   useClientes,
   useCriarCliente,
@@ -132,21 +133,31 @@ export default function Clientes() {
             key={cliente.id}
             className="bg-superficie flex items-center gap-3 rounded-xl p-4 shadow-sm"
           >
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">
-                {cliente.nome}
-                {!cliente.ativo && (
-                  <span className="bg-superficie-2 text-texto-suave ml-2 rounded px-2 py-0.5 text-xs">
-                    inativo
-                  </span>
-                )}
-              </p>
-              <p className="text-texto-suave truncate text-sm">
-                <span className="font-mono">{cliente.codigo}</span>
-                {cliente.cidade && ` · ${cliente.cidade}`}
-                {cliente.telefone && ` · ${cliente.telefone}`}
-              </p>
-            </div>
+            <Link
+              to={`/clientes/${cliente.id}`}
+              className="flex min-w-0 flex-1 items-center gap-2"
+              aria-label={`Ver detalhes de ${cliente.nome}`}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">
+                  {cliente.nome}
+                  {!cliente.ativo && (
+                    <span className="bg-superficie-2 text-texto-suave ml-2 rounded px-2 py-0.5 text-xs">
+                      inativo
+                    </span>
+                  )}
+                </span>
+                <span className="text-texto-suave block truncate text-sm">
+                  <span className="font-mono">{cliente.codigo}</span>
+                  {cliente.cidade && ` · ${cliente.cidade}`}
+                  {cliente.telefone && ` · ${cliente.telefone}`}
+                </span>
+              </span>
+              <ChevronRight
+                aria-hidden="true"
+                className="text-texto-suave size-4 shrink-0"
+              />
+            </Link>
 
             <Botao
               variante="secundaria"

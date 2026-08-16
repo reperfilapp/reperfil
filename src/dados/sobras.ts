@@ -123,3 +123,65 @@ export function useResumoEstoque() {
     },
   })
 }
+
+/**
+ * Histórico de um lote.
+ *
+ * As movimentações são imutáveis — não há política de exclusão no banco — e
+ * é isso que torna esta tela confiável: o que está aqui aconteceu, e ninguém
+ * apagou depois.
+ */
+export interface MovimentacaoDetalhada {
+  id: string
+  tipo: string
+  quantidade: number
+  comprimento_mm: number | null
+  justificativa: string | null
+  criado_em: string
+  usuario: { nome: string } | null
+}
+
+export function useHistoricoDoLote(loteId: string | null) {
+  return useQuery({
+    queryKey: [...chaves.sobras, 'historico', loteId],
+    enabled: loteId !== null,
+    queryFn: async (): Promise<MovimentacaoDetalhada[]> => {
+      const { data, error } = await supabase
+        .from('movimentacoes_estoque')
+        .select(
+          `id, tipo, quantidade, comprimento_mm, justificativa, criado_em,
+           usuario:perfis_usuario (nome)`,
+        )
+        .eq('lote_id', loteId)
+        .order('criado_em', { ascending: false })
+
+      if (error) throw new Error(error.message)
+
+      return data as unknown as MovimentacaoDetalhada[]
+    },
+  })
+}
+
+/** Uma sobra específica, com tudo que a tela de detalhe precisa. */
+export function useSobra(id: string | null) {
+  return useQuery({
+    queryKey: [...chaves.sobras, 'uma', id],
+    enabled: id !== null,
+    queryFn: async (): Promise<SobraDetalhada | null> => {
+      const { data, error } = await supabase
+        .from('lotes_sobras')
+        .select(
+          `*,
+           modelo:modelos_perfil (codigo, descricao, linha),
+           acabamento:acabamentos (codigo, nome, cor_hex),
+           localizacao:localizacoes (codigo)`,
+        )
+        .eq('id', id)
+        .maybeSingle()
+
+      if (error) throw new Error(error.message)
+
+      return data as unknown as SobraDetalhada | null
+    },
+  })
+}

@@ -173,3 +173,38 @@ invasão desta conta hoje daria acesso a perfis e sobras fictícios.
 >
 > Este item está repetido na lista de verificação de
 > `docs/publicacao-play-store.md`, porque publicar na loja implica uso real.
+
+
+---
+
+## D9 — Toda linha de lista abre uma tela de detalhe
+
+**Decisão.** Todo registro exibido numa lista é clicável e leva a uma tela
+própria de exibição. Vale para sobra, perfil, cliente, acabamento e
+localização — e para o que vier depois.
+
+**Motivo.** Consistência é o que permite aprender o aplicativo uma vez. Se
+algumas linhas abrem e outras não, a pessoa deixa de tentar, e passa a não
+descobrir o que existe. O padrão foi pedido pelo cliente e adotado como
+convenção do projeto.
+
+**Como aplicar.** Usar `PaginaDetalhe` de `src/componentes/PaginaDetalhe.tsx`,
+que dá a casca comum: voltar no mesmo lugar, código no mesmo lugar, ações no
+mesmo lugar. `FichaDados`, do mesmo arquivo, monta os blocos de rótulo e
+valor.
+
+**A tela de detalhe não repete a lista.** Ela mostra o que não cabia:
+
+| Registro | O que a tela acrescenta |
+| --- | --- |
+| Sobra | Histórico de movimentações, foto da peça, etiqueta |
+| Perfil | Desenhos, fotos, estoque agrupado, peso da barra |
+| Cliente | Botões de ligar, WhatsApp e e-mail |
+| Acabamento | Quanto existe nessa cor e em quais perfis |
+| Localização | O que está guardado ali — a lista de separação |
+
+Uma tela de detalhe que só repete a linha da lista não justifica o toque.
+
+**Valor vazio aparece como travessão**, não some. Linha ausente faz pensar
+que o campo não existe, quando na verdade está por preencher — e vazio é
+informação num cadastro que alguém precisa completar.

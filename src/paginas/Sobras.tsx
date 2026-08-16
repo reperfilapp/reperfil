@@ -133,9 +133,9 @@ export default function Sobras() {
               <div className="mb-2 flex items-start justify-between gap-3">
                 {/* O desenho identifica a peça mais rápido que o código. */}
                 <Link
-                  to={`/perfis/${sobra.modelo_perfil_id}`}
+                  to={`/sobras/${sobra.id}`}
                   className="flex min-w-0 flex-1 items-start gap-3"
-                  aria-label={`Ver ficha do perfil ${sobra.modelo?.codigo}`}
+                  aria-label={`Ver detalhes da sobra ${sobra.codigo}`}
                 >
                   <MiniaturaPerfil
                     link={capas?.get(sobra.modelo_perfil_id)}

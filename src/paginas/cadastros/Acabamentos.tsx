@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { Plus, Pencil } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Plus, Pencil, ChevronRight } from 'lucide-react'
 import {
   useAcabamentos,
   useCriarAcabamento,
@@ -112,20 +113,30 @@ export default function Acabamentos() {
               style={{ backgroundColor: acabamento.cor_hex ?? 'transparent' }}
             />
 
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">
-                {acabamento.nome}
-                {!acabamento.ativo && (
-                  <span className="bg-superficie-2 text-texto-suave ml-2 rounded px-2 py-0.5 text-xs">
-                    inativo
-                  </span>
-                )}
-              </p>
-              <p className="text-texto-suave truncate text-sm">
-                {acabamento.codigo}
-                {acabamento.codigo_ral && ` · ${acabamento.codigo_ral}`}
-              </p>
-            </div>
+            <Link
+              to={`/acabamentos/${acabamento.id}`}
+              className="flex min-w-0 flex-1 items-center gap-2"
+              aria-label={`Ver detalhes de ${acabamento.nome}`}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">
+                  {acabamento.nome}
+                  {!acabamento.ativo && (
+                    <span className="bg-superficie-2 text-texto-suave ml-2 rounded px-2 py-0.5 text-xs">
+                      inativo
+                    </span>
+                  )}
+                </span>
+                <span className="text-texto-suave block truncate text-sm">
+                  {acabamento.codigo}
+                  {acabamento.codigo_ral && ` · ${acabamento.codigo_ral}`}
+                </span>
+              </span>
+              <ChevronRight
+                aria-hidden="true"
+                className="text-texto-suave size-4 shrink-0"
+              />
+            </Link>
 
             <Botao
               variante="secundaria"

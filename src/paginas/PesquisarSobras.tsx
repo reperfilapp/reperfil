@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Search,
   MapPin,
+  ChevronRight,
   CheckCircle2,
   AlertTriangle,
   PackageCheck,
@@ -242,18 +244,30 @@ export default function PesquisarSobras() {
                   className="bg-superficie rounded-xl p-4 shadow-sm"
                 >
                   <div className="mb-3 flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-mono font-bold">{s.codigo}</p>
-                      <p className="truncate text-sm">
-                        {s.modeloCodigo} · {s.acabamentoNome}
-                      </p>
-                      {s.localizacaoCodigo && (
-                        <p className="text-texto-suave flex items-center gap-1 text-sm">
-                          <MapPin aria-hidden="true" className="size-3.5" />
-                          {s.localizacaoCodigo}
-                        </p>
-                      )}
-                    </div>
+                    <Link
+                      to={`/sobras/${s.id}`}
+                      className="flex min-w-0 items-center gap-2"
+                      aria-label={`Ver detalhes da sobra ${s.codigo}`}
+                    >
+                      <span className="min-w-0">
+                        <span className="block font-mono font-bold">
+                          {s.codigo}
+                        </span>
+                        <span className="block truncate text-sm">
+                          {s.modeloCodigo} · {s.acabamentoNome}
+                        </span>
+                        {s.localizacaoCodigo && (
+                          <span className="text-texto-suave flex items-center gap-1 text-sm">
+                            <MapPin aria-hidden="true" className="size-3.5" />
+                            {s.localizacaoCodigo}
+                          </span>
+                        )}
+                      </span>
+                      <ChevronRight
+                        aria-hidden="true"
+                        className="text-texto-suave size-4 shrink-0"
+                      />
+                    </Link>
 
                     <p className="shrink-0 text-right">
                       <span className="block text-xl font-bold tabular-nums">

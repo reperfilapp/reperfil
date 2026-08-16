@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { Plus, Pencil } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Plus, Pencil, ChevronRight } from 'lucide-react'
 import {
   useLocalizacoes,
   useCriarLocalizacao,
@@ -108,19 +109,29 @@ export default function Localizacoes() {
             key={local.id}
             className="bg-superficie flex items-center gap-3 rounded-xl p-4 shadow-sm"
           >
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">
-                {local.codigo}
-                {!local.ativo && (
-                  <span className="bg-superficie-2 text-texto-suave ml-2 rounded px-2 py-0.5 text-xs">
-                    inativa
-                  </span>
-                )}
-              </p>
-              <p className="text-texto-suave truncate text-sm">
-                {descreverLocalizacao(local)}
-              </p>
-            </div>
+            <Link
+              to={`/localizacoes/${local.id}`}
+              className="flex min-w-0 flex-1 items-center gap-2"
+              aria-label={`Ver detalhes de ${local.codigo}`}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium">
+                  {local.codigo}
+                  {!local.ativo && (
+                    <span className="bg-superficie-2 text-texto-suave ml-2 rounded px-2 py-0.5 text-xs">
+                      inativa
+                    </span>
+                  )}
+                </span>
+                <span className="text-texto-suave block truncate text-sm">
+                  {descreverLocalizacao(local)}
+                </span>
+              </span>
+              <ChevronRight
+                aria-hidden="true"
+                className="text-texto-suave size-4 shrink-0"
+              />
+            </Link>
 
             <Botao
               variante="secundaria"
