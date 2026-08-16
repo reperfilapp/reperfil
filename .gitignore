@@ -1,4 +1,8 @@
 # --- Dados sensíveis: NUNCA versionar ---
+# Planilhas e catálogos para importação. Podem conter material licenciado
+# do fabricante e dados comerciais da empresa.
+importar/
+
 # Os PDFs de referência contêm nome de cliente, endereço de obra,
 # telefone e valores reais. Ficam apenas na máquina local.
 docs/referencia/

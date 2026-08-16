@@ -45,6 +45,17 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.1.0 — 15/08/2026
+
+**Importação da planilha de inventário.**
+
+Importados 79 perfis com seus 79 desenhos técnicos, 6 acabamentos e 84 lotes
+— 296 peças, 1.718 metros. As 39 pontas sem medida e as 2 riscadas ficaram de
+fora, exportadas para uma lista de conferência.
+
+`scripts/importar-planilha.mjs` sempre mostra uma prévia antes de gravar;
+só grava com `--confirmar`.
+
 ## 1.0.0 — 15/08/2026
 
 **Fase 1 completa.**
