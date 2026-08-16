@@ -1,9 +1,9 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import {
   Home,
-  Package,
+  Search,
   PackagePlus,
-  Users,
+  Clock,
   Menu as MenuIcone,
 } from 'lucide-react'
 import { MarcaRePerfil } from './MarcaRePerfil'
@@ -18,11 +18,14 @@ import { cn } from '@/lib/utilitarios'
  * usado de pé no depósito e muitas vezes com uma mão só.
  * No computador: menu lateral, onde há espaço e o trabalho é administrativo.
  */
+// Clientes saiu da barra e foi para "Mais": no depósito ninguém consulta
+// cliente, e o espaço vale mais para procurar e reservar. Volta ao centro na
+// Fase 3, quando houver orçamento.
 const ITENS_NAVEGACAO = [
   { para: '/', rotulo: 'Início', Icone: Home, exato: true },
-  { para: '/sobras', rotulo: 'Sobras', Icone: Package, exato: false },
+  { para: '/procurar', rotulo: 'Procurar', Icone: Search, exato: false },
   { para: '/cadastrar', rotulo: 'Cadastrar', Icone: PackagePlus, exato: false },
-  { para: '/clientes', rotulo: 'Clientes', Icone: Users, exato: false },
+  { para: '/reservas', rotulo: 'Reservas', Icone: Clock, exato: false },
   { para: '/mais', rotulo: 'Mais', Icone: MenuIcone, exato: false },
 ] as const
 

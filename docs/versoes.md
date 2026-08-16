@@ -45,6 +45,30 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 0.7.0 — 15/08/2026
+
+**Etapa 6: pesquisa, reserva e corte.**
+
+- Tela "Procurar sobra": informa perfil, acabamento e comprimento do corte, e
+  vê o que serve, com o aproveitamento calculado
+- Ordenação por menor sobra, depois localização, depois peça mais antiga
+- Reserva, retirada, confirmação de corte e cancelamento com motivo
+- Prévia antes de confirmar o corte, mostrando se o resto volta ao estoque ou
+  vira descarte
+
+Verificado no banco real: corte de 1.000 mm numa peça de 1.800 gerou a sobra
+SB-HEVR de 797 mm, vinculada à peça de origem; corte de 1.850 mm numa de 2.100
+lançou os 247 mm restantes como descarte, sem criar sobra fantasma; e a
+segunda reserva da mesma peça foi recusada.
+
+Novo componente `EstadoConsulta`: consulta que falha passa a mostrar o erro.
+Antes deixava a tela em branco — num sistema de estoque, tela vazia é lida
+como "não há nada", que é a conclusão errada mais perigosa.
+
+Corrigido: a consulta de reservas não dizia qual das duas chaves estrangeiras
+para `lotes_sobras` usar (o lote reservado e o lote resultante do corte), e o
+PostgREST recusava.
+
 ## 0.6.0 — 15/08/2026
 
 **Fotos e leitura de QR Code.**

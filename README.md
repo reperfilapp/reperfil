@@ -6,10 +6,10 @@ Aplicativo de controle de sobras de perfis de alumínio e orçamento de esquadri
 PWA instalável, web responsiva e Android (via Capacitor), a partir de uma única
 base de código.
 
-**Situação atual: versão 0.6.0 — Etapas 0 a 5 concluídas, mais fotos e QR
-Code.** Já é possível cadastrar perfis com desenhos técnicos, acabamentos,
-localizações e clientes, lançar sobras com foto e imprimir etiquetas com QR.
-Publicado em https://reperfil.vercel.app.
+**Situação atual: versão 0.7.0 — Etapas 0 a 6 concluídas.** O ciclo completo
+funciona: cadastrar sobras com foto, procurar a peça que serve para um corte,
+reservar, retirar, confirmar o corte e ver o resto voltar ao estoque ou virar
+descarte. Publicado em https://reperfil.vercel.app.
 
 ## O problema que resolve
 
@@ -114,7 +114,7 @@ supabase/
 | 3 | Autenticação e perfis de acesso | Concluída |
 | 4 | Cadastros: perfis, acabamentos, locais, clientes, configurações | Concluída |
 | 5 | Cadastro rápido de sobras | Concluída |
-| 6 | Pesquisa, reserva e corte | Pendente |
+| 6 | Pesquisa, reserva e corte | Concluída |
 | 7 | Painel, relatórios e PWA | Pendente |
 | 8 | Android (Capacitor) e documentação de publicação | Pendente |
 

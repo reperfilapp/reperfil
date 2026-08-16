@@ -30,6 +30,7 @@ export const clienteConsultas = new QueryClient({
  */
 export const chaves = {
   sobras: ['sobras'] as const,
+  reservas: ['reservas'] as const,
   acabamentos: ['acabamentos'] as const,
   localizacoes: ['localizacoes'] as const,
   modelosPerfil: ['modelos-perfil'] as const,

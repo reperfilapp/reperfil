@@ -6,6 +6,8 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  Package,
+  Users,
 } from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { eAdministrador, podeMovimentarEstoque } from '@/autenticacao/contexto'
@@ -24,6 +26,20 @@ export default function Mais() {
   const { perfil, sair } = useAutenticacao()
 
   const itens = [
+    {
+      para: '/sobras',
+      rotulo: 'Estoque de sobras',
+      descricao: 'Todas as peças, com etiqueta e QR Code',
+      Icone: Package,
+      visivel: true,
+    },
+    {
+      para: '/clientes',
+      rotulo: 'Clientes',
+      descricao: 'Serão usados nos orçamentos da Fase 3',
+      Icone: Users,
+      visivel: true,
+    },
     {
       para: '/perfis',
       rotulo: 'Modelos de perfil',

@@ -7,6 +7,7 @@ import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { formatarComprimento } from '@/dominio/medidas'
 import { LeitorQrCode } from '@/componentes/LeitorQrCode'
 import { EtiquetaSobra } from '@/componentes/EtiquetaSobra'
+import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import type { StatusLote } from '@/tipos/banco'
 
 const ROTULO_STATUS: Record<StatusLote, string> = {
@@ -42,7 +43,7 @@ function combina(sobra: SobraDetalhada, termo: string): boolean {
 }
 
 export default function Sobras() {
-  const { data: sobras, isPending } = useSobras()
+  const { data: sobras, isPending, error, refetch } = useSobras()
   const { perfil } = useAutenticacao()
   const [busca, setBusca] = useState('')
   const [lendoQr, setLendoQr] = useState(false)
@@ -91,15 +92,17 @@ export default function Sobras() {
         </button>
       </div>
 
-      {isPending && <p className="text-texto-suave">Carregando…</p>}
-
-      {!isPending && visiveis.length === 0 && (
-        <p className="bg-superficie-2 text-texto-suave rounded-xl p-6 text-center">
-          {busca
+      <EstadoConsulta
+        carregando={isPending}
+        erro={error}
+        vazio={visiveis.length === 0}
+        mensagemVazio={
+          busca
             ? 'Nenhuma sobra encontrada com esse termo.'
-            : 'Nenhuma sobra cadastrada ainda.'}
-        </p>
-      )}
+            : 'Nenhuma sobra cadastrada ainda.'
+        }
+        aoTentarNovamente={() => void refetch()}
+      />
 
       <ul className="flex flex-col gap-2">
         {visiveis.map((sobra) => {
