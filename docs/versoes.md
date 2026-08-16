@@ -45,6 +45,25 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.2 — 16/08/2026
+
+**Card do perfil escolhido: texto completo e clicável.**
+
+Na tela "Cadastrar sobra", o card verde do perfil escolhido tinha dois
+problemas: o texto da aplicação era cortado com "…" quando ficava longo (ex.:
+"lateral da porta de correr de 8 folhas…" — justamente o texto que confirma
+se é a peça certa), e o card não abria a ficha completa do perfil ao ser
+tocado, diferente do resto do app.
+
+Corrigido: o texto da aplicação agora quebra linha em vez de truncar, e o
+card inteiro passou a abrir a ficha do perfil (decisão D9 — todo registro
+clicável abre seu detalhe). Os botões de ampliar desenho e foto continuam
+funcionando por cima, sem disparar a navegação.
+
+Verificado no navegador: aplicação com 96 caracteres exibida por inteiro, sem
+corte; clique no botão de ampliar abre o desenho sem sair da tela; clique no
+corpo do card navega para `/perfis/:id` e mostra a ficha correta.
+
 ## 1.6.1 — 16/08/2026
 
 **Sugestões de aplicação autoexpansíveis.**

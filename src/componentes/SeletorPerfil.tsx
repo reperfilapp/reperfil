@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Search, Check, ZoomIn, X } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Search, Check, ZoomIn, X, ChevronRight } from 'lucide-react'
 import { useModelosPerfil, filtrarModelos } from '@/dados/modelosPerfil'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
 import { MiniaturaPerfil } from './MiniaturaPerfil'
@@ -28,6 +29,7 @@ export function SeletorPerfil({
   selecionado,
   aoSelecionar,
 }: PropsSeletorPerfil) {
+  const navegar = useNavigate()
   const { data: modelos, isPending } = useModelosPerfil()
   const { data: capas } = useCapasDesenhos('imagem')
   const { data: fotos } = useCapasDesenhos('foto')
@@ -40,16 +42,37 @@ export function SeletorPerfil({
     const desenho = capas?.get(selecionado.id)
     const foto = fotos?.get(selecionado.id)
 
+    /*
+     * O card inteiro abre a ficha completa do perfil — mesma convenção de
+     * qualquer outro registro do sistema (decisão D9). Os botões de ampliar
+     * desenho e foto ficam por cima e cortam a propagação do clique, senão
+     * "ver a foto grande" acabaria navegando para outra tela sem querer.
+     */
     return (
       <>
-        <div className="border-economia-500 bg-economia-50 flex items-start gap-3 rounded-xl border-2 p-3">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => navegar(`/perfis/${selecionado.id}`)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              navegar(`/perfis/${selecionado.id}`)
+            }
+          }}
+          aria-label={`Ver ficha completa do perfil ${selecionado.codigo}`}
+          className="border-economia-500 bg-economia-50 hover:bg-economia-100 flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3"
+        >
           {/* Desenho e foto lado a lado: a geometria e a peça real. É a
               conferência mais rápida possível contra a ponta na mão. */}
           <div className="flex shrink-0 gap-2">
             {desenho ? (
               <button
                 type="button"
-                onClick={() => setAmpliado(desenho)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setAmpliado(desenho)
+                }}
                 className="border-borda relative overflow-hidden rounded-lg border bg-white"
                 aria-label="Ampliar desenho técnico"
               >
@@ -73,7 +96,10 @@ export function SeletorPerfil({
             {foto && (
               <button
                 type="button"
-                onClick={() => setAmpliado(foto)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setAmpliado(foto)
+                }}
                 className="border-borda relative overflow-hidden rounded-lg border"
                 aria-label="Ampliar foto do perfil"
               >
@@ -110,6 +136,15 @@ export function SeletorPerfil({
               </p>
             )}
 
+            {/* Sem truncate de propósito: "lateral da porta de correr de 8
+                folhas com barra antipânico" não pode virar "lateral da
+                porta…" — é justamente o texto que confirma a peça certa. */}
+            {selecionado.aplicacao && (
+              <p className="text-acao-700 bg-acao-100 mt-1 inline-block rounded px-2 py-0.5 text-xs break-words">
+                {selecionado.aplicacao}
+              </p>
+            )}
+
             {(desenho || foto) && (
               <p className="text-grafite-600 mt-1 text-xs">
                 {desenho && foto
@@ -119,6 +154,11 @@ export function SeletorPerfil({
                     : 'Confira a foto antes de salvar.'}
               </p>
             )}
+
+            <p className="text-acao-700 mt-1.5 flex items-center gap-0.5 text-xs font-medium">
+              Ver ficha completa do perfil
+              <ChevronRight aria-hidden="true" className="size-3.5" />
+            </p>
           </div>
         </div>
 
