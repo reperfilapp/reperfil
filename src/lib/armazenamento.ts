@@ -20,6 +20,8 @@ import {
 
 export const BALDE_FOTOS = 'fotos-sobras'
 export const BALDE_DESENHOS = 'desenhos-tecnicos'
+/** Fotografia da peça real, separada do desenho de catálogo. */
+export const BALDE_FOTOS_PERFIL = 'fotos-perfis'
 
 /** Quanto tempo o link temporário vale. Uma hora cobre qualquer sessão. */
 const VALIDADE_LINK_SEGUNDOS = 3600
@@ -96,6 +98,17 @@ export function enviarFotoSobra(arquivo: File): Promise<ResultadoEnvio> {
 
 export function enviarDesenhoTecnico(arquivo: File): Promise<ResultadoEnvio> {
   return enviar(BALDE_DESENHOS, arquivo, COMPRESSAO_DESENHO)
+}
+
+/**
+ * Foto do perfil real.
+ *
+ * Usa a compressão do desenho, não a da sobra: a foto do perfil serve para
+ * comparar detalhe de encaixe e tom do acabamento, e precisa de mais
+ * resolução do que a foto de uma ponta na prateleira.
+ */
+export function enviarFotoPerfil(arquivo: File): Promise<ResultadoEnvio> {
+  return enviar(BALDE_FOTOS_PERFIL, arquivo, COMPRESSAO_DESENHO)
 }
 
 /**

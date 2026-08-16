@@ -180,7 +180,7 @@ export default function ModelosPerfil() {
             <Botao
               variante="secundaria"
               onClick={() => setGaleriaDe(modelo)}
-              aria-label={`Desenhos técnicos de ${modelo.codigo}`}
+              aria-label={`Imagens de ${modelo.codigo}`}
             >
               <Images aria-hidden="true" className="size-4" />
             </Botao>
@@ -312,9 +312,16 @@ export default function ModelosPerfil() {
       <Modal
         aberto={galeriaDe !== null}
         aoFechar={() => setGaleriaDe(null)}
-        titulo={galeriaDe ? `Desenhos — ${galeriaDe.codigo}` : 'Desenhos'}
+        titulo={galeriaDe ? `Imagens — ${galeriaDe.codigo}` : 'Imagens'}
       >
-        {galeriaDe && <GaleriaDesenhos modelo={galeriaDe} />}
+        {galeriaDe && (
+          <div className="flex flex-col gap-6">
+            <GaleriaDesenhos modelo={galeriaDe} tipo="imagem" />
+            <div className="border-borda border-t pt-6">
+              <GaleriaDesenhos modelo={galeriaDe} tipo="foto" />
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

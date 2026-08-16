@@ -5,24 +5,56 @@ import {
   useAdicionarDesenho,
   useRemoverDesenho,
 } from '@/dados/desenhosTecnicos'
-import { enviarDesenhoTecnico } from '@/lib/armazenamento'
+import type { TipoImagemPerfil } from '@/dados/desenhosTecnicos'
+import { enviarDesenhoTecnico, enviarFotoPerfil } from '@/lib/armazenamento'
 import { CampoFoto } from './ui/CampoFoto'
 import { Botao } from './ui/Botao'
+import { cn } from '@/lib/utilitarios'
 import type { ModeloPerfil } from '@/tipos/banco'
 
+/** Textos e comportamento de cada tipo de imagem. */
+const CONFIGURACAO = {
+  imagem: {
+    titulo: 'Desenhos técnicos',
+    descricao:
+      'Fotos do desenho ou do catálogo, de vários ângulos, com as medidas de cada face.',
+    exemploLegenda: 'Legenda, ex.: vista frontal, corte A-A',
+    ajuda: 'A legenda acima é aplicada à imagem que você enviar agora.',
+    enviar: enviarDesenhoTecnico,
+    // Desenho é traço preto sobre branco: sem fundo branco, some no escuro.
+    fundoBranco: true,
+  },
+  foto: {
+    titulo: 'Fotos do perfil',
+    descricao:
+      'Fotografias da peça real. Tirar no mesmo ângulo do desenho facilita a conferência.',
+    exemploLegenda: 'Legenda, ex.: topo, encaixe, acabamento branco',
+    ajuda: 'Enquadre a ponta do perfil como no desenho técnico.',
+    enviar: enviarFotoPerfil,
+    fundoBranco: false,
+  },
+} as const
+
 /**
- * Galeria de desenhos técnicos de um perfil.
+ * Galeria de imagens de um perfil — desenhos técnicos ou fotos reais.
  *
  * Serve para o serralheiro conferir, no depósito, se a peça da prateleira é
- * mesmo aquele perfil — comparando a seção real com o desenho cotado, sem ir
- * atrás do catálogo impresso.
+ * mesmo aquele perfil. O desenho dá a geometria e as cotas; a foto dá a peça
+ * como ela é, com a cor e o estado do acabamento. Juntos, e no mesmo ângulo,
+ * a conferência é imediata.
  *
- * Por isso o visualizador ampliado existe e não é enfeite: cota em milímetro
- * dentro de uma miniatura de 100 px é ilegível, e a cota é exatamente o que a
- * pessoa foi consultar.
+ * O visualizador ampliado não é enfeite: cota em milímetro dentro de uma
+ * miniatura de 100 px é ilegível, e a cota é o que a pessoa foi consultar.
  */
-export function GaleriaDesenhos({ modelo }: { modelo: ModeloPerfil }) {
-  const { data: desenhos, isPending } = useDesenhosTecnicos(modelo.id)
+export function GaleriaDesenhos({
+  modelo,
+  tipo = 'imagem',
+}: {
+  modelo: ModeloPerfil
+  tipo?: TipoImagemPerfil
+}) {
+  const config = CONFIGURACAO[tipo]
+  const { data: desenhos, isPending } = useDesenhosTecnicos(modelo.id, tipo)
   const adicionar = useAdicionarDesenho()
   const remover = useRemoverDesenho()
 
@@ -39,6 +71,7 @@ export function GaleriaDesenhos({ modelo }: { modelo: ModeloPerfil }) {
         caminho,
         legenda: legenda.trim() === '' ? null : legenda.trim(),
         ordem: desenhos?.length ?? 0,
+        tipo,
       })
       setLegenda('')
     } catch (e) {
@@ -49,11 +82,8 @@ export function GaleriaDesenhos({ modelo }: { modelo: ModeloPerfil }) {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h3 className="font-semibold">Desenhos técnicos</h3>
-        <p className="text-texto-suave text-sm">
-          Fotos do desenho ou do catálogo, de vários ângulos, com as medidas de
-          cada face.
-        </p>
+        <h3 className="font-semibold">{config.titulo}</h3>
+        <p className="text-texto-suave text-sm">{config.descricao}</p>
       </div>
 
       {isPending && <p className="text-texto-suave text-sm">Carregando…</p>}
@@ -75,7 +105,10 @@ export function GaleriaDesenhos({ modelo }: { modelo: ModeloPerfil }) {
                   <img
                     src={desenho.link}
                     alt={desenho.legenda ?? 'Desenho técnico do perfil'}
-                    className="bg-superficie-2 aspect-square w-full object-contain"
+                    className={cn(
+                      'aspect-square w-full object-contain',
+                      config.fundoBranco ? 'bg-white' : 'bg-superficie-2',
+                    )}
                   />
                   <span className="bg-grafite-900/70 absolute right-1.5 bottom-1.5 rounded-full p-1.5 text-white">
                     <ZoomIn aria-hidden="true" className="size-4" />
@@ -98,6 +131,7 @@ export function GaleriaDesenhos({ modelo }: { modelo: ModeloPerfil }) {
                       id: desenho.id,
                       caminho: desenho.arquivo_url,
                       modeloPerfilId: modelo.id,
+                      tipo,
                     })
                   }
                   aria-label="Remover desenho"
@@ -116,14 +150,14 @@ export function GaleriaDesenhos({ modelo }: { modelo: ModeloPerfil }) {
           type="text"
           value={legenda}
           onChange={(e) => setLegenda(e.target.value)}
-          placeholder="Legenda, ex.: vista frontal, corte A-A"
+          placeholder={config.exemploLegenda}
           aria-label="Legenda da próxima imagem"
           className="border-borda bg-superficie min-h-12 rounded-xl border-2 px-3"
         />
 
         <CampoFoto
-          ajuda="A legenda acima é aplicada à imagem que você enviar agora."
-          aoEnviar={enviarDesenhoTecnico}
+          ajuda={config.ajuda}
+          aoEnviar={config.enviar}
           caminho={null}
           previa={null}
           aoRemover={() => undefined}

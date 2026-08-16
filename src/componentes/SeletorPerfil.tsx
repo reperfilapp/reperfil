@@ -29,7 +29,8 @@ export function SeletorPerfil({
   aoSelecionar,
 }: PropsSeletorPerfil) {
   const { data: modelos, isPending } = useModelosPerfil()
-  const { data: capas } = useCapasDesenhos()
+  const { data: capas } = useCapasDesenhos('imagem')
+  const { data: fotos } = useCapasDesenhos('foto')
   const [busca, setBusca] = useState('')
   const [ampliado, setAmpliado] = useState<string | null>(null)
 
@@ -37,33 +38,56 @@ export function SeletorPerfil({
 
   if (selecionado) {
     const desenho = capas?.get(selecionado.id)
+    const foto = fotos?.get(selecionado.id)
 
     return (
       <>
         <div className="border-economia-500 bg-economia-50 flex items-start gap-3 rounded-xl border-2 p-3">
-          {desenho ? (
-            <button
-              type="button"
-              onClick={() => setAmpliado(desenho)}
-              className="border-borda relative shrink-0 overflow-hidden rounded-lg border bg-white"
-              aria-label="Ampliar desenho técnico"
-            >
-              <img
-                src={desenho}
-                alt={`Desenho técnico do perfil ${selecionado.codigo}`}
-                className="size-24 object-contain p-1"
+          {/* Desenho e foto lado a lado: a geometria e a peça real. É a
+              conferência mais rápida possível contra a ponta na mão. */}
+          <div className="flex shrink-0 gap-2">
+            {desenho ? (
+              <button
+                type="button"
+                onClick={() => setAmpliado(desenho)}
+                className="border-borda relative overflow-hidden rounded-lg border bg-white"
+                aria-label="Ampliar desenho técnico"
+              >
+                <img
+                  src={desenho}
+                  alt={`Desenho técnico do perfil ${selecionado.codigo}`}
+                  className="size-24 object-contain p-1"
+                />
+                <span className="bg-grafite-900/70 absolute right-1 bottom-1 rounded-full p-1 text-white">
+                  <ZoomIn aria-hidden="true" className="size-3" />
+                </span>
+              </button>
+            ) : (
+              <MiniaturaPerfil
+                link={null}
+                codigo={selecionado.codigo}
+                className="size-24"
               />
-              <span className="bg-grafite-900/70 absolute right-1 bottom-1 rounded-full p-1 text-white">
-                <ZoomIn aria-hidden="true" className="size-3" />
-              </span>
-            </button>
-          ) : (
-            <MiniaturaPerfil
-              link={null}
-              codigo={selecionado.codigo}
-              className="size-24"
-            />
-          )}
+            )}
+
+            {foto && (
+              <button
+                type="button"
+                onClick={() => setAmpliado(foto)}
+                className="border-borda relative overflow-hidden rounded-lg border"
+                aria-label="Ampliar foto do perfil"
+              >
+                <img
+                  src={foto}
+                  alt={`Foto do perfil ${selecionado.codigo}`}
+                  className="size-24 object-cover"
+                />
+                <span className="bg-grafite-900/70 absolute right-1 bottom-1 rounded-full p-1 text-white">
+                  <ZoomIn aria-hidden="true" className="size-3" />
+                </span>
+              </button>
+            )}
+          </div>
 
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex items-center gap-1.5">

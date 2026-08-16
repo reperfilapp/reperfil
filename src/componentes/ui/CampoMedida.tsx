@@ -102,9 +102,16 @@ export function CampoMedida({
   const textoNaoNumerico = texto.trim() !== '' && valorMm === null
   const invalido = erro !== undefined || textoNaoNumerico
 
+  /*
+   * Os botões de passo têm cor própria, mais forte que a do campo e mais
+   * fraca que a do botão de salvar. Sem contraste eles somem ao lado da
+   * caixa de texto; com a cor do botão principal, competiriam com a ação de
+   * salvar e a pessoa tocaria neles achando que confirma.
+   */
   const classeBotao =
-    'border-borda bg-superficie flex min-h-16 w-16 shrink-0 items-center ' +
-    'justify-center rounded-xl border-2 disabled:opacity-40'
+    'border-destaque-borda bg-destaque text-destaque-texto flex min-h-16 ' +
+    'w-16 shrink-0 items-center justify-center rounded-xl border-2 ' +
+    'font-bold hover:bg-destaque-hover disabled:opacity-40'
 
   return (
     <div className="flex flex-col gap-2">

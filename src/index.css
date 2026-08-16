@@ -98,6 +98,13 @@
   --cor-texto-suave: var(--color-grafite-600);
   --cor-primaria: var(--color-acao-600);
   --cor-primaria-texto: white;
+
+  /* Controles auxiliares — botões de mais e menos, passos, ajustes.
+     Precisam se destacar do campo sem competir com o botão de salvar. */
+  --cor-destaque-fundo: var(--color-acao-50);
+  --cor-destaque-borda: var(--color-acao-300);
+  --cor-destaque-texto: var(--color-acao-700);
+  --cor-destaque-hover: var(--color-acao-100);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -110,6 +117,17 @@
     --cor-texto-suave: var(--color-aluminio-400);
     --cor-primaria: var(--color-acao-500);
     --cor-primaria-texto: white;
+
+    /* No escuro os papéis se invertem: fundo azul profundo com texto claro.
+       Manter o tom claro do tema claro produziria uma mancha branca — peso
+       visual demais para um controle secundário. */
+    --cor-destaque-fundo: var(--color-acao-800);
+    /* Borda clara, não escura: sobre superfície quase preta, o azul-600 fica
+       a 2:1 do fundo e o botão some. O 300 dá 7:1 — é a borda que define o
+       limite do controle, e ela precisa ser vista. */
+    --cor-destaque-borda: var(--color-acao-300);
+    --cor-destaque-texto: var(--color-acao-100);
+    --cor-destaque-hover: var(--color-acao-700);
   }
 }
 
@@ -122,6 +140,10 @@
   --cor-texto-suave: var(--color-aluminio-400);
   --cor-primaria: var(--color-acao-500);
   --cor-primaria-texto: white;
+  --cor-destaque-fundo: var(--color-acao-800);
+  --cor-destaque-borda: var(--color-acao-300);
+  --cor-destaque-texto: var(--color-acao-100);
+  --cor-destaque-hover: var(--color-acao-700);
 }
 
 @theme inline {
@@ -133,6 +155,10 @@
   --color-texto-suave: var(--cor-texto-suave);
   --color-primaria: var(--cor-primaria);
   --color-primaria-texto: var(--cor-primaria-texto);
+  --color-destaque: var(--cor-destaque-fundo);
+  --color-destaque-borda: var(--cor-destaque-borda);
+  --color-destaque-texto: var(--cor-destaque-texto);
+  --color-destaque-hover: var(--cor-destaque-hover);
 }
 
 @layer base {

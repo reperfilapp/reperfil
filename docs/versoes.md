@@ -45,6 +45,19 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.5.0 — 16/08/2026
+
+**Fotos do perfil e destaque nos botões de incremento.**
+
+- Cada perfil aceita fotos da peça real, além dos desenhos técnicos. Tiradas
+  no mesmo ângulo do desenho, as duas lado a lado permitem conferir a ponta
+  na mão de imediato
+- A foto aparece na ficha do perfil e ao lado do desenho no cadastro de sobra
+- Botões de mais e menos ganham cor própria, com tokens que se adaptam ao
+  tema claro e escuro
+
+Precisa aplicar a migration `20260815190000_fotos_do_perfil.sql`.
+
 ## 1.4.0 — 15/08/2026
 
 **Sobra não pode ser maior que a barra.**

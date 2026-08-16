@@ -4,7 +4,24 @@ import {
   obterLinksTemporarios,
   apagarImagem,
   BALDE_DESENHOS,
+  BALDE_FOTOS_PERFIL,
 } from '@/lib/armazenamento'
+
+/**
+ * As duas representações do perfil, guardadas na mesma tabela e distinguidas
+ * pelo `tipo`:
+ *
+ *   imagem  desenho técnico ou página de catálogo, com as cotas
+ *   foto    fotografia da peça real
+ *
+ * A Fase 2 acrescenta `secao_svg` e `secao_dxf` ao lado destas.
+ */
+export type TipoImagemPerfil = 'imagem' | 'foto'
+
+const BALDE_DE: Record<TipoImagemPerfil, string> = {
+  imagem: BALDE_DESENHOS,
+  foto: BALDE_FOTOS_PERFIL,
+}
 
 /**
  * Desenhos técnicos do perfil.
@@ -28,9 +45,12 @@ export interface DesenhoTecnico {
   link: string | null
 }
 
-export function useDesenhosTecnicos(modeloPerfilId: string | null) {
+export function useDesenhosTecnicos(
+  modeloPerfilId: string | null,
+  tipo: TipoImagemPerfil = 'imagem',
+) {
   return useQuery({
-    queryKey: ['desenhos-tecnicos', modeloPerfilId],
+    queryKey: ['imagens-perfil', tipo, modeloPerfilId],
     enabled: modeloPerfilId !== null,
     queryFn: async (): Promise<DesenhoTecnico[]> => {
       const { data, error } = await supabase
@@ -39,7 +59,7 @@ export function useDesenhosTecnicos(modeloPerfilId: string | null) {
           'id, modelo_perfil_id, arquivo_url, legenda, ordem, largura_mm, altura_mm, criado_em',
         )
         .eq('modelo_perfil_id', modeloPerfilId)
-        .eq('tipo', 'imagem')
+        .eq('tipo', tipo)
         .order('ordem')
         .order('criado_em')
 
@@ -49,7 +69,7 @@ export function useDesenhosTecnicos(modeloPerfilId: string | null) {
 
       // Um pedido só para todos os links, em vez de um por imagem.
       const links = await obterLinksTemporarios(
-        BALDE_DESENHOS,
+        BALDE_DE[tipo],
         registros.map((r) => r.arquivo_url),
       )
 
@@ -70,15 +90,17 @@ export function useAdicionarDesenho() {
       caminho,
       legenda,
       ordem,
+      tipo,
     }: {
       modeloPerfilId: string
       caminho: string
       legenda: string | null
       ordem: number
+      tipo: TipoImagemPerfil
     }) => {
       const { error } = await supabase.from('arquivos_vetoriais').insert({
         modelo_perfil_id: modeloPerfilId,
-        tipo: 'imagem',
+        tipo,
         arquivo_url: caminho,
         legenda,
         ordem,
@@ -89,10 +111,9 @@ export function useAdicionarDesenho() {
 
       if (error) throw new Error(error.message)
     },
-    onSuccess: (_dados, variaveis) => {
-      void cliente.invalidateQueries({
-        queryKey: ['desenhos-tecnicos', variaveis.modeloPerfilId],
-      })
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: ['imagens-perfil'] })
+      void cliente.invalidateQueries({ queryKey: ['capas-perfil'] })
     },
   })
 }
@@ -104,10 +125,12 @@ export function useRemoverDesenho() {
     mutationFn: async ({
       id,
       caminho,
+      tipo,
     }: {
       id: string
       caminho: string
       modeloPerfilId: string
+      tipo: TipoImagemPerfil
     }) => {
       // Apaga o registro primeiro. Se a ordem fosse inversa e o banco
       // recusasse, ficaria um registro apontando para arquivo inexistente.
@@ -121,15 +144,14 @@ export function useRemoverDesenho() {
       // O arquivo em si é secundário: se a remoção falhar, sobra um arquivo
       // órfão no Storage, o que é bem menos grave do que registro quebrado.
       try {
-        await apagarImagem(BALDE_DESENHOS, caminho)
+        await apagarImagem(BALDE_DE[tipo], caminho)
       } catch (e) {
         console.error('Registro removido, mas o arquivo permaneceu:', e)
       }
     },
-    onSuccess: (_dados, variaveis) => {
-      void cliente.invalidateQueries({
-        queryKey: ['desenhos-tecnicos', variaveis.modeloPerfilId],
-      })
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: ['imagens-perfil'] })
+      void cliente.invalidateQueries({ queryKey: ['capas-perfil'] })
     },
   })
 }
@@ -142,14 +164,14 @@ export function useRemoverDesenho() {
  * consulta para os registros e um único pedido de links assinados para o
  * lote inteiro de imagens.
  */
-export function useCapasDesenhos() {
+export function useCapasDesenhos(tipo: TipoImagemPerfil = 'imagem') {
   return useQuery({
-    queryKey: ['desenhos-tecnicos', 'capas'],
+    queryKey: ['capas-perfil', tipo],
     queryFn: async (): Promise<Map<string, string>> => {
       const { data, error } = await supabase
         .from('arquivos_vetoriais')
         .select('modelo_perfil_id, arquivo_url, ordem')
-        .eq('tipo', 'imagem')
+        .eq('tipo', tipo)
         .order('ordem')
 
       if (error) throw new Error(error.message)
@@ -167,7 +189,7 @@ export function useCapasDesenhos() {
         }
       }
 
-      const links = await obterLinksTemporarios(BALDE_DESENHOS, [
+      const links = await obterLinksTemporarios(BALDE_DE[tipo], [
         ...primeiroDeCada.values(),
       ])
 

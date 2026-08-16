@@ -18,7 +18,8 @@ import { formatarComprimento } from '@/dominio/medidas'
 export default function PerfilDetalhe() {
   const { id } = useParams<{ id: string }>()
   const { data: modelos, isPending, error } = useModelosPerfil(true)
-  const { data: desenhos } = useDesenhosTecnicos(id ?? null)
+  const { data: desenhos } = useDesenhosTecnicos(id ?? null, 'imagem')
+  const { data: fotos } = useDesenhosTecnicos(id ?? null, 'foto')
   const { data: sobras } = useSobras()
   const [ampliado, setAmpliado] = useState<string | null>(null)
 
@@ -125,6 +126,41 @@ export default function PerfilDetalhe() {
           <p className="text-texto-suave mt-1 text-xs">
             Toque para ampliar e ler as cotas.
           </p>
+        </section>
+      )}
+
+      {/* Fotos da peça real, logo abaixo do desenho: juntos permitem a
+          conferência que o desenho sozinho não dá — cor, brilho, estado. */}
+      {fotos && fotos.length > 0 && (
+        <section className="mb-6">
+          <h2 className="mb-2 font-semibold">Fotos do perfil</h2>
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {fotos.map((f) =>
+              f.link ? (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setAmpliado(f.link)}
+                  className="border-borda bg-superficie-2 relative shrink-0 overflow-hidden rounded-xl border-2"
+                  aria-label={`Ampliar ${f.legenda ?? 'foto'}`}
+                >
+                  <img
+                    src={f.link}
+                    alt={f.legenda ?? `Foto do perfil ${modelo.codigo}`}
+                    className="h-40 w-56 object-cover"
+                  />
+                  <span className="bg-grafite-900/70 absolute right-1.5 bottom-1.5 rounded-full p-1.5 text-white">
+                    <ZoomIn aria-hidden="true" className="size-4" />
+                  </span>
+                  {f.legenda && (
+                    <span className="bg-grafite-900/70 absolute inset-x-0 bottom-0 truncate px-2 py-1 text-left text-xs text-white">
+                      {f.legenda}
+                    </span>
+                  )}
+                </button>
+              ) : null,
+            )}
+          </div>
         </section>
       )}
 

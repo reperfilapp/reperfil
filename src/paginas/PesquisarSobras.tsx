@@ -167,7 +167,7 @@ export default function PesquisarSobras() {
               type="button"
               onClick={() => setQuantidade((q) => Math.max(1, q - 1))}
               aria-label="Diminuir quantidade"
-              className="border-borda bg-superficie min-h-14 w-14 rounded-xl border-2 text-2xl font-bold"
+              className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-14 w-14 rounded-xl border-2 text-2xl font-bold"
             >
               −
             </button>
@@ -178,7 +178,7 @@ export default function PesquisarSobras() {
               type="button"
               onClick={() => setQuantidade((q) => Math.min(999, q + 1))}
               aria-label="Aumentar quantidade"
-              className="border-borda bg-superficie min-h-14 w-14 rounded-xl border-2 text-2xl font-bold"
+              className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-14 w-14 rounded-xl border-2 text-2xl font-bold"
             >
               +
             </button>
