@@ -63,7 +63,7 @@ export default function Mais() {
     },
     {
       para: '/identificar',
-      rotulo: 'Identificar pelo peso',
+      rotulo: 'Identificar perfil',
       descricao: 'Descobrir o perfil de uma ponta sem etiqueta',
       Icone: Scale,
       visivel: true,
