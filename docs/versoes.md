@@ -45,6 +45,62 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.8 — 17/08/2026
+
+**Botão de voltar: cor visível nos dois temas, e só onde faz sentido —
+mais o card do perfil escolhido bem mais enxuto.**
+
+Continuação da 1.6.7. Duas correções depois de ver o resultado real:
+
+- A cor usada no botão (fundo branco, borda cinza-claro) ficava ótima no
+  tema escuro e praticamente invisível no tema claro — fundo quase
+  branco sobre página quase branca. Só percebi porque tinha testado
+  apenas no escuro. Trocado para as cores de "destaque" que o app já usa
+  nos botões de mais e menos (`CampoMedida`, quantidade em "Cadastrar
+  sobra") — pensadas desde o início para se destacarem em qualquer tema.
+- O botão tinha ido parar também nas 5 telas da navegação inferior
+  (Início, Procurar, Cadastrar, Reservas, Mais), sempre apontando para o
+  Início. Errado: essas telas não têm uma única tela anterior — chegam
+  de lugares diferentes — e a barra inferior já leva ao Início a
+  qualquer momento; um botão fixo ali era redundante e por vezes
+  enganoso. Removido dessas 5 telas. Fica só onde existe uma origem
+  única de verdade: fichas de detalhe (perfil, sobra, acabamento,
+  localização, cliente — voltam para a lista de origem) e os cadastros
+  dentro de "Mais" (perfis, acabamentos, localizações, clientes,
+  relatórios, configurações — só se chega ali por "Mais").
+
+Criado um componente único (`BotaoVoltar`) para não repetir o mesmo
+estilo em cada tela, agora bem mais compacto (borda simples, texto
+pequeno) — é um coadjuvante de navegação, não deve competir com o
+título da tela.
+
+Também em "Cadastrar sobra": ao escolher um perfil, o link "Trocar
+perfil" (que já existia, abaixo do cartão verde) subiu para o topo do
+passo 1, ao lado do título, com a mesma cara do botão de voltar — mesma
+ideia (desfazer uma escolha e voltar), mesmo lugar, mesmo estilo.
+
+Verificado no navegador, nos dois temas e em mobile/desktop: botão
+visível e compacto nas fichas de detalhe e nos cadastros de "Mais";
+ausente nas 5 telas de navegação inferior; "Trocar perfil" funciona e
+aparece no topo do passo 1.
+
+**E, no mesmo espírito de economizar espaço:** o cartão verde de
+confirmação (tela "Cadastrar sobra", ao escolher um perfil) tinha o
+texto na vertical ao lado do desenho e da foto, e três coisas que não
+agregam para quem já conhece os perfis: o rótulo "Perfil escolhido", a
+dica "Compare o desenho e a foto com a peça antes de salvar" e um link
+de texto "Ver ficha completa do perfil" numa linha só para ele.
+
+Reorganizado: o texto foi para baixo do desenho/foto (horizontal, não
+mais espremido do lado), e cortado o que era só apoio. O selo de
+confirmação virou um "✓" pequeno junto do código, e o acesso à ficha
+completa virou um ícone de seta, sem texto, compartilhando a mesma
+linha do código — o cartão inteiro já é clicável e já anuncia isso pelo
+`aria-label`, o ícone é só o reforço visual.
+
+Verificado no navegador: cartão mais baixo, texto legível, clique no
+corpo do cartão continua abrindo a ficha do perfil normalmente.
+
 ## 1.6.7 — 16/08/2026
 
 **Botão de voltar mais evidente nas telas de detalhe.**

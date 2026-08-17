@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCircle2, Copy, ArrowLeft, PackagePlus } from 'lucide-react'
+import { CheckCircle2, Copy, PackagePlus } from 'lucide-react'
 import { useCadastrarSobra, type DadosNovaSobra } from '@/dados/sobras'
 import { useAcabamentos } from '@/dados/acabamentos'
 import { useLocalizacoes, descreverLocalizacao } from '@/dados/localizacoes'
@@ -8,6 +8,7 @@ import { CampoMedida } from '@/componentes/ui/CampoMedida'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { CampoFoto } from '@/componentes/ui/CampoFoto'
 import { Botao } from '@/componentes/ui/Botao'
+import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import {
   formatarComprimento,
   interpretarMedidaDigitada,
@@ -153,7 +154,7 @@ export default function CadastrarSobra() {
         !modelo && 'flex h-[calc(100dvh-6rem)] flex-col md:h-auto',
       )}
     >
-      <header className="mb-6 flex items-center gap-3">
+      <header className="mb-6 flex shrink-0 items-center gap-3">
         <PackagePlus aria-hidden="true" className="text-acao-600 size-7" />
         <h1 className="text-2xl font-bold">Cadastrar sobra</h1>
       </header>
@@ -183,18 +184,16 @@ export default function CadastrarSobra() {
       <div className={cn('flex flex-col gap-6', !modelo && 'min-h-0 flex-1')}>
         {/* 1 — Perfil */}
         <section className={cn(!modelo && 'flex min-h-0 flex-1 flex-col')}>
-          <h2 className="mb-2 font-semibold">1. Qual perfil?</h2>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <h2 className="font-semibold">1. Qual perfil?</h2>
+            {modelo && (
+              <BotaoVoltar
+                onClick={() => setModelo(null)}
+                rotulo="Trocar perfil"
+              />
+            )}
+          </div>
           <SeletorPerfil selecionado={modelo} aoSelecionar={setModelo} />
-          {modelo && (
-            <button
-              type="button"
-              onClick={() => setModelo(null)}
-              className="text-acao-600 mt-2 flex items-center gap-1 text-sm hover:underline"
-            >
-              <ArrowLeft aria-hidden="true" className="size-4" />
-              Trocar perfil
-            </button>
-          )}
         </section>
 
         {modelo && (

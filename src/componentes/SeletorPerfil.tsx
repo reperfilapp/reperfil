@@ -61,11 +61,11 @@ export function SeletorPerfil({
             }
           }}
           aria-label={`Ver ficha completa do perfil ${selecionado.codigo}`}
-          className="border-economia-500 bg-economia-50 hover:bg-economia-100 flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3"
+          className="border-economia-500 bg-economia-50 hover:bg-economia-100 flex cursor-pointer flex-col gap-3 rounded-xl border-2 p-3"
         >
           {/* Desenho e foto lado a lado: a geometria e a peça real. É a
               conferência mais rápida possível contra a ponta na mão. */}
-          <div className="flex shrink-0 gap-2">
+          <div className="flex gap-2">
             {desenho ? (
               <button
                 type="button"
@@ -115,20 +115,23 @@ export function SeletorPerfil({
             )}
           </div>
 
-          <div className="min-w-0 flex-1">
-            <div className="mb-1 flex items-center gap-1.5">
-              <Check
+          <div className="min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-grafite-900 flex items-center gap-1.5 font-mono font-bold">
+                <Check
+                  aria-hidden="true"
+                  className="text-economia-700 size-4 shrink-0"
+                />
+                {selecionado.codigo}
+              </p>
+              {/* Ícone sozinho, sem texto: o card inteiro já é clicável e
+                  já tem o rótulo "Ver ficha completa" no aria-label. */}
+              <ChevronRight
                 aria-hidden="true"
-                className="text-economia-700 size-5 shrink-0"
+                className="text-economia-700 size-4 shrink-0"
               />
-              <span className="text-economia-700 text-sm font-medium">
-                Perfil escolhido
-              </span>
             </div>
 
-            <p className="text-grafite-900 font-mono font-bold">
-              {selecionado.codigo}
-            </p>
             <p className="text-grafite-800 text-sm">{selecionado.descricao}</p>
             {selecionado.linha && (
               <p className="text-grafite-600 truncate text-sm">
@@ -144,21 +147,6 @@ export function SeletorPerfil({
                 {selecionado.aplicacao}
               </p>
             )}
-
-            {(desenho || foto) && (
-              <p className="text-grafite-600 mt-1 text-xs">
-                {desenho && foto
-                  ? 'Compare o desenho e a foto com a peça antes de salvar.'
-                  : desenho
-                    ? 'Confira o desenho antes de salvar.'
-                    : 'Confira a foto antes de salvar.'}
-              </p>
-            )}
-
-            <p className="text-acao-700 mt-1.5 flex items-center gap-0.5 text-xs font-medium">
-              Ver ficha completa do perfil
-              <ChevronRight aria-hidden="true" className="size-3.5" />
-            </p>
           </div>
         </div>
 

@@ -11,6 +11,7 @@ import {
   type DadosModeloPerfil,
 } from '@/dados/modelosPerfil'
 import { Botao } from '@/componentes/ui/Botao'
+import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { Modal } from '@/componentes/ui/Modal'
 import { GaleriaDesenhos } from '@/componentes/GaleriaDesenhos'
@@ -143,6 +144,8 @@ export default function ModelosPerfil() {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-8">
+      <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
+
       <header className="mb-5 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Modelos de perfil</h1>

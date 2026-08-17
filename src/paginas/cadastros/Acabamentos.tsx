@@ -9,6 +9,7 @@ import {
   type DadosAcabamento,
 } from '@/dados/acabamentos'
 import { Botao } from '@/componentes/ui/Botao'
+import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { Modal } from '@/componentes/ui/Modal'
@@ -80,6 +81,8 @@ export default function Acabamentos() {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-8">
+      <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
+
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Cores e acabamentos</h1>

@@ -10,6 +10,7 @@ import {
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { Botao } from '@/componentes/ui/Botao'
+import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { gerarCsv, baixarCsv, nomeArquivoComData } from '@/lib/csv'
 import { formatarComprimento } from '@/dominio/medidas'
 
@@ -129,6 +130,8 @@ export default function Relatorios() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
+      <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
+
       <header className="mb-5 flex items-center gap-3">
         <FileSpreadsheet aria-hidden="true" className="text-acao-600 size-7" />
         <h1 className="text-2xl font-bold">Relatórios</h1>

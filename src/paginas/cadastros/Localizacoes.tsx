@@ -10,6 +10,7 @@ import {
   type DadosLocalizacao,
 } from '@/dados/localizacoes'
 import { Botao } from '@/componentes/ui/Botao'
+import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { Modal } from '@/componentes/ui/Modal'
 import type { Localizacao } from '@/tipos/banco'
@@ -82,6 +83,8 @@ export default function Localizacoes() {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-8">
+      <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
+
       <header className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Localizações</h1>

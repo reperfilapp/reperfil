@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { BotaoVoltar } from './ui/BotaoVoltar'
 
 interface PropsPaginaDetalhe {
   /** Para onde o "voltar" leva, e como se chama a lista de origem. */
@@ -37,13 +36,7 @@ export function PaginaDetalhe({
 }: PropsPaginaDetalhe) {
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
-      <Link
-        to={voltarPara}
-        className="border-borda bg-superficie hover:bg-superficie-2 text-texto mb-4 inline-flex min-h-10 items-center gap-1.5 rounded-lg border-2 px-3 text-sm font-semibold"
-      >
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        {rotuloVoltar}
-      </Link>
+      <BotaoVoltar para={voltarPara} rotulo={rotuloVoltar} className="mb-4" />
 
       <header className="mb-5 flex items-start justify-between gap-3">
         <div className="min-w-0">

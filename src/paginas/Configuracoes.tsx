@@ -6,6 +6,7 @@ import {
   type DadosConfiguracoes,
 } from '@/dados/configuracoes'
 import { Botao } from '@/componentes/ui/Botao'
+import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { planejarCorte } from '@/dominio/corte'
@@ -62,6 +63,8 @@ export default function Configuracoes() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-8">
+      <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
+
       <header className="mb-6">
         <h1 className="text-2xl font-bold">Configurações do cálculo</h1>
         <p className="text-texto-suave mt-1">
