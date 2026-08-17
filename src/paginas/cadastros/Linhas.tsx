@@ -9,7 +9,7 @@ import {
 } from '@/dados/modelosPerfil'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
-import { CampoTexto } from '@/componentes/ui/CampoTexto'
+import { CampoSugestao } from '@/componentes/ui/CampoSugestao'
 import { Modal } from '@/componentes/ui/Modal'
 
 /**
@@ -50,6 +50,11 @@ export default function Linhas() {
   const alvo = novoNome.trim()
   const quantidadeEditando =
     renomeaveis.find((g) => g.linha === editando)?.modelos.length ?? 0
+  // A própria linha fica de fora: escolhê-la seria renomear para o mesmo
+  // nome, que não faz nada.
+  const outrasLinhas = renomeaveis
+    .map((g) => g.linha)
+    .filter((nome) => nome !== editando)
   const vaiFundir =
     editando !== null && alvo !== editando && nomesExistentes.has(alvo)
   const quantidadeAlvo = vaiFundir
@@ -175,13 +180,16 @@ export default function Linhas() {
         titulo="Renomear linha"
       >
         <form onSubmit={aoEnviar} className="flex flex-col gap-4" noValidate>
-          <CampoTexto
+          {/* Sugere as outras linhas: para juntar duas, escolher da lista é
+              mais seguro do que tentar reproduzir a grafia exata — "Linha
+              Gold / 32" não perdoa um espaço a mais. Digitar um nome novo
+              continua valendo. */}
+          <CampoSugestao
             rotulo="Nome da linha"
-            value={novoNome}
-            onChange={(e) => setNovoNome(e.target.value)}
+            valor={novoNome}
+            aoMudar={setNovoNome}
+            sugestoes={outrasLinhas}
             ajuda={editando ? textoAlcance(quantidadeEditando) : undefined}
-            required
-            autoFocus
           />
 
           {vaiFundir && (

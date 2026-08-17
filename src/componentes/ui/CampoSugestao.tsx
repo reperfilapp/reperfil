@@ -40,18 +40,27 @@ export function CampoSugestao({
 
   const [aberto, setAberto] = useState(false)
   const [destacado, setDestacado] = useState(-1)
+  /*
+   * Só filtra depois que a pessoa digita. Abrir a lista com um valor já
+   * preenchido — ao editar um cadastro, por exemplo — mostraria apenas o
+   * que se parece com o valor atual, e quem abriu a lista queria
+   * justamente ver as outras opções.
+   */
+  const [filtrando, setFiltrando] = useState(false)
   const container = useRef<HTMLDivElement>(null)
 
   const termo = valor.trim().toLowerCase()
-  const filtradas = sugestoes.filter(
-    (s) => termo === '' || s.toLowerCase().includes(termo),
-  )
+  const filtradas =
+    filtrando && termo !== ''
+      ? sugestoes.filter((s) => s.toLowerCase().includes(termo))
+      : [...sugestoes]
   const mostrando = aberto && filtradas.length > 0
 
   function escolher(sugestao: string) {
     aoMudar(sugestao)
     setAberto(false)
     setDestacado(-1)
+    setFiltrando(false)
   }
 
   function aoTeclar(evento: React.KeyboardEvent<HTMLInputElement>) {
@@ -115,6 +124,7 @@ export function CampoSugestao({
             aoMudar(e.target.value)
             setAberto(true)
             setDestacado(-1)
+            setFiltrando(true)
           }}
           onFocus={() => setAberto(true)}
           onKeyDown={aoTeclar}
@@ -129,7 +139,10 @@ export function CampoSugestao({
             // pelo teclado — dois paradas de tabulação para o mesmo campo
             // só atrapalha.
             tabIndex={-1}
-            onClick={() => setAberto((v) => !v)}
+            onClick={() => {
+              setFiltrando(false)
+              setAberto((v) => !v)
+            }}
             aria-label={`Ver opções de ${rotulo.toLowerCase()}`}
             className="text-texto-suave absolute top-1/2 right-2 -translate-y-1/2 rounded-lg p-2"
           >

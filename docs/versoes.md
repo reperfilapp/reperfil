@@ -45,6 +45,30 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.15 — 17/08/2026
+
+**Renomear linha agora sugere as linhas existentes.**
+
+O campo "Nome da linha" da tela de renomeação era texto puro. Para
+juntar duas linhas era preciso reproduzir a grafia exata da outra — e
+"Linha Gold / 32" não perdoa um espaço a mais. Errar significava criar
+uma terceira linha em vez de juntar.
+
+Agora o campo sugere as demais linhas cadastradas: escolher da lista
+garante o nome certo, e digitar um nome novo continua funcionando. A
+própria linha fica de fora da lista, porque renomeá-la para si mesma não
+faria nada.
+
+Junto, um ajuste no campo de sugestões (`CampoSugestao`, usado também no
+cadastro de perfil): a lista só filtra depois que a pessoa digita. Antes,
+abrir a lista num campo já preenchido mostrava apenas o que se parecia
+com o valor atual — exatamente o contrário do que se quer ao abrir a
+lista para trocar de valor.
+
+Verificado no navegador: lista abre completa (14 linhas), filtra ao
+digitar ("Gold" → "Linha Gold / 32"), e a linha em edição não aparece
+entre as opções.
+
 ## 1.6.14 — 17/08/2026
 
 **Sugestões que funcionam, catálogo agrupado por linha e tela de linhas.**
