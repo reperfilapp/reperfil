@@ -45,6 +45,28 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.5 — 16/08/2026
+
+**Logo grande na tela inicial, com a versão no rodapé.**
+
+Depois de entrar, a tela de login some e a marca do RePerfil não
+aparecia em lugar nenhum até a próxima vez que a pessoa saísse e
+voltasse a entrar. A versão em execução também só ficava visível dentro
+de "Mais".
+
+Adicionada a logo completa (símbolo + nome), grande, logo no topo da
+tela inicial, antes dos cartões de estoque — a primeira coisa que
+aparece ao entrar. A saudação ("Olá, Nome" e o papel) ficou centralizada
+em relação à logo, em vez de alinhada à esquerda. Os dados de versão
+(`SeloVersao`, o mesmo componente já usado na tela de login) ficam no
+rodapé da tela, abaixo dos botões: toque para expandir e ver build,
+commit e data de publicação, com opção de copiar.
+
+Verificado no navegador, celular e computador: logo aparece grande e
+sem cortar, saudação centralizada sob ela, cartões continuam normais
+logo abaixo, selo de versão expande corretamente no rodapé, sem
+rolagem horizontal em nenhuma das duas larguras testadas.
+
 ## 1.6.4 — 16/08/2026
 
 **Lista de perfis preenche a tela até a navegação.**

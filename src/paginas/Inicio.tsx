@@ -5,6 +5,7 @@ import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { useResumoEstoque } from '@/dados/sobras'
 import { useConfiguracoes } from '@/dados/configuracoes'
 import { MarcaRePerfil } from '@/componentes/MarcaRePerfil'
+import { SeloVersao } from '@/componentes/SeloVersao'
 
 export default function Inicio() {
   const { perfil } = useAutenticacao()
@@ -20,16 +21,23 @@ export default function Inicio() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
-      <header className="mb-6 flex items-center gap-3">
-        <MarcaRePerfil className="size-11" />
-        <div className="min-w-0">
-          <p className="truncate text-lg leading-tight font-bold">
-            Olá, {perfil?.nome.split(' ')[0]}
-          </p>
-          <p className="text-texto-suave truncate text-sm capitalize">
-            {perfil?.papel}
-          </p>
-        </div>
+      {/* A logo grande é a primeira coisa que a pessoa vê ao entrar — a
+          tela de entrada some assim que a sessão abre, e sem isso a marca
+          nunca aparece de novo até sair e voltar a entrar. */}
+      <div className="mb-6 flex justify-center">
+        <MarcaRePerfil
+          variante="completa"
+          className="max-w-48 rounded-xl bg-white p-3"
+        />
+      </div>
+
+      <header className="mb-6 text-center">
+        <p className="truncate text-lg leading-tight font-bold">
+          Olá, {perfil?.nome.split(' ')[0]}
+        </p>
+        <p className="text-texto-suave truncate text-sm capitalize">
+          {perfil?.papel}
+        </p>
       </header>
 
       {/* Aviso enquanto os parâmetros de corte não foram confirmados. Sem
@@ -82,6 +90,8 @@ export default function Inicio() {
         <Package aria-hidden="true" className="size-5" />
         Ver estoque de sobras
       </Link>
+
+      <SeloVersao className="mt-8" />
     </div>
   )
 }
