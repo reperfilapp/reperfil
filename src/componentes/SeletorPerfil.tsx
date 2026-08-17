@@ -189,8 +189,8 @@ export function SeletorPerfil({
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="relative">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="relative shrink-0">
         <Search
           aria-hidden="true"
           className="text-texto-suave pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2"
@@ -209,46 +209,54 @@ export function SeletorPerfil({
       {isPending && <p className="text-texto-suave">Carregando perfis…</p>}
 
       {!isPending && encontrados.length === 0 && (
-        <p className="bg-superficie-2 text-texto-suave rounded-xl p-5 text-center">
+        <p className="bg-superficie-2 text-texto-suave flex flex-1 items-center justify-center rounded-xl p-5 text-center">
           {busca
             ? 'Nenhum perfil com esse termo.'
             : 'Nenhum perfil cadastrado. Cadastre em Mais → Modelos de perfil.'}
         </p>
       )}
 
-      <ul className="flex max-h-96 flex-col gap-2 overflow-y-auto">
-        {encontrados.map((modelo) => (
-          <li key={modelo.id}>
-            <button
-              type="button"
-              onClick={() => aoSelecionar(modelo)}
-              className={cn(
-                'border-borda flex min-h-16 w-full items-center gap-3 rounded-xl border-2',
-                'bg-superficie hover:border-acao-500 hover:bg-superficie-2 p-2 text-left',
-              )}
-            >
-              <MiniaturaPerfil
-                link={capas?.get(modelo.id)}
-                codigo={modelo.codigo}
-              />
-
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-semibold">
-                  <span className="text-acao-600 font-mono">
-                    {modelo.codigo}
-                  </span>{' '}
-                  {modelo.descricao}
-                </span>
-                {modelo.linha && (
-                  <span className="text-texto-suave block truncate text-sm">
-                    {modelo.linha}
-                  </span>
+      {/* min-h-0 é o que permite este container encolher dentro da coluna
+          flexível da tela e sobrar espaço real para rolar — sem ele, o
+          conteúdo empurra a lista para além da tela em vez de rolar nela.
+          Só existe quando há itens: com a lista vazia, quem preenche o
+          espaço é a mensagem acima, não uma lista vazia disputando o
+          mesmo espaço com ela. */}
+      {encontrados.length > 0 && (
+        <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+          {encontrados.map((modelo) => (
+            <li key={modelo.id}>
+              <button
+                type="button"
+                onClick={() => aoSelecionar(modelo)}
+                className={cn(
+                  'border-borda flex min-h-16 w-full items-center gap-3 rounded-xl border-2',
+                  'bg-superficie hover:border-acao-500 hover:bg-superficie-2 p-2 text-left',
                 )}
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
+              >
+                <MiniaturaPerfil
+                  link={capas?.get(modelo.id)}
+                  codigo={modelo.codigo}
+                />
+
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-semibold">
+                    <span className="text-acao-600 font-mono">
+                      {modelo.codigo}
+                    </span>{' '}
+                    {modelo.descricao}
+                  </span>
+                  {modelo.linha && (
+                    <span className="text-texto-suave block truncate text-sm">
+                      {modelo.linha}
+                    </span>
+                  )}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

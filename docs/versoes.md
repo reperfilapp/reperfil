@@ -45,6 +45,29 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.4 — 16/08/2026
+
+**Lista de perfis preenche a tela até a navegação.**
+
+Na tela "Cadastrar sobra", a lista de perfis (passo "1. Qual perfil?")
+tinha altura fixa (24rem). Em celulares mais altos, isso deixava uma
+faixa vazia entre o fim da lista e a barra de navegação — espaço que
+deveria mostrar mais perfis e em vez disso ficava em branco.
+
+Corrigido: enquanto o perfil ainda não foi escolhido, a tela vira uma
+coluna com a altura real disponível (até a navegação inferior), e a
+lista cresce para ocupar esse espaço inteiro, rolando por dentro dela
+quando há mais perfis do que cabem. A mensagem de "nenhum perfil
+encontrado" também passou a ocupar o espaço todo, em vez de ficar
+pequena no topo com vazio embaixo. Depois de escolher o perfil, a tela
+volta ao normal — como já tem formulário demais para uma tela só, ela
+rola inteira, como sempre foi.
+
+Verificado no navegador em 375px de altura de tela: sem faixa vazia
+entre a lista e a navegação, lista rola por dentro, mensagem de busca
+sem resultado ocupa o espaço certo, e nada muda no computador (onde o
+menu é lateral e não há esse problema).
+
 ## 1.6.3 — 16/08/2026
 
 **Trava contra rolagem horizontal.**

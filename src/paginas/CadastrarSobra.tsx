@@ -141,7 +141,18 @@ export default function CadastrarSobra() {
   const localEscolhido = locais?.find((l) => l.id === localizacaoId)
 
   return (
-    <div className="mx-auto w-full max-w-lg px-5 py-6">
+    <div
+      className={cn(
+        'mx-auto w-full max-w-lg px-5 py-6',
+        // Enquanto ainda não escolheu o perfil, a tela vira uma coluna que
+        // ocupa a altura disponível de verdade (até a navegação inferior),
+        // e a lista de perfis cresce para preencher o resto — sem isso sobra
+        // uma faixa vazia embaixo da lista em telas mais altas. Depois de
+        // escolher o perfil, a tela volta ao fluxo normal: tem formulário
+        // demais para caber numa tela só, e ela precisa rolar.
+        !modelo && 'flex h-[calc(100dvh-6rem)] flex-col md:h-auto',
+      )}
+    >
       <header className="mb-6 flex items-center gap-3">
         <PackagePlus aria-hidden="true" className="text-acao-600 size-7" />
         <h1 className="text-2xl font-bold">Cadastrar sobra</h1>
@@ -169,9 +180,9 @@ export default function CadastrarSobra() {
         </div>
       )}
 
-      <div className="flex flex-col gap-6">
+      <div className={cn('flex flex-col gap-6', !modelo && 'min-h-0 flex-1')}>
         {/* 1 — Perfil */}
-        <section>
+        <section className={cn(!modelo && 'flex min-h-0 flex-1 flex-col')}>
           <h2 className="mb-2 font-semibold">1. Qual perfil?</h2>
           <SeletorPerfil selecionado={modelo} aoSelecionar={setModelo} />
           {modelo && (
