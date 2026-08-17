@@ -36,36 +36,72 @@ export function useModelosPerfil(incluirInativos = false) {
   })
 }
 
+/** Campos de texto livre que sugerem o que a organização já digitou. */
+export type CampoSugerivel = 'aplicacao' | 'linha' | 'fabricante'
+
 /**
- * Aplicações já usadas em algum perfil desta organização, sem repetir.
+ * Valores já usados num campo, nos perfis desta organização, sem repetir.
  *
  * Autoexpansível de propósito: em vez de um cadastro à parte para
- * administrar, a lista de sugestões cresce sozinha conforme as pessoas
- * digitam. Ninguém precisa lembrar de cadastrar "peitoril" antes de usar —
- * usa uma vez, e a partir da segunda vez ela já sugere.
+ * administrar linhas e fabricantes, a lista de sugestões cresce sozinha
+ * conforme as pessoas digitam. Ninguém precisa lembrar de cadastrar
+ * "Suprema" antes de usar — usa uma vez, e a partir da segunda vez ela já
+ * sugere. Continua sendo texto livre: digitar algo novo funciona sempre,
+ * que é o que permite a lista crescer.
  */
-export function useAplicacoesUsadas() {
+export function useValoresUsados(campo: CampoSugerivel) {
   return useQuery({
-    queryKey: [...chaves.modelosPerfil, 'aplicacoes-usadas'],
+    queryKey: [...chaves.modelosPerfil, 'valores-usados', campo],
     queryFn: async (): Promise<string[]> => {
       const { data, error } = await supabase
         .from('modelos_perfil')
-        .select('aplicacao')
-        .not('aplicacao', 'is', null)
+        .select(campo)
+        .not(campo, 'is', null)
 
       if (error) throw new Error(error.message)
 
-      const distintas = new Set(
-        (data as { aplicacao: string }[])
-          .map((linha) => linha.aplicacao.trim())
+      const distintos = new Set(
+        (data as Record<string, string>[])
+          .map((registro) => registro[campo]?.trim() ?? '')
           .filter((valor) => valor !== ''),
       )
 
-      return [...distintas].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+      return [...distintos].sort((a, b) => a.localeCompare(b, 'pt-BR'))
     },
     // Muda pouco; não vale revalidar a cada troca de tela.
     staleTime: 5 * 60_000,
   })
+}
+
+/**
+ * Linhas cadastradas, para agrupar a lista de perfis.
+ *
+ * Perfil sem linha não fica de fora: ele entra num grupo "Sem linha", senão
+ * some da tela agrupada e a pessoa conclui que o cadastro se perdeu.
+ */
+export const SEM_LINHA = 'Sem linha'
+
+export function agruparPorLinha(
+  modelos: readonly ModeloPerfil[],
+): { linha: string; modelos: ModeloPerfil[] }[] {
+  const grupos = new Map<string, ModeloPerfil[]>()
+
+  for (const modelo of modelos) {
+    const chave = modelo.linha?.trim() || SEM_LINHA
+    const lista = grupos.get(chave) ?? []
+
+    lista.push(modelo)
+    grupos.set(chave, lista)
+  }
+
+  return [...grupos.entries()]
+    .map(([linha, lista]) => ({ linha, modelos: lista }))
+    .sort((a, b) => {
+      // "Sem linha" por último: é o resto, não uma linha de verdade.
+      if (a.linha === SEM_LINHA) return 1
+      if (b.linha === SEM_LINHA) return -1
+      return a.linha.localeCompare(b.linha, 'pt-BR')
+    })
 }
 
 /**
@@ -94,6 +130,47 @@ export function filtrarModelos(
       (modelo.linha?.toLowerCase().includes(busca) ?? false) ||
       (modelo.aplicacao?.toLowerCase().includes(busca) ?? false),
   )
+}
+
+/**
+ * Renomeia uma linha em todos os perfis que a usam.
+ *
+ * A linha não é uma tabela: é texto gravado em cada perfil. Isso mantém o
+ * cadastro simples — usar uma linha nova já é criá-la — mas deixa a porta
+ * aberta para variações que na prática são a mesma coisa ("Fachada" e
+ * "Fachada?" vieram assim da planilha importada). Esta função é a faxina:
+ * renomear para um nome que já existe FUNDE as duas, porque passam a ser o
+ * mesmo texto. É o comportamento desejado, e por isso a tela avisa antes.
+ */
+export function useRenomearLinha() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      de,
+      para,
+    }: {
+      de: string
+      para: string
+    }): Promise<number> => {
+      const novo = para.trim()
+
+      if (novo === '') throw new Error('O nome da linha não pode ficar vazio.')
+
+      const { data, error } = await supabase
+        .from('modelos_perfil')
+        .update({ linha: novo })
+        .eq('linha', de)
+        .select('id')
+
+      if (error) throw new Error(error.message)
+
+      return (data as { id: string }[]).length
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.modelosPerfil })
+    },
+  })
 }
 
 export function useCriarModeloPerfil() {

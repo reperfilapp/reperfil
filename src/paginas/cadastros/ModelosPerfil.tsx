@@ -1,24 +1,37 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Pencil, Search, Images, ChevronRight } from 'lucide-react'
+import {
+  Plus,
+  Pencil,
+  Search,
+  Images,
+  ChevronRight,
+  Layers,
+} from 'lucide-react'
 import {
   useModelosPerfil,
   useCriarModeloPerfil,
   useEditarModeloPerfil,
   useDesativarModeloPerfil,
-  useAplicacoesUsadas,
+  useValoresUsados,
   filtrarModelos,
+  agruparPorLinha,
+  SEM_LINHA,
   type DadosModeloPerfil,
 } from '@/dados/modelosPerfil'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
+import { CampoSugestao } from '@/componentes/ui/CampoSugestao'
 import { Modal } from '@/componentes/ui/Modal'
 import { GaleriaDesenhos } from '@/componentes/GaleriaDesenhos'
 import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
 import { formatarComprimento } from '@/dominio/medidas'
 import type { ModeloPerfil } from '@/tipos/banco'
+
+/** Valor de `linhaAberta` que significa "ignorar o agrupamento". */
+const TODAS = '__todas__'
 
 const VAZIO: DadosModeloPerfil = {
   codigo: '',
@@ -73,7 +86,9 @@ export default function ModelosPerfil() {
   const editar = useEditarModeloPerfil()
   const desativar = useDesativarModeloPerfil()
   const { data: capas } = useCapasDesenhos()
-  const { data: aplicacoesUsadas } = useAplicacoesUsadas()
+  const { data: aplicacoesUsadas } = useValoresUsados('aplicacao')
+  const { data: linhasUsadas } = useValoresUsados('linha')
+  const { data: fabricantesUsados } = useValoresUsados('fabricante')
 
   // As 16 iniciais aparecem sempre, para quem ainda não usou nenhuma; o que
   // a empresa já digitou entra junto, sem repetir.
@@ -82,13 +97,40 @@ export default function ModelosPerfil() {
   ].sort((a, b) => a.localeCompare(b, 'pt-BR'))
 
   const [busca, setBusca] = useState('')
+  /*
+   * Linha escolhida para ver, `null` enquanto a pessoa está na lista de
+   * linhas e 'todas' quando ela pediu tudo de uma vez.
+   *
+   * O catálogo tem centenas de perfis, e quem procura um já sabe de que
+   * linha ele é — abrir direto numa lista corrida obriga a rolar por linhas
+   * que não interessam. A BUSCA ignora este filtro de propósito: quem
+   * digita um código quer achá-lo esteja onde estiver, e não descobrir
+   * depois que a peça existia noutra linha.
+   */
+  const [linhaAberta, setLinhaAberta] = useState<string | null>(null)
   const [aberto, setAberto] = useState(false)
   const [editando, setEditando] = useState<ModeloPerfil | null>(null)
   const [form, setForm] = useState<DadosModeloPerfil>(VAZIO)
   const [erro, setErro] = useState<string | null>(null)
   const [galeriaDe, setGaleriaDe] = useState<ModeloPerfil | null>(null)
 
-  const visiveis = filtrarModelos(modelos ?? [], busca)
+  const encontrados = filtrarModelos(modelos ?? [], busca)
+  const buscando = busca.trim() !== ''
+  const grupos = agruparPorLinha(modelos ?? [])
+
+  // Buscando: mostra o resultado, venha de que linha vier. Senão, respeita
+  // a linha aberta — e, sem linha aberta, a tela é a lista de linhas.
+  const visiveis = buscando
+    ? encontrados
+    : linhaAberta === TODAS
+      ? encontrados
+      : linhaAberta === null
+        ? []
+        : encontrados.filter(
+            (m) => (m.linha?.trim() || SEM_LINHA) === linhaAberta,
+          )
+
+  const mostrandoLinhas = !buscando && linhaAberta === null
 
   function abrirNovo() {
     setEditando(null)
@@ -176,11 +218,75 @@ export default function ModelosPerfil() {
 
       {isPending && <p className="text-texto-suave">Carregando…</p>}
 
-      {!isPending && visiveis.length === 0 && (
+      {/* Lista de linhas: a porta de entrada do catálogo. */}
+      {!isPending && mostrandoLinhas && grupos.length > 0 && (
+        <>
+          <ul className="mb-3 flex flex-col gap-2">
+            {grupos.map(({ linha, modelos: daLinha }) => (
+              <li key={linha}>
+                <button
+                  type="button"
+                  onClick={() => setLinhaAberta(linha)}
+                  className="bg-superficie hover:bg-superficie-2 flex min-h-16 w-full items-center gap-3 rounded-xl p-4 text-left shadow-sm"
+                >
+                  <Layers
+                    aria-hidden="true"
+                    className="text-acao-600 size-5 shrink-0"
+                  />
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {linha}
+                  </span>
+                  <span className="text-texto-suave shrink-0 text-sm">
+                    {daLinha.length}{' '}
+                    {daLinha.length === 1 ? 'perfil' : 'perfis'}
+                  </span>
+                  <ChevronRight
+                    aria-hidden="true"
+                    className="text-texto-suave size-4 shrink-0"
+                  />
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <Botao
+            variante="contorno"
+            tamanho="largura_total"
+            onClick={() => setLinhaAberta(TODAS)}
+          >
+            Ver todos os perfis
+          </Botao>
+        </>
+      )}
+
+      {/* Cabeçalho de quem está dentro de uma linha (ou vendo tudo). */}
+      {!isPending && !buscando && linhaAberta !== null && (
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="min-w-0 truncate font-semibold">
+            {linhaAberta === TODAS ? 'Todos os perfis' : linhaAberta}
+            <span className="text-texto-suave ml-2 font-normal">
+              ({visiveis.length})
+            </span>
+          </p>
+          <BotaoVoltar
+            onClick={() => setLinhaAberta(null)}
+            rotulo="Linhas"
+            className="shrink-0"
+          />
+        </div>
+      )}
+
+      {!isPending && !mostrandoLinhas && visiveis.length === 0 && (
         <p className="bg-superficie-2 text-texto-suave rounded-xl p-6 text-center">
           {busca
             ? 'Nenhum perfil encontrado com esse termo.'
-            : 'Nenhum perfil cadastrado ainda.'}
+            : 'Nenhum perfil nesta linha.'}
+        </p>
+      )}
+
+      {!isPending && mostrandoLinhas && grupos.length === 0 && (
+        <p className="bg-superficie-2 text-texto-suave rounded-xl p-6 text-center">
+          Nenhum perfil cadastrado ainda.
         </p>
       )}
 
@@ -277,36 +383,29 @@ export default function ModelosPerfil() {
           />
 
           <div className="grid grid-cols-2 gap-4">
-            <CampoTexto
+            <CampoSugestao
               rotulo="Linha ou sistema"
-              value={form.linha ?? ''}
-              onChange={(e) =>
-                setForm({ ...form, linha: e.target.value || null })
-              }
+              valor={form.linha ?? ''}
+              aoMudar={(v) => setForm({ ...form, linha: v || null })}
+              sugestoes={linhasUsadas ?? []}
+              ajuda="Escolha uma já usada ou digite uma nova."
             />
-            <CampoTexto
+            <CampoSugestao
               rotulo="Fabricante"
-              value={form.fabricante ?? ''}
-              onChange={(e) =>
-                setForm({ ...form, fabricante: e.target.value || null })
-              }
+              valor={form.fabricante ?? ''}
+              aoMudar={(v) => setForm({ ...form, fabricante: v || null })}
+              sugestoes={fabricantesUsados ?? []}
+              ajuda="Escolha um já usado ou digite um novo."
             />
           </div>
 
-          <CampoTexto
+          <CampoSugestao
             rotulo="Aplicação"
-            list="sugestoes-aplicacao"
-            value={form.aplicacao ?? ''}
-            onChange={(e) =>
-              setForm({ ...form, aplicacao: e.target.value || null })
-            }
+            valor={form.aplicacao ?? ''}
+            aoMudar={(v) => setForm({ ...form, aplicacao: v || null })}
+            sugestoes={sugestoesAplicacao}
             ajuda="Onde este perfil é usado na esquadria: lateral da porta, base da janela, montante…"
           />
-          <datalist id="sugestoes-aplicacao">
-            {sugestoesAplicacao.map((s) => (
-              <option key={s} value={s} />
-            ))}
-          </datalist>
 
           <CampoTexto
             rotulo="Comprimento da barra nova (mm)"

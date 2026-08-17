@@ -18,6 +18,7 @@ import Mais from '@/paginas/Mais'
 import Configuracoes from '@/paginas/Configuracoes'
 import Relatorios from '@/paginas/Relatorios'
 import ModelosPerfil from '@/paginas/cadastros/ModelosPerfil'
+import Linhas from '@/paginas/cadastros/Linhas'
 import PerfilDetalhe from '@/paginas/PerfilDetalhe'
 import SobraDetalhe from '@/paginas/SobraDetalhe'
 import ClienteDetalhe from '@/paginas/detalhes/ClienteDetalhe'
@@ -60,6 +61,7 @@ export default function App() {
                 <Route path="/reservas" element={<Reservas />} />
                 <Route path="/perfis" element={<ModelosPerfil />} />
                 <Route path="/perfis/:id" element={<PerfilDetalhe />} />
+                <Route path="/linhas" element={<Linhas />} />
                 <Route path="/acabamentos" element={<Acabamentos />} />
                 <Route
                   path="/acabamentos/:id"

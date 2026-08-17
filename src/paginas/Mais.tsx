@@ -61,6 +61,13 @@ export default function Mais() {
       visivel: true,
     },
     {
+      para: '/linhas',
+      rotulo: 'Linhas e sistemas',
+      descricao: 'Renomear e juntar linhas repetidas',
+      Icone: Layers,
+      visivel: true,
+    },
+    {
       para: '/acabamentos',
       rotulo: 'Cores e acabamentos',
       descricao: 'Pinturas, anodizados e códigos RAL',

@@ -45,6 +45,48 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.14 — 17/08/2026
+
+**Sugestões que funcionam, catálogo agrupado por linha e tela de linhas.**
+
+**Correção: as sugestões nunca apareciam.** Os campos "Aplicação",
+"Linha" e "Fabricante" usavam `<datalist>` para sugerir o que a empresa
+já digitou. A lista era montada certa — dava para ver as 17 sugestões no
+código da página — mas nunca aparecia na tela. Causa: esses campos ficam
+dentro do modal de cadastro, que é um `<dialog>` aberto com
+`showModal()`, e o Chromium desenha o menu do datalist ABAIXO da camada
+do modal. A setinha aparecia no campo, a lista ficava invisível.
+
+Substituído por um campo próprio (`CampoSugestao`), que desenha a lista
+em vez de pedir ao navegador: filtra conforme se digita, navega por
+setas, escolhe com Enter ou toque, e tem um botão para abrir a lista
+inteira. Continua texto livre — digitar algo novo funciona sempre, que é
+como a lista cresce. De quebra, resolve o iPhone, onde o suporte a
+datalist é irregular.
+
+Agora os três campos sugerem: linha e fabricante entraram junto com
+aplicação, que já era para funcionar desde a 1.6.1.
+
+**Catálogo por linha.** A tela "Modelos de perfil" abria uma lista
+corrida com os 82 perfis. Agora abre na lista de linhas (Suprema, Linha
+25, Fachada…), cada uma com a contagem de perfis; tocar numa linha lista
+os perfis dela, e há um botão "Ver todos os perfis" para quem prefere
+tudo de uma vez. A busca continua procurando no catálogo inteiro, esteja
+onde estiver — quem digita um código quer achá-lo, não descobrir depois
+que a peça existia noutra linha.
+
+**Tela de linhas e sistemas** (em Mais). A importação da planilha trouxe
+variações que são a mesma linha escrita diferente: "Fachada" e
+"Fachada?", "Lambril" e "Lambril?". A tela nova lista as linhas com a
+contagem e permite renomear — e renomear para um nome que já existe
+junta as duas, com aviso antes de confirmar. Não há "criar" nem
+"excluir" ali de propósito: a linha nasce quando alguém a digita num
+perfil e some quando o último perfil deixa de usá-la.
+
+Verificado no navegador: sugestões abrindo, filtrando e aceitando texto
+novo; agrupamento, abertura de linha, "ver todos" e busca cruzando
+linhas; e o aviso de fusão na tela de linhas.
+
 ## 1.6.13 — 17/08/2026
 
 **Zoom de verdade nas imagens, e fim do verde na interface.**
