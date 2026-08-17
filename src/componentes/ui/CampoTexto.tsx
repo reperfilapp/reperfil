@@ -42,7 +42,10 @@ export function CampoTexto({
         aria-invalid={temErro}
         aria-describedby={cn(temErro && idErro, !temErro && ajuda && idAjuda)}
         className={cn(
-          'bg-superficie min-h-12 rounded-xl border-2 px-4 text-base',
+          // 64px, igual aos campos de seleção e de medida — todos os campos
+          // do app têm a mesma altura, para não haver campo "menos
+          // importante" que o vizinho.
+          'bg-superficie min-h-16 rounded-xl border-2 px-4 text-base',
           'placeholder:text-texto-suave',
           temErro ? 'border-erro-500' : 'border-borda',
           className,

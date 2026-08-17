@@ -45,6 +45,25 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.10 — 17/08/2026
+
+**Todos os campos com a mesma altura.**
+
+Os campos de acabamento e localização tinham 48px de altura, enquanto
+os campos vizinhos no mesmo formulário (comprimento, quantidade) tinham
+64px. Lado a lado, o campo mais baixo parecia secundário — e era um
+alvo de toque pior para quem usa luva no depósito.
+
+Padronizados em 64px: `CampoSelecao` (acabamento, localização, tipo,
+período de relatório) e `CampoTexto` (todos os formulários de cadastro),
+mais o campo de quantidade de "Procurar sobra", que ainda estava em
+56px. Agora todo campo do app tem a mesma altura.
+
+Verificado no navegador, em todas as telas afetadas: "Cadastrar sobra"
+e "Procurar sobra" (campos alinhados com os de medida) e os
+formulários de cadastro em modal (acabamentos, perfis, clientes,
+localizações).
+
 ## 1.6.9 — 17/08/2026
 
 **Tema claro/escuro à escolha, menu do computador fixo, e busca de

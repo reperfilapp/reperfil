@@ -31,7 +31,10 @@ export function CampoSelecao({
         aria-invalid={temErro}
         aria-describedby={temErro ? idErro : undefined}
         className={cn(
-          'bg-superficie min-h-12 rounded-xl border-2 px-3 text-base',
+          // Mesma altura dos campos de medida e quantidade (min-h-16): lado
+          // a lado no mesmo formulário, um campo mais baixo que o outro
+          // parece secundário e é um alvo de toque pior com luva.
+          'bg-superficie min-h-16 rounded-xl border-2 px-3 text-base',
           temErro ? 'border-erro-500' : 'border-borda',
           className,
         )}
