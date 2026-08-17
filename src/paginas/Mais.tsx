@@ -12,6 +12,7 @@ import {
   Sun,
   Moon,
   SunMoon,
+  Scale,
 } from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { eAdministrador, podeMovimentarEstoque } from '@/autenticacao/contexto'
@@ -58,6 +59,13 @@ export default function Mais() {
       rotulo: 'Modelos de perfil',
       descricao: 'O catálogo de perfis da empresa',
       Icone: Layers,
+      visivel: true,
+    },
+    {
+      para: '/identificar',
+      rotulo: 'Identificar pelo peso',
+      descricao: 'Descobrir o perfil de uma ponta sem etiqueta',
+      Icone: Scale,
       visivel: true,
     },
     {

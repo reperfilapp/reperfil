@@ -8,6 +8,7 @@ import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
 import { formatarComprimento } from '@/dominio/medidas'
+import { areaSecaoMm2, formatarAreaSecao, formatarSecao } from '@/dominio/secao'
 
 /**
  * Ficha do perfil: o que ele é, como é a seção, e quanto existe no depósito.
@@ -233,6 +234,17 @@ export default function PerfilDetalhe() {
           <dt className="text-texto-suave">Fabricante</dt>
           <dd className="text-right">{modelo.fabricante ?? '—'}</dd>
 
+          {/* Medida derivada do peso e do desenho, não digitada. Aproximada
+              de propósito: serve para achar o perfil com uma trena. */}
+          {formatarSecao(modelo.largura_secao_mm, modelo.altura_secao_mm) && (
+            <>
+              <dt className="text-texto-suave">Seção (aprox.)</dt>
+              <dd className="text-right tabular-nums">
+                {formatarSecao(modelo.largura_secao_mm, modelo.altura_secao_mm)}
+              </dd>
+            </>
+          )}
+
           <dt className="text-texto-suave">Barra padrão</dt>
           <dd className="text-right tabular-nums">
             {formatarComprimento(modelo.comprimento_barra_mm)}
@@ -256,6 +268,15 @@ export default function PerfilDetalhe() {
                   .toFixed(2)
                   .replace('.', ',')}{' '}
                 kg
+              </dd>
+
+              {/* Não é um dado digitado: sai do peso, porque peso por metro
+                  é área da seção × densidade do alumínio. Serve para
+                  comparar perfis parecidos e para identificar uma ponta sem
+                  etiqueta na balança. */}
+              <dt className="text-texto-suave">Área da seção</dt>
+              <dd className="text-right tabular-nums">
+                {formatarAreaSecao(areaSecaoMm2(modelo.peso_por_metro_g)!)}
               </dd>
             </>
           )}

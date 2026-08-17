@@ -45,6 +45,73 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.17 — 17/08/2026
+
+**Identificar a ponta sem etiqueta, medindo com trena.**
+
+⚠️ **Precisa aplicar a migração**
+`supabase/migrations/20260817200000_dimensoes_da_secao.sql` e depois rodar
+`npm run secao:calcular --confirmar`. Sem esses dois passos a tela abre e
+funciona, mas diz "sem medida no catálogo" em todos os perfis.
+
+Sobra antiga achada no fundo do depósito, retalho vindo do fornecedor,
+peça que perdeu a identificação: para essas o QR Code não serve, e achar
+de olho entre 82 perfis parecidos é onde o erro acontece — cadastrar no
+perfil errado é pior do que não cadastrar.
+
+**As medidas não foram digitadas: foram derivadas.** O catálogo não tinha
+as dimensões da seção em lugar nenhum, só o desenho. Mas tinha o peso por
+metro de 64 perfis — e peso por metro de alumínio É a área da seção vezes
+a densidade do metal (2,70 g/cm³). Sabendo a área real em mm² e quantos
+pixels a seção ocupa no desenho, sai a escala do desenho; com a escala,
+qualquer medida dele vira milímetro.
+
+A parte difícil foi achar a seção no desenho, que tem cotas, setas e
+carimbo também em preto. A separação é por manchas conexas de pixels: a
+seção é de longe a maior delas — no 25-016, 4.038 pixels contra 305 da
+maior linha de cota.
+
+Conferência: o 25-002 tem as cotas 30 e 37 impressas no próprio desenho,
+e o cálculo deu 29,0 × 35,7 mm — 3% abaixo, provavelmente porque a
+espessura do traço entra na contagem. Folgado para o uso pretendido.
+
+**A tela.** Reúne o que a oficina tem à mão:
+
+- **Trena** (principal): até quatro medidas, nenhuma obrigatória. Quem
+  está com a ponta na mão mede o que é fácil — a largura por fora, a
+  altura, a aba que sobra, o vão de uma câmara — e não tem como saber
+  quais dessas o catálogo conhece. Então o app não pede "largura e
+  altura": recebe o punhado de medidas e procura, dentro dele, as que
+  conhece. Medida que não corresponde a nada não elimina o perfil, porque
+  provavelmente é uma cota interna que o catálogo ainda não tem. A ordem
+  não importa. Tolerância de 12%, generosa de propósito: as medidas do
+  catálogo são aproximadas e a trena numa ponta cortada também erra;
+  apertar isso deixaria o perfil certo de fora.
+
+  Vale registrar o limite: hoje informar quatro medidas em vez de duas não
+  deixa o resultado mais preciso — deixa mais provável de acertar, porque
+  aumenta a chance de as duas conhecidas estarem no meio. Quando o
+  catálogo ganhar as cotas internas, as extras passam a restringir de
+  fato, sem mudar nada para quem usa.
+- **Foto da ponta** (opcional): não é reconhecida automaticamente — fica
+  ao lado dos desenhos dos candidatos, resolvendo a comparação que antes
+  obrigava a ir e voltar de tela com a peça na mão. A foto não é enviada
+  nem gravada.
+- **Peso** (recolhido): para o dia em que houver balança.
+- **Linha**: estreita bastante. Medido contra o catálogo real, o peso
+  sozinho deixa 4 ou mais candidatos em quase metade dos casos; junto com
+  a linha, 86% caem para três ou menos.
+
+O app nunca decide sozinho: mostra candidatos com o desenho ao lado, e
+quem confirma é quem está com a peça na mão.
+
+A ficha do perfil também passou a mostrar a seção aproximada e a área da
+seção, ambas derivadas.
+
+Verificado: 27 testes novos do cálculo; conferência contra as cotas
+impressas de 6 perfis; e a tela funcionando antes da migração (sem
+quebrar, sinalizando "sem medida no catálogo").
+
 ## 1.6.16 — 17/08/2026
 
 **Escolha do perfil por linha ao cadastrar e procurar sobra, e correção

@@ -73,6 +73,17 @@ export interface ModeloPerfil {
   categoria: string | null
   /** Onde o perfil é usado na esquadria: "lateral da porta", "montante". */
   aplicacao: string | null
+  /**
+   * Medidas da seção, DERIVADAS do peso e do desenho (script
+   * `scripts/calcular-secao.mjs`), não digitadas. Aproximadas em ±5%:
+   * servem para achar o perfil com uma trena, nunca para calcular corte.
+   *
+   * Opcionais no tipo porque a migração que as cria pode ainda não ter sido
+   * aplicada — nesse caso o banco não devolve as colunas, e a tela precisa
+   * continuar funcionando.
+   */
+  largura_secao_mm?: number | null
+  altura_secao_mm?: number | null
   imagem_url: string | null
   codigo_barras: string | null
   comprimento_barra_mm: number
