@@ -45,6 +45,48 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.16 — 17/08/2026
+
+**Escolha do perfil por linha ao cadastrar e procurar sobra, e correção
+da lista de sugestões cortada.**
+
+**Perfil por linha.** As telas "Cadastrar sobra" e "Procurar sobra"
+abriam a escolha do perfil numa lista corrida com o catálogo inteiro.
+Agora abrem na lista de linhas — Suprema, Linha 25, Fachada… — cada uma
+com a contagem de perfis à direita; tocar numa linha mostra os perfis
+dela, com um atalho para voltar às linhas, e há "Ver todos os perfis"
+para quem prefere tudo de uma vez. É a mesma organização já usada em
+"Modelos de perfil" (versão 1.6.14), agora onde a escolha realmente
+acontece no dia a dia.
+
+A busca continua ignorando o agrupamento: digitar um código acha o
+perfil esteja ele em que linha estiver, e limpar a busca devolve a
+pessoa à linha em que estava.
+
+**Correção: a lista de sugestões aparecia com só duas opções.**
+
+Na tela de renomear linha (e nos campos do cadastro de perfil), a lista
+de sugestões mostrava duas opções e o resto sumia, por mais que a lista
+tivesse dez ou vinte itens.
+
+Não era o tamanho da lista: ela estava sendo RECORTADA. O conteúdo do
+modal tem rolagem própria, e tudo que é posicionado lá dentro é cortado
+na borda dele — a lista continuava existindo, só que fora da área
+visível.
+
+A lista passou a ser posicionada em coordenadas de tela, fora desse
+recorte, e agora mostra até 6 opções de uma vez, com rolagem para o
+resto. É responsiva: usa o espaço que houver, e abre para cima quando
+não há espaço abaixo — caso do campo perto do rodapé, ou do teclado
+aberto no celular. Acompanha a rolagem e o redimensionamento.
+
+Cada opção também ficou com altura de toque confortável (48px), no
+lugar do texto solto de antes.
+
+Verificado no navegador: 6 opções visíveis no computador e no celular,
+lista dentro da tela, abertura para cima confirmada numa tela de 460px
+de altura, e a largura sempre acompanhando o campo.
+
 ## 1.6.15 — 17/08/2026
 
 **Renomear linha agora sugere as linhas existentes.**

@@ -1,12 +1,21 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Check, ZoomIn, ChevronRight } from 'lucide-react'
-import { useModelosPerfil, filtrarModelos } from '@/dados/modelosPerfil'
+import { Search, Check, ZoomIn, ChevronRight, Layers } from 'lucide-react'
+import {
+  useModelosPerfil,
+  filtrarModelos,
+  agruparPorLinha,
+  SEM_LINHA,
+} from '@/dados/modelosPerfil'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
 import { MiniaturaPerfil } from './MiniaturaPerfil'
 import { VisualizadorImagem } from './ui/VisualizadorImagem'
+import { BotaoVoltar } from './ui/BotaoVoltar'
 import { cn } from '@/lib/utilitarios'
 import type { ModeloPerfil } from '@/tipos/banco'
+
+/** Valor de `linhaAberta` que significa "ignorar o agrupamento". */
+const TODAS = '__todas__'
 
 interface PropsSeletorPerfil {
   selecionado: ModeloPerfil | null
@@ -36,8 +45,31 @@ export function SeletorPerfil({
   const { data: fotos } = useCapasDesenhos('foto')
   const [busca, setBusca] = useState('')
   const [ampliado, setAmpliado] = useState<string | null>(null)
+  /*
+   * Mesma ideia da tela "Modelos de perfil": o catálogo tem dezenas de
+   * perfis, e quem vai lançar uma sobra já sabe de que linha ela é. Abrir
+   * numa lista corrida obriga a rolar por linhas que não interessam.
+   *
+   * A BUSCA continua ignorando o agrupamento: quem digita um código quer
+   * achá-lo esteja em que linha estiver.
+   */
+  const [linhaAberta, setLinhaAberta] = useState<string | null>(null)
 
   const encontrados = filtrarModelos(modelos ?? [], busca)
+  const buscando = busca.trim() !== ''
+  const grupos = agruparPorLinha(modelos ?? [])
+
+  const visiveis = buscando
+    ? encontrados
+    : linhaAberta === TODAS
+      ? encontrados
+      : linhaAberta === null
+        ? []
+        : encontrados.filter(
+            (m) => (m.linha?.trim() || SEM_LINHA) === linhaAberta,
+          )
+
+  const mostrandoLinhas = !buscando && linhaAberta === null
 
   if (selecionado) {
     const desenho = capas?.get(selecionado.id)
@@ -190,15 +222,72 @@ export function SeletorPerfil({
         </p>
       )}
 
+      {/* Lista de linhas: a porta de entrada, como em "Modelos de perfil". */}
+      {!isPending && mostrandoLinhas && grupos.length > 0 && (
+        <ul className="border-borda flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-xl border-2 p-2">
+          {grupos.map(({ linha, modelos: daLinha }) => (
+            <li key={linha}>
+              <button
+                type="button"
+                onClick={() => setLinhaAberta(linha)}
+                className="border-borda bg-superficie hover:border-acao-500 hover:bg-superficie-2 flex min-h-16 w-full items-center gap-3 rounded-xl border-2 p-3 text-left"
+              >
+                <Layers
+                  aria-hidden="true"
+                  className="text-acao-600 size-5 shrink-0"
+                />
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {linha}
+                </span>
+                <span className="text-texto-suave shrink-0 text-sm">
+                  {daLinha.length} {daLinha.length === 1 ? 'perfil' : 'perfis'}
+                </span>
+                <ChevronRight
+                  aria-hidden="true"
+                  className="text-texto-suave size-4 shrink-0"
+                />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {!isPending && mostrandoLinhas && grupos.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setLinhaAberta(TODAS)}
+          className="text-acao-600 shrink-0 text-sm font-medium hover:underline"
+        >
+          Ver todos os perfis
+        </button>
+      )}
+
+      {/* Dentro de uma linha: diz onde se está e como voltar. */}
+      {!isPending && !buscando && linhaAberta !== null && (
+        <div className="flex shrink-0 items-center justify-between gap-3">
+          <p className="min-w-0 truncate text-sm font-semibold">
+            {linhaAberta === TODAS ? 'Todos os perfis' : linhaAberta}
+            <span className="text-texto-suave ml-2 font-normal">
+              ({visiveis.length})
+            </span>
+          </p>
+          <BotaoVoltar
+            onClick={() => setLinhaAberta(null)}
+            rotulo="Linhas"
+            className="shrink-0"
+          />
+        </div>
+      )}
+
       {/* min-h-0 é o que permite este container encolher dentro da coluna
           flexível da tela e sobrar espaço real para rolar — sem ele, o
           conteúdo empurra a lista para além da tela em vez de rolar nela.
           Só existe quando há itens: com a lista vazia, quem preenche o
           espaço é a mensagem acima, não uma lista vazia disputando o
           mesmo espaço com ela. */}
-      {encontrados.length > 0 && (
+      {visiveis.length > 0 && (
         <ul className="border-borda flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-xl border-2 p-2">
-          {encontrados.map((modelo) => (
+          {visiveis.map((modelo) => (
             <li key={modelo.id}>
               <button
                 type="button"

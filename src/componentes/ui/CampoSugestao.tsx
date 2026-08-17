@@ -1,6 +1,13 @@
-import { useId, useRef, useState, type ReactNode } from 'react'
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utilitarios'
+
+/** Altura de uma opção da lista, em pixels. Usada para dimensionar. */
+const ALTURA_OPCAO = 48
+/** Quantas opções mostrar de uma vez, quando houver espaço. */
+const OPCOES_VISIVEIS = 6
+/** Respiro até a borda da tela, para a lista não encostar. */
+const MARGEM_TELA = 12
 
 interface PropsCampoSugestao {
   rotulo: string
@@ -48,6 +55,23 @@ export function CampoSugestao({
    */
   const [filtrando, setFiltrando] = useState(false)
   const container = useRef<HTMLDivElement>(null)
+  const campo = useRef<HTMLInputElement>(null)
+
+  /*
+   * A lista é posicionada em coordenadas de tela (`fixed`), não dentro do
+   * campo. Motivo: estes campos aparecem dentro do modal, cujo conteúdo
+   * tem rolagem própria — e tudo que é posicionado lá dentro é RECORTADO
+   * na borda dele. Era o que acontecia: por mais alta que a lista fosse,
+   * apareciam duas opções e o resto sumia no corte. Em `fixed` ela sai
+   * desse recorte e usa a tela inteira.
+   */
+  const [posicao, setPosicao] = useState<{
+    esquerda: number
+    largura: number
+    topo?: number
+    base?: number
+    altura: number
+  } | null>(null)
 
   const termo = valor.trim().toLowerCase()
   const filtradas =
@@ -55,6 +79,53 @@ export function CampoSugestao({
       ? sugestoes.filter((s) => s.toLowerCase().includes(termo))
       : [...sugestoes]
   const mostrando = aberto && filtradas.length > 0
+
+  /*
+   * Mede o campo e decide onde cabe a lista. Abre para baixo por padrão; se
+   * lá embaixo couber menos do que em cima — teclado do celular aberto,
+   * campo no rodapé —, abre para cima. Recalcula ao rolar e ao redimensionar
+   * porque a lista, sendo `fixed`, não acompanha sozinha.
+   */
+  useLayoutEffect(() => {
+    if (!mostrando) {
+      setPosicao(null)
+      return
+    }
+
+    function medir() {
+      const alvo = campo.current
+      if (!alvo) return
+
+      const r = alvo.getBoundingClientRect()
+      const desejada = filtradas.length * ALTURA_OPCAO
+      const teto = OPCOES_VISIVEIS * ALTURA_OPCAO
+      const abaixo = window.innerHeight - r.bottom - MARGEM_TELA
+      const acima = r.top - MARGEM_TELA
+      const paraCima = abaixo < Math.min(desejada, teto) && acima > abaixo
+      const disponivel = paraCima ? acima : abaixo
+
+      setPosicao({
+        esquerda: r.left,
+        largura: r.width,
+        altura: Math.min(desejada, teto, disponivel),
+        ...(paraCima
+          ? { base: window.innerHeight - r.top + 4 }
+          : { topo: r.bottom + 4 }),
+      })
+    }
+
+    medir()
+
+    // `true` na captura: pega a rolagem do conteúdo do modal também, que
+    // não borbulha até a janela.
+    window.addEventListener('scroll', medir, true)
+    window.addEventListener('resize', medir)
+
+    return () => {
+      window.removeEventListener('scroll', medir, true)
+      window.removeEventListener('resize', medir)
+    }
+  }, [mostrando, filtradas.length])
 
   function escolher(sugestao: string) {
     aoMudar(sugestao)
@@ -111,6 +182,7 @@ export function CampoSugestao({
         }}
       >
         <input
+          ref={campo}
           id={idCampo}
           type="text"
           role="combobox"
@@ -156,11 +228,19 @@ export function CampoSugestao({
           </button>
         )}
 
-        {mostrando && (
+        {mostrando && posicao && (
           <ul
             id={idLista}
             role="listbox"
-            className="border-borda bg-superficie absolute inset-x-0 top-full z-10 mt-1 max-h-60 overflow-y-auto rounded-xl border-2 shadow-lg"
+            style={{
+              left: posicao.esquerda,
+              width: posicao.largura,
+              maxHeight: posicao.altura,
+              ...(posicao.topo !== undefined
+                ? { top: posicao.topo }
+                : { bottom: posicao.base }),
+            }}
+            className="border-borda bg-superficie fixed z-50 overflow-y-auto rounded-xl border-2 shadow-lg"
           >
             {filtradas.map((sugestao, indice) => (
               <li key={sugestao}>
@@ -171,7 +251,7 @@ export function CampoSugestao({
                   onMouseEnter={() => setDestacado(indice)}
                   onClick={() => escolher(sugestao)}
                   className={cn(
-                    'w-full px-4 py-3 text-left',
+                    'flex min-h-12 w-full items-center px-4 text-left',
                     indice === destacado
                       ? 'bg-superficie-2'
                       : 'hover:bg-superficie-2',
