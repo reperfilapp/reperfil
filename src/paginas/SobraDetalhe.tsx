@@ -21,7 +21,7 @@ const ROTULO_STATUS: Record<StatusLote, string> = {
 }
 
 const COR_STATUS: Record<StatusLote, string> = {
-  disponivel: 'bg-economia-100 text-economia-700',
+  disponivel: 'bg-aluminio-200 text-grafite-900',
   reservada: 'bg-atencao-100 text-atencao-700',
   consumida: 'bg-superficie-2 text-texto-suave',
   descartada: 'bg-erro-50 text-erro-700',

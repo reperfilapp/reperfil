@@ -35,10 +35,18 @@ const ROTULO_STATUS: Record<StatusLote, string> = {
   em_conferencia: 'em conferência',
 }
 
-/** Verde para o que dá para usar, âmbar para o que está preso, cinza para o
- *  que saiu do estoque. Vermelho fica reservado a descarte. */
+/*
+ * Cinza sólido para o que dá para usar, âmbar para o que está preso,
+ * cinza apagado para o que saiu do estoque. Vermelho fica reservado a
+ * descarte.
+ *
+ * "Disponível" e "consumida" são os dois cinzas, então precisam de peso
+ * diferente para não se confundirem de relance: o disponível tem fundo e
+ * texto fortes, o consumido é apagado — o que saiu do estoque deve
+ * desaparecer da vista, não competir com o que está na prateleira.
+ */
 const COR_STATUS: Record<StatusLote, string> = {
-  disponivel: 'bg-economia-100 text-economia-700',
+  disponivel: 'bg-aluminio-200 text-grafite-900',
   reservada: 'bg-atencao-100 text-atencao-700',
   consumida: 'bg-superficie-2 text-texto-suave',
   descartada: 'bg-erro-50 text-erro-700',

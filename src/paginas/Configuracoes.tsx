@@ -184,7 +184,7 @@ export default function Configuracoes() {
             </strong>{' '}
             e{' '}
             {exemplo.cabe ? (
-              <strong className="text-economia-700">cabe</strong>
+              <strong className="text-grafite-800">cabe</strong>
             ) : (
               <strong className="text-erro-600">não cabe</strong>
             )}
@@ -204,7 +204,7 @@ export default function Configuracoes() {
         {salvo && (
           <p
             role="status"
-            className="bg-economia-50 text-economia-700 flex items-center gap-2 rounded-xl px-4 py-3"
+            className="bg-aluminio-100 text-grafite-800 flex items-center gap-2 rounded-xl px-4 py-3"
           >
             <CheckCircle2 aria-hidden="true" className="size-5" />
             Configurações salvas e confirmadas.

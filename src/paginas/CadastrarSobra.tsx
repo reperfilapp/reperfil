@@ -166,7 +166,7 @@ export default function CadastrarSobra() {
       {ultimo && (
         <div
           role="status"
-          className="bg-economia-50 text-economia-700 mb-5 flex items-center gap-3 rounded-xl p-4"
+          className="bg-aluminio-100 text-grafite-800 mb-5 flex items-center gap-3 rounded-xl p-4"
         >
           <CheckCircle2 aria-hidden="true" className="size-5 shrink-0" />
           <p className="flex-1 text-sm">

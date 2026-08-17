@@ -45,6 +45,45 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.13 — 17/08/2026
+
+**Zoom de verdade nas imagens, e fim do verde na interface.**
+
+**Zoom.** Tocar no desenho técnico ou na foto já abria a imagem em tela
+cheia, mas ela ficava só do tamanho da tela — e a cota de um desenho é
+impressa pequena. Quem precisava saber se a medida era 22 ou 27
+desistia e ia medir a peça na mão, que é justamente o trabalho que o
+desenho existe para evitar.
+
+Agora a imagem ampliada tem zoom até 8×, com as três formas de uso que
+fazem sentido em cada aparelho: pinça de dois dedos e arrastar no
+celular; roda do mouse e arrastar no computador; e botões de mais,
+menos e "ajustar à tela" nos dois — porque com luva a pinça falha, e no
+computador nem todo mundo descobre sozinho que a roda funciona ali.
+Fecha com Esc, com o X ou tocando no fundo (arrastar a imagem para fora
+não fecha mais sem querer).
+
+O visualizador virou um componente único (`VisualizadorImagem`), usado
+tanto na ficha do perfil quanto no cartão de perfil escolhido — antes
+eram duas cópias do mesmo overlay, cada uma com seu comportamento.
+
+**Verde.** O verde saiu da interface, substituído pelo cinza-alumínio da
+marca: o cartão do perfil escolhido, os painéis de "Disponível no
+depósito" (perfil, acabamento e localização), as confirmações de
+cadastro e reserva, o aviso de configurações salvas e o selo de status
+"disponível".
+
+Um cuidado nesse último: "disponível" e "consumida" agora são os dois
+cinzas, então ganharam pesos diferentes para não se confundirem de
+relance — o disponível com fundo e texto fortes, o consumido apagado,
+já que o que saiu do estoque deve sumir da vista, não competir com o
+que está na prateleira. Âmbar (reservada) e vermelho (descartada)
+continuam como estavam.
+
+Verificado no navegador, nos dois temas e em celular/computador: zoom,
+arrasto, pinça, botões, Esc e clique no fundo; e as telas afetadas pela
+troca de cor.
+
 ## 1.6.12 — 17/08/2026
 
 **Correção: campos de acabamento e localização continuavam estreitos no

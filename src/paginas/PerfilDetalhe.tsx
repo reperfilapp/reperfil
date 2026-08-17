@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Search, ZoomIn, X, ExternalLink } from 'lucide-react'
+import { Search, ZoomIn, ExternalLink } from 'lucide-react'
 import { useModelosPerfil } from '@/dados/modelosPerfil'
 import { useDesenhosTecnicos } from '@/dados/desenhosTecnicos'
 import { useSobras } from '@/dados/sobras'
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
-import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
+import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
 import { formatarComprimento } from '@/dominio/medidas'
 
 /**
@@ -174,7 +174,7 @@ export default function PerfilDetalhe() {
           </p>
         ) : (
           <>
-            <div className="bg-economia-50 text-economia-700 mb-3 flex items-baseline gap-4 rounded-xl p-4">
+            <div className="bg-aluminio-100 text-grafite-800 mb-3 flex items-baseline gap-4 rounded-xl p-4">
               <p className="text-3xl font-bold tabular-nums">{pecasLivres}</p>
               <div className="text-sm">
                 <p>{pecasLivres === 1 ? 'peça livre' : 'peças livres'}</p>
@@ -289,26 +289,11 @@ export default function PerfilDetalhe() {
       </section>
 
       {ampliado && (
-        <div
-          role="dialog"
-          aria-label="Desenho ampliado"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
-          onClick={() => setAmpliado(null)}
-        >
-          <img
-            src={ampliado}
-            alt="Desenho técnico ampliado"
-            className="max-h-full max-w-full object-contain"
-          />
-          <Botao
-            variante="secundaria"
-            onClick={() => setAmpliado(null)}
-            aria-label="Fechar"
-            className="absolute top-4 right-4"
-          >
-            <X aria-hidden="true" className="size-5" />
-          </Botao>
-        </div>
+        <VisualizadorImagem
+          src={ampliado}
+          alt={`Imagem do perfil ${modelo.codigo}, ampliada`}
+          aoFechar={() => setAmpliado(null)}
+        />
       )}
     </div>
   )

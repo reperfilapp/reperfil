@@ -39,7 +39,7 @@ export default function RecuperarSenha() {
   if (enviado) {
     return (
       <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-6 px-6 text-center">
-        <div className="bg-economia-100 text-economia-700 rounded-full p-6">
+        <div className="bg-aluminio-200 text-grafite-800 rounded-full p-6">
           <MailCheck aria-hidden="true" className="size-12" />
         </div>
 

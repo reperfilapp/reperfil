@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Check, ZoomIn, X, ChevronRight } from 'lucide-react'
+import { Search, Check, ZoomIn, ChevronRight } from 'lucide-react'
 import { useModelosPerfil, filtrarModelos } from '@/dados/modelosPerfil'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
 import { MiniaturaPerfil } from './MiniaturaPerfil'
+import { VisualizadorImagem } from './ui/VisualizadorImagem'
 import { cn } from '@/lib/utilitarios'
 import type { ModeloPerfil } from '@/tipos/banco'
 
@@ -61,7 +62,7 @@ export function SeletorPerfil({
             }
           }}
           aria-label={`Ver ficha completa do perfil ${selecionado.codigo}`}
-          className="border-economia-500 bg-economia-50 hover:bg-economia-100 flex cursor-pointer flex-col gap-3 rounded-xl border-2 p-3"
+          className="border-marca-cinza bg-aluminio-100 hover:bg-aluminio-200 flex cursor-pointer flex-col gap-3 rounded-xl border-2 p-3"
         >
           {/* Desenho e foto lado a lado: a geometria e a peça real. É a
               conferência mais rápida possível contra a ponta na mão. */}
@@ -120,7 +121,7 @@ export function SeletorPerfil({
               <p className="text-grafite-900 flex items-center gap-1.5 font-mono font-bold">
                 <Check
                   aria-hidden="true"
-                  className="text-economia-700 size-4 shrink-0"
+                  className="text-grafite-700 size-4 shrink-0"
                 />
                 {selecionado.codigo}
               </p>
@@ -128,7 +129,7 @@ export function SeletorPerfil({
                   já tem o rótulo "Ver ficha completa" no aria-label. */}
               <ChevronRight
                 aria-hidden="true"
-                className="text-economia-700 size-4 shrink-0"
+                className="text-acao-600 size-4 shrink-0"
               />
             </div>
 
@@ -151,26 +152,11 @@ export function SeletorPerfil({
         </div>
 
         {ampliado && (
-          <div
-            role="dialog"
-            aria-label="Desenho ampliado"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
-            onClick={() => setAmpliado(null)}
-          >
-            <img
-              src={ampliado}
-              alt="Desenho técnico ampliado"
-              className="max-h-full max-w-full object-contain"
-            />
-            <button
-              type="button"
-              onClick={() => setAmpliado(null)}
-              aria-label="Fechar"
-              className="text-grafite-900 absolute top-4 right-4 rounded-full bg-white/90 p-3"
-            >
-              <X aria-hidden="true" className="size-5" />
-            </button>
-          </div>
+          <VisualizadorImagem
+            src={ampliado}
+            alt={`Desenho do perfil ${selecionado.codigo}, ampliado`}
+            aoFechar={() => setAmpliado(null)}
+          />
         )}
       </>
     )

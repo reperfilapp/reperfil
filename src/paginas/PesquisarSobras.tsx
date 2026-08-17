@@ -208,7 +208,7 @@ export default function PesquisarSobras() {
       {reservada && (
         <div
           role="status"
-          className="bg-economia-50 text-economia-700 mb-5 flex items-center gap-3 rounded-xl p-4"
+          className="bg-aluminio-100 text-grafite-800 mb-5 flex items-center gap-3 rounded-xl p-4"
         >
           <PackageCheck aria-hidden="true" className="size-5 shrink-0" />
           <p className="text-sm">
@@ -302,7 +302,7 @@ export default function PesquisarSobras() {
                     className={`mb-3 flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
                       aproveitamento === 'gera-descarte'
                         ? 'bg-atencao-50 text-atencao-700'
-                        : 'bg-economia-50 text-economia-700'
+                        : 'bg-aluminio-100 text-grafite-800'
                     }`}
                   >
                     {aproveitamento === 'gera-descarte' ? (

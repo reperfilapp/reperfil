@@ -133,7 +133,7 @@ export default function Reservas() {
       {resultado && (
         <p
           role="status"
-          className="bg-economia-50 text-economia-700 mb-5 rounded-xl px-4 py-3 text-sm"
+          className="bg-aluminio-100 text-grafite-800 mb-5 rounded-xl px-4 py-3 text-sm"
         >
           {resultado}
         </p>

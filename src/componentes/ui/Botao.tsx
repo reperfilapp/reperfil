@@ -23,8 +23,6 @@ const estilos = cva(
           'bg-superficie-2 text-texto hover:bg-borda focus-visible:outline-acao-600',
         contorno:
           'border-2 border-borda bg-transparent text-texto hover:bg-superficie-2',
-        economia:
-          'bg-economia-600 text-white hover:bg-economia-700 focus-visible:outline-economia-600',
         // Vermelho é reservado a erro e descarte — não usar para "salvar".
         destrutiva:
           'bg-erro-600 text-white hover:bg-erro-700 focus-visible:outline-erro-600',

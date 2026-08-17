@@ -66,7 +66,7 @@ export default function LocalizacaoDetalhe() {
     >
       <section>
         <h2 className="mb-2 font-semibold">Guardado aqui</h2>
-        <div className="bg-economia-50 text-economia-700 flex items-baseline gap-4 rounded-xl p-4">
+        <div className="bg-aluminio-100 text-grafite-800 flex items-baseline gap-4 rounded-xl p-4">
           <p className="text-3xl font-bold tabular-nums">{pecas}</p>
           <div className="text-sm">
             <p>{pecas === 1 ? 'peça' : 'peças'}</p>
