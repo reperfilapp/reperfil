@@ -21,15 +21,24 @@ export function AvisoNovaVersao() {
     onRegisteredSW(_url, registro) {
       if (!registro) return
 
-      // Procura versão nova de hora em hora. O navegador já verifica ao
-      // abrir, mas aplicativo instalado no celular fica dias sem ser
-      // fechado — e aí nunca verificaria.
-      setInterval(
-        () => {
-          void registro.update()
-        },
-        60 * 60 * 1000,
-      )
+      const verificar = () => void registro.update()
+
+      // Verifica assim que registra — cobre o caso mais comum, que é abrir
+      // o app depois de alguém ter publicado uma correção.
+      verificar()
+
+      // E de novo toda vez que o app volta a ficar visível. No iPhone, o
+      // app instalado fica dias em segundo plano e o sistema pausa
+      // temporizadores nesse meio tempo — o setInterval abaixo sozinho
+      // quase nunca chega a rodar de fato lá. Retomar a tela é o momento
+      // real em que vale a pena checar.
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') verificar()
+      })
+
+      // Ainda assim mantém a verificação periódica, para quem deixa o app
+      // aberto no computador por muitas horas seguidas.
+      setInterval(verificar, 60 * 60 * 1000)
     },
   })
 

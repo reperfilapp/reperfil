@@ -45,6 +45,43 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.6 — 16/08/2026
+
+**Verificação de atualização mais confiável, com botão manual.**
+
+O app já avisava sobre versão nova (`AvisoNovaVersao`), mas só verificava
+de hora em hora. No iPhone isso quase nunca chegava a rodar de verdade:
+o app instalado fica dias em segundo plano, e o Safari suspende
+temporizadores nesse meio tempo — resultado, alguém ficava semanas numa
+versão antiga sem nunca ver o aviso.
+
+Três mudanças:
+
+- A verificação agora roda assim que o app abre, e de novo toda vez que
+  ele volta a ficar visível (`visibilitychange`) — não só de hora em
+  hora. É o momento em que realmente vale a pena checar: a pessoa acabou
+  de reabrir o app depois de um tempo fechado.
+- Adicionado um botão "Verificar atualização" no selo de versão
+  (`SeloVersao`, visível na tela inicial e na de entrada). Toque manual,
+  para quem quer confirmar na hora, sem depender de nenhum temporizador.
+  Se achar versão nova, o aviso de atualizar aparece sozinho; se não
+  achar, mostra "Você já está na versão mais recente."
+- `vercel.json` passou a mandar `Cache-Control: max-age=0,
+  must-revalidate` para `sw.js`, `index.html` e `manifest.webmanifest` —
+  sem isso, mesmo pedindo para checar, o servidor podia devolver uma
+  cópia em cache desses arquivos e a checagem nunca via a versão nova de
+  verdade.
+
+Verificado no navegador: botão "Verificar atualização" funciona (mostra
+"Verificando…", depois o resultado), sem erros no console; build e
+testes passando.
+
+Quem já tem o app instalado e travado numa versão antiga (ex.: iPhone
+preso na 1.6.2) precisa de um empurrão manual uma única vez, porque o
+service worker antigo é quem decide se procura por um novo — force
+fechar o app (deslizar para cima no seletor de apps) e reabrir, ou
+apagar o ícone da tela de início e adicionar de novo pelo Safari.
+
 ## 1.6.5 — 16/08/2026
 
 **Logo grande na tela inicial, com a versão no rodapé.**
