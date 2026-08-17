@@ -45,6 +45,23 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.11 — 17/08/2026
+
+**Aplicação do perfil aparece na ficha da sobra.**
+
+Na tela de detalhe de uma sobra (estoque → tocar numa peça), a seção
+"Dados da peça" não mostrava a aplicação do perfil — o campo criado na
+versão 1.6.0, que diz onde aquela peça entra na esquadria.
+
+Não era só falta de exibir: a consulta que carrega a sobra buscava
+apenas código, descrição e linha do perfil, então o dado nem chegava na
+tela. Corrigido nos dois lugares (lista e detalhe) e exibido logo abaixo
+de "Acabamento" — é ali que se procura, com a ponta na mão.
+
+Verificado no navegador com um perfil que tem aplicação preenchida: a
+linha aparece com o texto certo; o dado de teste foi revertido ao
+valor original depois.
+
 ## 1.6.10 — 17/08/2026
 
 **Todos os campos com a mesma altura.**

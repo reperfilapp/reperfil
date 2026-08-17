@@ -168,6 +168,12 @@ export default function SobraDetalhe() {
             rotulo: 'Acabamento',
             valor: sobra.acabamento?.nome ?? null,
           },
+          // Vem do perfil, não da peça, mas é aqui que se procura: com a
+          // ponta na mão, a pergunta é "onde isto entra na esquadria?".
+          {
+            rotulo: 'Aplicação',
+            valor: sobra.modelo?.aplicacao ?? null,
+          },
           {
             rotulo: 'Localização',
             valor: sobra.localizacao ? (

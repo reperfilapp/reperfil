@@ -5,7 +5,12 @@ import type { EstadoConservacao, LoteSobra } from '@/tipos/banco'
 
 /** Sobra com os cadastros relacionados já carregados, para exibir na lista. */
 export interface SobraDetalhada extends LoteSobra {
-  modelo: { codigo: string; descricao: string; linha: string | null } | null
+  modelo: {
+    codigo: string
+    descricao: string
+    linha: string | null
+    aplicacao: string | null
+  } | null
   acabamento: { codigo: string; nome: string; cor_hex: string | null } | null
   localizacao: { codigo: string } | null
 }
@@ -38,7 +43,7 @@ export function useSobras() {
         .from('lotes_sobras')
         .select(
           `*,
-           modelo:modelos_perfil (codigo, descricao, linha),
+           modelo:modelos_perfil (codigo, descricao, linha, aplicacao),
            acabamento:acabamentos (codigo, nome, cor_hex),
            localizacao:localizacoes (codigo)`,
         )
@@ -172,7 +177,7 @@ export function useSobra(id: string | null) {
         .from('lotes_sobras')
         .select(
           `*,
-           modelo:modelos_perfil (codigo, descricao, linha),
+           modelo:modelos_perfil (codigo, descricao, linha, aplicacao),
            acabamento:acabamentos (codigo, nome, cor_hex),
            localizacao:localizacoes (codigo)`,
         )
