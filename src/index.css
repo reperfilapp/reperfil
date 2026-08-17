@@ -176,10 +176,17 @@
    *
    * Não afeta galerias de imagem que rolam de propósito (`overflow-x-auto`
    * num container específico) — a trava é só no documento como um todo.
+   *
+   * `clip`, não `hidden`: travar só o eixo X com `hidden` faz o navegador
+   * forçar o eixo Y a virar um container de rolagem próprio (regra do CSS:
+   * um eixo não-visible "puxa" o outro para `auto`), e isso quebra
+   * `position: sticky` no menu lateral do computador — ele passa a rolar
+   * dentro desse container extra em vez de grudar na tela. `clip` corta o
+   * excesso sem criar esse container.
    */
   html,
   body {
-    overflow-x: hidden;
+    overflow-x: clip;
     max-width: 100%;
   }
 

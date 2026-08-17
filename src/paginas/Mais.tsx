@@ -9,11 +9,22 @@ import {
   Package,
   Users,
   FileSpreadsheet,
+  Sun,
+  Moon,
+  SunMoon,
 } from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { eAdministrador, podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
 import { SeloVersao } from '@/componentes/SeloVersao'
+import { useTema, type Tema } from '@/tema/useTema'
+import { cn } from '@/lib/utilitarios'
+
+const OPCOES_TEMA: { valor: Tema; rotulo: string; Icone: typeof Sun }[] = [
+  { valor: 'automatico', rotulo: 'Automático', Icone: SunMoon },
+  { valor: 'claro', rotulo: 'Claro', Icone: Sun },
+  { valor: 'escuro', rotulo: 'Escuro', Icone: Moon },
+]
 
 /**
  * Menu de cadastros e configurações.
@@ -25,6 +36,7 @@ import { SeloVersao } from '@/componentes/SeloVersao'
  */
 export default function Mais() {
   const { perfil, sair } = useAutenticacao()
+  const { tema, definirTema } = useTema()
 
   const itens = [
     {
@@ -115,6 +127,31 @@ export default function Mais() {
           são feitos por quem tem perfil de estoque ou administrador.
         </p>
       )}
+
+      {/* Fica no aparelho, não na conta: o mesmo usuário pode preferir
+          escuro no celular do depósito e claro no computador do escritório. */}
+      <div role="group" aria-label="Tema" className="mb-6">
+        <p className="mb-2 font-medium">Tema</p>
+        <div className="grid grid-cols-3 gap-2">
+          {OPCOES_TEMA.map(({ valor, rotulo, Icone }) => (
+            <button
+              key={valor}
+              type="button"
+              onClick={() => definirTema(valor)}
+              aria-pressed={tema === valor}
+              className={cn(
+                'flex min-h-12 items-center justify-center gap-1.5 rounded-xl border-2 text-sm font-semibold',
+                tema === valor
+                  ? 'border-acao-600 bg-acao-600 text-white'
+                  : 'border-borda bg-superficie text-texto-suave',
+              )}
+            >
+              <Icone aria-hidden="true" className="size-4" />
+              {rotulo}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <Botao
         variante="contorno"

@@ -24,6 +24,7 @@ const EtiquetaSobra = lazy(() =>
   })),
 )
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
+import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import type { StatusLote } from '@/tipos/banco'
 
 const ROTULO_STATUS: Record<StatusLote, string> = {
@@ -70,6 +71,8 @@ export default function Sobras() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
+      <BotaoVoltar para="/" rotulo="Início" className="mb-4" />
+
       <header className="mb-4 flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Sobras</h1>
         {podeMovimentarEstoque(perfil) && (

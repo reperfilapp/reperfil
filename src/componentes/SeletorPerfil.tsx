@@ -211,7 +211,7 @@ export function SeletorPerfil({
           espaço é a mensagem acima, não uma lista vazia disputando o
           mesmo espaço com ela. */}
       {encontrados.length > 0 && (
-        <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+        <ul className="border-borda flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-xl border-2 p-2">
           {encontrados.map((modelo) => (
             <li key={modelo.id}>
               <button

@@ -37,8 +37,9 @@ export function LayoutApp() {
 
   return (
     <div className="min-h-dvh md:flex">
-      {/* Menu lateral — apenas no computador */}
-      <aside className="border-borda bg-superficie hidden w-60 shrink-0 flex-col gap-1 border-r p-4 md:flex">
+      {/* Menu lateral — apenas no computador. Fixo (sticky) para não rolar
+          junto com o conteúdo em páginas mais longas. */}
+      <aside className="border-borda bg-superficie hidden w-60 shrink-0 flex-col gap-1 overflow-y-auto border-r p-4 md:sticky md:top-0 md:flex md:h-dvh">
         <div className="mb-6 flex items-center gap-2 px-2">
           <MarcaRePerfil className="text-acao-600 size-8" />
           <div>

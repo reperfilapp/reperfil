@@ -151,7 +151,11 @@ export default function CadastrarSobra() {
         // uma faixa vazia embaixo da lista em telas mais altas. Depois de
         // escolher o perfil, a tela volta ao fluxo normal: tem formulário
         // demais para caber numa tela só, e ela precisa rolar.
-        !modelo && 'flex h-[calc(100dvh-6rem)] flex-col md:h-auto',
+        //
+        // 4rem é a altura da barra de navegação. O `pb-24` do `main` (6rem)
+        // é folga para telas que rolam; aqui, que não rola, descontar 6rem
+        // deixaria uma faixa morta de mais de 30px acima da barra.
+        !modelo && 'flex h-[calc(100dvh-4rem)] flex-col md:h-auto',
       )}
     >
       <header className="mb-6 flex shrink-0 items-center gap-3">

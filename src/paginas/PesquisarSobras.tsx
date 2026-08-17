@@ -11,11 +11,12 @@ import {
 import { useSobras } from '@/dados/sobras'
 import { useAcabamentos } from '@/dados/acabamentos'
 import { useConfiguracoes, paraConfiguracaoCorte } from '@/dados/configuracoes'
-import { useModelosPerfil } from '@/dados/modelosPerfil'
 import { useReservarSobra } from '@/dados/reservas'
+import { SeletorPerfil } from '@/componentes/SeletorPerfil'
 import { CampoMedida } from '@/componentes/ui/CampoMedida'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { Botao } from '@/componentes/ui/Botao'
+import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import {
   pesquisarSobras,
   classificarAproveitamento,
@@ -26,7 +27,9 @@ import {
   interpretarMedidaDigitada,
 } from '@/dominio/medidas'
 import { CONFIGURACAO_CORTE_PADRAO } from '@/dominio/corte'
+import { cn } from '@/lib/utilitarios'
 import type { UnidadeMedida } from '@/config/aplicacao'
+import type { ModeloPerfil } from '@/tipos/banco'
 
 /**
  * Pesquisa de sobras para um corte.
@@ -50,11 +53,10 @@ interface CandidataComDados extends CandidataSobra {
 export default function PesquisarSobras() {
   const { data: sobras } = useSobras()
   const { data: acabamentos } = useAcabamentos()
-  const { data: modelos } = useModelosPerfil()
   const { data: config } = useConfiguracoes()
   const reservar = useReservarSobra()
 
-  const [modeloId, setModeloId] = useState('')
+  const [modelo, setModelo] = useState<ModeloPerfil | null>(null)
   const [acabamentoId, setAcabamentoId] = useState('')
   const [textoMedida, setTextoMedida] = useState('')
   const [unidade, setUnidade] = useState<UnidadeMedida>('mm')
@@ -68,13 +70,13 @@ export default function PesquisarSobras() {
     : CONFIGURACAO_CORTE_PADRAO
 
   const podePesquisar =
-    modeloId !== '' && acabamentoId !== '' && corteMm !== null && corteMm > 0
+    modelo !== null && acabamentoId !== '' && corteMm !== null && corteMm > 0
 
   // Só peças do modelo escolhido, disponíveis, com unidade livre.
   const candidatas: CandidataComDados[] = (sobras ?? [])
     .filter(
       (s) =>
-        s.modelo_perfil_id === modeloId &&
+        s.modelo_perfil_id === modelo?.id &&
         s.status === 'disponivel' &&
         s.quantidade - s.quantidade_reservada > 0,
     )
@@ -128,18 +130,25 @@ export default function PesquisarSobras() {
       )}
 
       <div className="mb-6 flex flex-col gap-4">
-        <CampoSelecao
-          rotulo="Perfil"
-          value={modeloId}
-          onChange={(e) => setModeloId(e.target.value)}
-        >
-          <option value="">Selecione o perfil…</option>
-          {modelos?.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.codigo} — {m.descricao}
-            </option>
-          ))}
-        </CampoSelecao>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-3">
+            <label className="font-medium">Perfil</label>
+            {modelo && (
+              <BotaoVoltar
+                onClick={() => setModelo(null)}
+                rotulo="Trocar perfil"
+              />
+            )}
+          </div>
+          {/* Mesmo campo de busca da tela "Cadastrar sobra": digitar em
+              vez de rolar um menu comprido, com desenho e foto para
+              conferir antes de escolher. A altura fixa só se aplica
+              enquanto a lista está aberta — com o perfil escolhido, o
+              cartão de confirmação assume a altura natural dele. */}
+          <div className={cn(!modelo && 'flex h-96 flex-col')}>
+            <SeletorPerfil selecionado={modelo} aoSelecionar={setModelo} />
+          </div>
+        </div>
 
         <CampoSelecao
           rotulo="Cor ou acabamento"
@@ -173,9 +182,17 @@ export default function PesquisarSobras() {
             >
               −
             </button>
-            <span className="min-h-14 min-w-0 flex-1 content-center text-center text-2xl font-semibold tabular-nums">
-              {quantidade}
-            </span>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={quantidade}
+              onChange={(e) => {
+                const n = Number(e.target.value.replace(/\D/g, ''))
+                setQuantidade(Number.isFinite(n) && n >= 1 ? n : 1)
+              }}
+              aria-label="Quantidade"
+              className="border-borda bg-superficie min-h-14 min-w-0 flex-1 rounded-xl border-2 text-center text-2xl font-semibold tabular-nums"
+            />
             <button
               type="button"
               onClick={() => setQuantidade((q) => Math.min(999, q + 1))}

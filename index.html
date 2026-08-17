@@ -13,6 +13,22 @@
       content="RePerfil — controle de sobras de perfis de alumínio e orçamento de esquadrias."
     />
     <title>RePerfil</title>
+    <!--
+      Aplica o tema escolhido antes de qualquer coisa aparecer na tela. Se
+      isto esperasse o JavaScript da aplicação carregar, quem escolheu claro
+      com o celular no escuro (ou o contrário) veria a tela piscar na cor
+      errada a cada abertura.
+    -->
+    <script>
+      try {
+        var tema = localStorage.getItem('reperfil:tema')
+        if (tema === 'claro' || tema === 'escuro') {
+          document.documentElement.setAttribute('data-tema', tema)
+        }
+      } catch (e) {
+        // Armazenamento bloqueado: segue o tema do sistema, sem quebrar.
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

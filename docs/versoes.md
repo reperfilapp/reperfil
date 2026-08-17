@@ -45,6 +45,67 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.9 — 17/08/2026
+
+**Tema claro/escuro à escolha, menu do computador fixo, e busca de
+perfil em "Procurar sobra" igual à de "Cadastrar sobra".**
+
+**Tema escolhido pelo usuário.** O app já tinha as duas paletas, mas
+seguia obrigatoriamente o tema do sistema. Agora há um seletor em
+"Mais" com três opções: Automático (segue o sistema, como era antes),
+Claro e Escuro. A escolha fica no aparelho, não na conta — a mesma
+pessoa pode preferir escuro no celular do depósito e claro no
+computador do escritório. Um trecho curto no `index.html` aplica o tema
+antes de a tela aparecer, senão quem escolhe o contrário do sistema
+veria a cor errada piscar a cada abertura.
+
+No computador, o menu lateral rolava junto com o conteúdo — numa lista
+comprida, ele desaparecia lá em cima e só voltava se a pessoa rolasse de
+volta ao topo. Causa: a trava contra rolagem horizontal (`overflow-x:
+hidden` em `html`/`body`, da versão 1.6.3) tem um efeito colateral do
+CSS — travar só o eixo X força o eixo Y a virar um container de rolagem
+próprio, e isso quebra `position: sticky`. Trocado `hidden` por `clip`,
+que corta o excesso sem criar esse container — a trava contra rolagem
+horizontal continua funcionando, e o menu agora fica fixo (`sticky`) na
+tela inteira.
+
+A tela "Sobras" (estoque completo) estava sem o botão de voltar — a
+única tela do app nessa situação; as demais já foram revisadas e têm
+botão onde faz sentido. Adicionado, voltando para o Início.
+
+A lista de perfis do `SeletorPerfil` (usada em "Cadastrar sobra" e
+"Procurar sobra") ganhou uma moldura ao redor da área que rola, para
+marcar visualmente onde termina a lista e começa o resto do formulário.
+
+Em "Procurar sobra", o campo de quantidade era só um número solto, sem
+moldura — diferente de todos os outros campos da tela. Virou um campo
+de verdade, com a mesma borda dos demais, e agora também aceita digitar
+o número direto (antes só dava para usar os botões de mais e menos).
+
+Ainda em "Cadastrar sobra": a faixa vazia entre o fim da lista de
+perfis e a barra de navegação estava grande demais (55px). O cálculo da
+altura descontava 6rem, mas a barra tem 4rem — o resto virava espaço
+morto. Ajustado para o desconto certo; sobra o respiro padrão das
+outras telas, e cabe mais um perfil na lista.
+
+**Busca de perfil em "Procurar sobra", igual à de "Cadastrar sobra".**
+
+O campo "Perfil" em "Procurar sobra" era um menu comprido (`<select>`),
+que obrigava a rolar por todos os perfis cadastrados até achar o
+certo — sem desenho, sem foto, só o código e a descrição em texto.
+
+Trocado pelo mesmo `SeletorPerfil` já usado em "Cadastrar sobra": digita
+o código ou parte da descrição e a lista filtra na hora, com miniatura
+do desenho técnico em cada linha. Ao escolher, aparece o mesmo cartão
+de confirmação (desenho, foto, código, aplicação) com o botão "Trocar
+perfil" ao lado do rótulo do campo, para buscar outro sem precisar
+recarregar a tela.
+
+Verificado no navegador: busca filtra em tempo real, seleção mostra o
+cartão de confirmação, "Trocar perfil" volta para a busca, e o restante
+do formulário (acabamento, comprimento, quantidade) continua
+funcionando normalmente depois de escolher o perfil.
+
 ## 1.6.8 — 17/08/2026
 
 **Botão de voltar: cor visível nos dois temas, e só onde faz sentido —
