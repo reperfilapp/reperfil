@@ -1,6 +1,13 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Search, Check, ZoomIn, ChevronRight, Layers } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import {
+  Search,
+  Check,
+  ZoomIn,
+  ChevronRight,
+  Layers,
+  Camera,
+} from 'lucide-react'
 import {
   useModelosPerfil,
   filtrarModelos,
@@ -40,6 +47,7 @@ export function SeletorPerfil({
   aoSelecionar,
 }: PropsSeletorPerfil) {
   const navegar = useNavigate()
+  const local = useLocation()
   const { data: modelos, isPending } = useModelosPerfil()
   const { data: capas } = useCapasDesenhos('imagem')
   const { data: fotos } = useCapasDesenhos('foto')
@@ -196,20 +204,43 @@ export function SeletorPerfil({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="relative shrink-0">
-        <Search
-          aria-hidden="true"
-          className="text-texto-suave pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2"
-        />
-        <input
-          type="search"
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          placeholder="Código ou descrição do perfil"
-          aria-label="Buscar perfil"
-          autoFocus
-          className="border-borda bg-superficie min-h-16 w-full rounded-xl border-2 pr-4 pl-12 text-lg"
-        />
+      {/* Busca à esquerda, atalho ao lado: o mesmo arranjo do leitor de QR
+          na tela de estoque. Botão vizinho, não dentro do campo — assim os
+          dois lugares do app onde se procura uma peça funcionam igual, e o
+          alvo de toque fica do tamanho do campo. */}
+      <div className="flex shrink-0 gap-2">
+        <div className="relative flex-1">
+          <Search
+            aria-hidden="true"
+            className="text-texto-suave pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2"
+          />
+          <input
+            type="search"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Código ou descrição do perfil"
+            aria-label="Buscar perfil"
+            autoFocus
+            className="border-borda bg-superficie min-h-16 w-full rounded-xl border-2 pr-4 pl-12 text-lg"
+          />
+        </div>
+
+        {/* Quem não sabe o código precisa do atalho JUNTO da busca que
+            acabou de falhar. Volta para cá com o perfil já escolhido — ver
+            o parâmetro `retorno`. */}
+        <button
+          type="button"
+          onClick={() =>
+            navegar(
+              `/identificar?retorno=${encodeURIComponent(local.pathname)}`,
+            )
+          }
+          aria-label="Identificar o perfil pela medida ou pela foto"
+          title="Não sabe qual é? Identifique pela medida ou pela foto"
+          className="border-borda bg-superficie hover:bg-superficie-2 text-acao-600 flex min-h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2"
+        >
+          <Camera aria-hidden="true" className="size-5" />
+        </button>
       </div>
 
       {isPending && <p className="text-texto-suave">Carregando perfis…</p>}
@@ -222,9 +253,14 @@ export function SeletorPerfil({
         </p>
       )}
 
-      {/* Lista de linhas: a porta de entrada, como em "Modelos de perfil". */}
+      {/* Lista de linhas: a porta de entrada, como em "Modelos de perfil".
+          A altura é a de SETE itens inteiros, não o espaço que sobrar: com
+          `flex-1` a lista terminava no meio do sétimo, e item cortado ao pé
+          da tela parece defeito de renderização, não convite a rolar.
+          516px = 7 × 64 (item) + 6 × 8 (respiro) + 16 (recheio) + 4 (borda).
+          `max-h-full` cede em tela baixa, onde sete não cabem mesmo. */}
       {!isPending && mostrandoLinhas && grupos.length > 0 && (
-        <ul className="border-borda flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-xl border-2 p-2">
+        <ul className="border-borda flex h-[516px] max-h-full min-h-0 flex-col gap-2 overflow-y-auto rounded-xl border-2 p-2">
           {grupos.map(({ linha, modelos: daLinha }) => (
             <li key={linha}>
               <button

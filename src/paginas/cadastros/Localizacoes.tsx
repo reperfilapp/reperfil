@@ -13,6 +13,7 @@ import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { Modal } from '@/componentes/ui/Modal'
+import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import type { Localizacao } from '@/tipos/banco'
 
 const VAZIO: DadosLocalizacao = {
@@ -82,24 +83,29 @@ export default function Localizacoes() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 py-8">
-      <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
+    <PaginaLista
+      className="max-w-3xl"
+      cabecalho={
+        <>
+          <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
 
-      <header className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Localizações</h1>
-          <p className="text-texto-suave mt-1">
-            Onde a peça está no depósito. Todos os níveis são opcionais.
-          </p>
-        </div>
-        <Botao onClick={abrirNovo}>
-          <Plus aria-hidden="true" className="size-5" />
-          Nova
-        </Botao>
-      </header>
+          <header className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold">Localizações</h1>
+              <p className="text-texto-suave mt-1">
+                Onde a peça está no depósito. Todos os níveis são opcionais.
+              </p>
+            </div>
+            <Botao onClick={abrirNovo}>
+              <Plus aria-hidden="true" className="size-5" />
+              Nova
+            </Botao>
+          </header>
 
-      {isPending && <p className="text-texto-suave">Carregando…</p>}
-
+          {isPending && <p className="text-texto-suave">Carregando…</p>}
+        </>
+      }
+    >
       {locais?.length === 0 && (
         <p className="bg-superficie-2 text-texto-suave rounded-xl p-6 text-center">
           Nenhuma localização cadastrada ainda.
@@ -254,6 +260,6 @@ export default function Localizacoes() {
           </div>
         </form>
       </Modal>
-    </div>
+    </PaginaLista>
   )
 }

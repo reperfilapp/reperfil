@@ -12,7 +12,7 @@ import {
   Sun,
   Moon,
   SunMoon,
-  Scale,
+  Ruler,
 } from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { eAdministrador, podeMovimentarEstoque } from '@/autenticacao/contexto'
@@ -65,7 +65,7 @@ export default function Mais() {
       para: '/identificar',
       rotulo: 'Identificar perfil',
       descricao: 'Descobrir o perfil de uma ponta sem etiqueta',
-      Icone: Scale,
+      Icone: Ruler,
       visivel: true,
     },
     {

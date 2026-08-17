@@ -13,6 +13,7 @@ import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { Modal } from '@/componentes/ui/Modal'
+import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import type { Acabamento, TipoAcabamento } from '@/tipos/banco'
 
 const VAZIO: DadosAcabamento = {
@@ -80,24 +81,30 @@ export default function Acabamentos() {
   const salvando = criar.isPending || editar.isPending
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 py-8">
-      <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
+    <PaginaLista
+      className="max-w-3xl"
+      cabecalho={
+        <>
+          <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
 
-      <header className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Cores e acabamentos</h1>
-          <p className="text-texto-suave mt-1">
-            O sistema nunca sugere uma sobra com acabamento diferente do pedido.
-          </p>
-        </div>
-        <Botao onClick={abrirNovo}>
-          <Plus aria-hidden="true" className="size-5" />
-          Novo
-        </Botao>
-      </header>
+          <header className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold">Cores e acabamentos</h1>
+              <p className="text-texto-suave mt-1">
+                O sistema nunca sugere uma sobra com acabamento diferente do
+                pedido.
+              </p>
+            </div>
+            <Botao onClick={abrirNovo}>
+              <Plus aria-hidden="true" className="size-5" />
+              Novo
+            </Botao>
+          </header>
 
-      {isPending && <p className="text-texto-suave">Carregando…</p>}
-
+          {isPending && <p className="text-texto-suave">Carregando…</p>}
+        </>
+      }
+    >
       {acabamentos?.length === 0 && (
         <p className="bg-superficie-2 text-texto-suave rounded-xl p-6 text-center">
           Nenhum acabamento cadastrado ainda.
@@ -240,6 +247,6 @@ export default function Acabamentos() {
           </div>
         </form>
       </Modal>
-    </div>
+    </PaginaLista>
   )
 }

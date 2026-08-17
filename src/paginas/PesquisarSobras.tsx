@@ -13,6 +13,7 @@ import { useAcabamentos } from '@/dados/acabamentos'
 import { useConfiguracoes, paraConfiguracaoCorte } from '@/dados/configuracoes'
 import { useReservarSobra } from '@/dados/reservas'
 import { SeletorPerfil } from '@/componentes/SeletorPerfil'
+import { usePerfilIndicado } from '@/componentes/usePerfilIndicado'
 import { CampoMedida } from '@/componentes/ui/CampoMedida'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { Botao } from '@/componentes/ui/Botao'
@@ -57,6 +58,8 @@ export default function PesquisarSobras() {
   const reservar = useReservarSobra()
 
   const [modelo, setModelo] = useState<ModeloPerfil | null>(null)
+  // Volta da tela de identificação já com o perfil escolhido.
+  usePerfilIndicado(setModelo)
   const [acabamentoId, setAcabamentoId] = useState('')
   const [textoMedida, setTextoMedida] = useState('')
   const [unidade, setUnidade] = useState<UnidadeMedida>('mm')

@@ -13,6 +13,7 @@ import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { Modal } from '@/componentes/ui/Modal'
+import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import type { Cliente } from '@/tipos/banco'
 
 const VAZIO: DadosCliente = {
@@ -89,39 +90,44 @@ export default function Clientes() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 py-8">
-      <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
+    <PaginaLista
+      className="max-w-3xl"
+      cabecalho={
+        <>
+          <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
 
-      <header className="mb-5 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Clientes</h1>
-          <p className="text-texto-suave mt-1">
-            Serão reaproveitados nos orçamentos da Fase 3.
-          </p>
-        </div>
-        <Botao onClick={abrirNovo}>
-          <Plus aria-hidden="true" className="size-5" />
-          Novo
-        </Botao>
-      </header>
+          <header className="mb-5 flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold">Clientes</h1>
+              <p className="text-texto-suave mt-1">
+                Serão reaproveitados nos orçamentos da Fase 3.
+              </p>
+            </div>
+            <Botao onClick={abrirNovo}>
+              <Plus aria-hidden="true" className="size-5" />
+              Novo
+            </Botao>
+          </header>
 
-      <div className="relative mb-4">
-        <Search
-          aria-hidden="true"
-          className="text-texto-suave pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2"
-        />
-        <input
-          type="search"
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          placeholder="Buscar por nome, documento ou cidade"
-          aria-label="Buscar cliente"
-          className="border-borda bg-superficie min-h-12 w-full rounded-xl border-2 pr-4 pl-12"
-        />
-      </div>
+          <div className="relative mb-4">
+            <Search
+              aria-hidden="true"
+              className="text-texto-suave pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2"
+            />
+            <input
+              type="search"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar por nome, documento ou cidade"
+              aria-label="Buscar cliente"
+              className="border-borda bg-superficie min-h-12 w-full rounded-xl border-2 pr-4 pl-12"
+            />
+          </div>
 
-      {isPending && <p className="text-texto-suave">Carregando…</p>}
-
+          {isPending && <p className="text-texto-suave">Carregando…</p>}
+        </>
+      }
+    >
       {!isPending && visiveis.length === 0 && (
         <p className="bg-superficie-2 text-texto-suave rounded-xl p-6 text-center">
           {busca
@@ -296,6 +302,6 @@ export default function Clientes() {
           </div>
         </form>
       </Modal>
-    </div>
+    </PaginaLista>
   )
 }

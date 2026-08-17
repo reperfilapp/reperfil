@@ -11,6 +11,7 @@ import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoSugestao } from '@/componentes/ui/CampoSugestao'
 import { Modal } from '@/componentes/ui/Modal'
+import { PaginaLista } from '@/componentes/ui/PaginaLista'
 
 /**
  * Revisão das linhas (ou sistemas) usadas pelos perfis.
@@ -97,28 +98,33 @@ export default function Linhas() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 py-8">
-      <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
+    <PaginaLista
+      className="max-w-3xl"
+      cabecalho={
+        <>
+          <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
 
-      <header className="mb-5">
-        <h1 className="text-2xl font-bold">Linhas e sistemas</h1>
-        <p className="text-texto-suave mt-1">
-          Como os perfis estão agrupados. Renomear para um nome que já existe
-          junta as duas linhas.
-        </p>
-      </header>
+          <header className="mb-5">
+            <h1 className="text-2xl font-bold">Linhas e sistemas</h1>
+            <p className="text-texto-suave mt-1">
+              Como os perfis estão agrupados. Renomear para um nome que já
+              existe junta as duas linhas.
+            </p>
+          </header>
 
-      {resultado && (
-        <p
-          role="status"
-          className="bg-aluminio-100 text-grafite-800 mb-4 rounded-xl px-4 py-3 text-sm"
-        >
-          {resultado}
-        </p>
-      )}
+          {resultado && (
+            <p
+              role="status"
+              className="bg-aluminio-100 text-grafite-800 mb-4 rounded-xl px-4 py-3 text-sm"
+            >
+              {resultado}
+            </p>
+          )}
 
-      {isPending && <p className="text-texto-suave">Carregando…</p>}
-
+          {isPending && <p className="text-texto-suave">Carregando…</p>}
+        </>
+      }
+    >
       {!isPending && renomeaveis.length === 0 && (
         <p className="bg-superficie-2 text-texto-suave rounded-xl p-6 text-center">
           Nenhuma linha cadastrada ainda. A linha aparece aqui quando algum
@@ -235,6 +241,6 @@ export default function Linhas() {
           </div>
         </form>
       </Modal>
-    </div>
+    </PaginaLista>
   )
 }

@@ -7,6 +7,7 @@ import {
   Images,
   ChevronRight,
   Layers,
+  Camera,
 } from 'lucide-react'
 import {
   useModelosPerfil,
@@ -24,6 +25,7 @@ import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoSugestao } from '@/componentes/ui/CampoSugestao'
 import { Modal } from '@/componentes/ui/Modal'
+import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import { GaleriaDesenhos } from '@/componentes/GaleriaDesenhos'
 import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
@@ -185,70 +187,78 @@ export default function ModelosPerfil() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 py-8">
-      <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
-
-      <header className="mb-5 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Modelos de perfil</h1>
-          <p className="text-texto-suave mt-1">
-            O catálogo que as sobras, os orçamentos e as obras usam.
-          </p>
-        </div>
-        <Botao onClick={abrirNovo}>
-          <Plus aria-hidden="true" className="size-5" />
-          Novo
-        </Botao>
-      </header>
-
-      <div className="relative mb-4">
-        <Search
-          aria-hidden="true"
-          className="text-texto-suave pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2"
-        />
-        <input
-          type="search"
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          placeholder="Buscar por código, descrição, linha ou aplicação"
-          aria-label="Buscar perfil"
-          className="border-borda bg-superficie min-h-12 w-full rounded-xl border-2 pr-4 pl-12"
-        />
-      </div>
-
-      {isPending && <p className="text-texto-suave">Carregando…</p>}
-
-      {/* Lista de linhas: a porta de entrada do catálogo. */}
-      {!isPending && mostrandoLinhas && grupos.length > 0 && (
+    <PaginaLista
+      className="max-w-3xl"
+      cabecalho={
         <>
-          <ul className="mb-3 flex flex-col gap-2">
-            {grupos.map(({ linha, modelos: daLinha }) => (
-              <li key={linha}>
-                <button
-                  type="button"
-                  onClick={() => setLinhaAberta(linha)}
-                  className="bg-superficie hover:bg-superficie-2 flex min-h-16 w-full items-center gap-3 rounded-xl p-4 text-left shadow-sm"
-                >
-                  <Layers
-                    aria-hidden="true"
-                    className="text-acao-600 size-5 shrink-0"
-                  />
-                  <span className="min-w-0 flex-1 truncate font-medium">
-                    {linha}
-                  </span>
-                  <span className="text-texto-suave shrink-0 text-sm">
-                    {daLinha.length}{' '}
-                    {daLinha.length === 1 ? 'perfil' : 'perfis'}
-                  </span>
-                  <ChevronRight
-                    aria-hidden="true"
-                    className="text-texto-suave size-4 shrink-0"
-                  />
-                </button>
-              </li>
-            ))}
-          </ul>
+          <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
 
+          <header className="mb-5 flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold">Modelos de perfil</h1>
+              <p className="text-texto-suave mt-1">
+                O catálogo que as sobras, os orçamentos e as obras usam.
+              </p>
+            </div>
+            <Botao onClick={abrirNovo}>
+              <Plus aria-hidden="true" className="size-5" />
+              Novo
+            </Botao>
+          </header>
+
+          {/* Busca e atalho lado a lado, como no estoque e na escolha de perfil
+          ao cadastrar: onde se procura uma peça, o app funciona igual. */}
+          <div className="mb-4 flex gap-2">
+            <div className="relative flex-1">
+              <Search
+                aria-hidden="true"
+                className="text-texto-suave pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2"
+              />
+              <input
+                type="search"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar por código, descrição, linha ou aplicação"
+                aria-label="Buscar perfil"
+                className="border-borda bg-superficie min-h-12 w-full rounded-xl border-2 pr-4 pl-12"
+              />
+            </div>
+
+            <Link
+              to="/identificar"
+              aria-label="Identificar o perfil pela medida ou pela foto"
+              title="Não sabe qual é? Identifique pela medida ou pela foto"
+              className="border-borda bg-superficie hover:bg-superficie-2 text-acao-600 flex min-h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2"
+            >
+              <Camera aria-hidden="true" className="size-5" />
+            </Link>
+          </div>
+
+          {isPending && <p className="text-texto-suave">Carregando…</p>}
+
+          {/* Onde se está e como voltar — no cabeçalho, não some ao rolar. */}
+          {!isPending && !buscando && linhaAberta !== null && (
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="min-w-0 truncate font-semibold">
+                {linhaAberta === TODAS ? 'Todos os perfis' : linhaAberta}
+                <span className="text-texto-suave ml-2 font-normal">
+                  ({visiveis.length})
+                </span>
+              </p>
+              <BotaoVoltar
+                onClick={() => setLinhaAberta(null)}
+                rotulo="Linhas"
+                className="shrink-0"
+              />
+            </div>
+          )}
+        </>
+      }
+      rodape={
+        // Só na lista de linhas: dentro de uma delas o atalho de voltar já
+        // está no cabeçalho, e um botão a mais aqui embaixo tomaria altura
+        // que a lista quer.
+        !isPending && mostrandoLinhas && grupos.length > 0 ? (
           <Botao
             variante="contorno"
             tamanho="largura_total"
@@ -256,24 +266,37 @@ export default function ModelosPerfil() {
           >
             Ver todos os perfis
           </Botao>
-        </>
-      )}
-
-      {/* Cabeçalho de quem está dentro de uma linha (ou vendo tudo). */}
-      {!isPending && !buscando && linhaAberta !== null && (
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <p className="min-w-0 truncate font-semibold">
-            {linhaAberta === TODAS ? 'Todos os perfis' : linhaAberta}
-            <span className="text-texto-suave ml-2 font-normal">
-              ({visiveis.length})
-            </span>
-          </p>
-          <BotaoVoltar
-            onClick={() => setLinhaAberta(null)}
-            rotulo="Linhas"
-            className="shrink-0"
-          />
-        </div>
+        ) : undefined
+      }
+    >
+      {/* Lista de linhas: a porta de entrada do catálogo. */}
+      {!isPending && mostrandoLinhas && grupos.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {grupos.map(({ linha, modelos: daLinha }) => (
+            <li key={linha}>
+              <button
+                type="button"
+                onClick={() => setLinhaAberta(linha)}
+                className="bg-superficie hover:bg-superficie-2 flex min-h-16 w-full items-center gap-3 rounded-xl p-4 text-left shadow-sm"
+              >
+                <Layers
+                  aria-hidden="true"
+                  className="text-acao-600 size-5 shrink-0"
+                />
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {linha}
+                </span>
+                <span className="text-texto-suave shrink-0 text-sm">
+                  {daLinha.length} {daLinha.length === 1 ? 'perfil' : 'perfis'}
+                </span>
+                <ChevronRight
+                  aria-hidden="true"
+                  className="text-texto-suave size-4 shrink-0"
+                />
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
 
       {!isPending && !mostrandoLinhas && visiveis.length === 0 && (
@@ -484,6 +507,6 @@ export default function ModelosPerfil() {
           </div>
         )}
       </Modal>
-    </div>
+    </PaginaLista>
   )
 }

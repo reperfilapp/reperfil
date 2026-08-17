@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Camera, ImagePlus, X, ChevronRight, Info } from 'lucide-react'
 import {
   useModelosPerfil,
@@ -56,6 +56,19 @@ import type { ModeloPerfil } from '@/tipos/banco'
 export default function IdentificarPerfil() {
   const { data: modelos } = useModelosPerfil()
   const { data: capas } = useCapasDesenhos('imagem')
+
+  /*
+   * Quem chegou aqui pelo atalho da câmera, no meio de um cadastro, volta
+   * para lá com o perfil já escolhido — senão teria de refazer o caminho e
+   * procurar de novo o mesmo perfil que acabou de identificar. Sem o
+   * parâmetro, o toque no candidato abre a ficha dele, como antes.
+   */
+  const [parametros] = useSearchParams()
+  const retorno = parametros.get('retorno')
+  const destinoDo = (idPerfil: string) =>
+    retorno
+      ? `${retorno}?perfil=${encodeURIComponent(idPerfil)}`
+      : `/perfis/${idPerfil}`
 
   const [foto, setFoto] = useState<string | null>(null)
   const [ampliada, setAmpliada] = useState<string | null>(null)
@@ -372,7 +385,7 @@ export default function IdentificarPerfil() {
             {candidatos.map(({ perfil, nota }) => (
               <li key={perfil.id}>
                 <Link
-                  to={`/perfis/${perfil.id}`}
+                  to={destinoDo(perfil.id)}
                   className="bg-superficie hover:bg-superficie-2 flex items-center gap-3 rounded-xl p-3 shadow-sm"
                 >
                   {/* A foto da ponta ao lado do desenho: é a comparação que

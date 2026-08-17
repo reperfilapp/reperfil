@@ -4,6 +4,7 @@ import { useCadastrarSobra, type DadosNovaSobra } from '@/dados/sobras'
 import { useAcabamentos } from '@/dados/acabamentos'
 import { useLocalizacoes, descreverLocalizacao } from '@/dados/localizacoes'
 import { SeletorPerfil } from '@/componentes/SeletorPerfil'
+import { usePerfilIndicado } from '@/componentes/usePerfilIndicado'
 import { CampoMedida } from '@/componentes/ui/CampoMedida'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { CampoFoto } from '@/componentes/ui/CampoFoto'
@@ -54,6 +55,8 @@ export default function CadastrarSobra() {
   const { data: locais } = useLocalizacoes()
 
   const [modelo, setModelo] = useState<ModeloPerfil | null>(null)
+  // Volta da tela de identificação já com o perfil escolhido.
+  usePerfilIndicado(setModelo)
   const [acabamentoId, setAcabamentoId] = useState('')
   const [localizacaoId, setLocalizacaoId] = useState('')
   // O texto digitado é a fonte de verdade; o valor em milímetros é derivado
@@ -144,7 +147,8 @@ export default function CadastrarSobra() {
   return (
     <div
       className={cn(
-        'mx-auto w-full max-w-lg px-5 py-6',
+        'mx-auto w-full max-w-lg px-5',
+        modelo && 'py-6',
         // Enquanto ainda não escolheu o perfil, a tela vira uma coluna que
         // ocupa a altura disponível de verdade (até a navegação inferior),
         // e a lista de perfis cresce para preencher o resto — sem isso sobra
@@ -152,10 +156,14 @@ export default function CadastrarSobra() {
         // escolher o perfil, a tela volta ao fluxo normal: tem formulário
         // demais para caber numa tela só, e ela precisa rolar.
         //
-        // 4rem é a altura da barra de navegação. O `pb-24` do `main` (6rem)
-        // é folga para telas que rolam; aqui, que não rola, descontar 6rem
-        // deixaria uma faixa morta de mais de 30px acima da barra.
-        !modelo && 'flex h-[calc(100dvh-4rem)] flex-col md:h-auto',
+        // `-mb-24` anula o `pb-24` que o `main` reserva para a barra de
+        // navegação: aqui a altura já é medida até ela, e somar os dois
+        // empurrava 32px para fora da tela — a página rolava numa tela que
+        // não deveria rolar, e a lista perdia justamente o espaço do último
+        // item. `py-4` no lugar de `py-6` devolve os 16px que faltavam para
+        // sete linhas inteiras caberem.
+        !modelo &&
+          '-mb-24 flex h-[calc(100dvh-4rem)] flex-col py-4 md:mb-0 md:h-auto md:py-6',
       )}
     >
       <header className="mb-6 flex shrink-0 items-center gap-3">

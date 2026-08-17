@@ -45,6 +45,83 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.19 — 17/08/2026
+
+**Atalho de identificação nos campos de perfil, estoque por linha e ícone
+de trena.**
+
+**Atalho da câmera.** Todo campo de escolha de perfil — em "Cadastrar
+sobra" e em "Procurar sobra" — ganhou um ícone de câmera dentro do
+próprio campo, à direita, sem ocupar linha nova. Ele leva à tela
+"Identificar perfil", e é ali que precisa estar: quem não sabe o código
+da peça precisa do atalho junto da busca que acabou de falhar, não
+perdido noutro canto da tela.
+
+O caminho de volta também está fechado. A tela de identificação sabe de
+onde a pessoa veio, e tocar num candidato devolve ela ao cadastro com o
+perfil JÁ selecionado — sem ter de refazer o caminho e procurar de novo
+o perfil que acabou de identificar. O parâmetro some da URL logo
+depois, senão "trocar perfil" ficaria impossível: qualquer nova
+renderização voltaria a selecionar o mesmo perfil.
+
+**Estoque por linha.** "Ver estoque de sobras" abria uma lista corrida
+com todas as peças. Agora abre pela linha — com a contagem de PEÇAS, não
+de modelos — e tocar numa linha mostra as sobras dela; há "Ver todas as
+sobras" para quem prefere tudo de uma vez. Mesma organização já usada em
+"Modelos de perfil" e na escolha de perfil ao cadastrar.
+
+A busca e o leitor de QR Code continuam ignorando o agrupamento: quem
+tem o código na mão quer a peça, não a linha dela. Verificado: estando
+dentro da "Linha 25", buscar "SU-" achou as 42 sobras da Suprema.
+
+**Ícone.** O item "Identificar perfil", no menu Mais, deixou de usar a
+balança — que a oficina não tem — e passou a usar uma trena, que é o
+instrumento do método principal da tela.
+
+**Um padrão só para procurar peça.** O atalho de identificação começou
+dentro do campo de busca e passou a ficar AO LADO dele, botão vizinho,
+como o leitor de QR Code já fazia no estoque. Agora os três lugares onde
+se procura uma peça — estoque, catálogo de perfis e escolha ao cadastrar
+— têm o mesmo arranjo: campo à esquerda, atalho à direita, alvo de toque
+do tamanho do campo.
+
+**Cabeçalho parado, lista rolando por dentro — em todas as telas de
+lista.** Antes a página inteira rolava, e rolar levava embora o campo de
+busca, o botão de voltar e o "ver todos" — justamente o que a pessoa
+procura quando a lista não trouxe o que ela queria. Ela então rolava
+tudo de volta para cima; de pé no depósito, com uma peça na mão, isso é
+caro.
+
+Agora o cabeçalho fica onde está, só a lista rola (dentro de uma
+moldura), e o botão de rodapé fica sempre alcançável. Vale para as sete
+telas de lista: estoque de sobras, modelos de perfil, linhas e sistemas,
+cores e acabamentos, localizações, clientes e reservas.
+
+Virou um componente (`PaginaLista`), não sete cópias do mesmo cálculo de
+altura — que é onde esse tipo de layout costuma se perder. No computador
+nada disso vale: o menu é lateral, não há barra inferior, e a página
+rola normalmente.
+
+**Sete linhas inteiras em "Cadastrar sobra".** A lista de linhas
+terminava no meio do sétimo item, e item cortado ao pé da tela parece
+defeito de renderização, não convite a rolar. A altura passou a ser a de
+sete itens exatos (516px = 7 × 64 + 6 × 8 + recheio e borda), cedendo
+só em tela baixa demais.
+
+No caminho apareceu um defeito de layout que ninguém tinha notado: a
+tela rolava 32px sem precisar. A altura era medida até a barra de
+navegação, mas o `main` ainda reservava 6rem embaixo para ela — os dois
+somados empurravam conteúdo para fora, e o que se perdia era justamente
+o espaço do último item. Corrigido anulando essa reserva nesta tela.
+
+## 1.6.18 — 17/08/2026
+
+**Renomeia o item do menu para "Identificar perfil".**
+
+Era "Identificar pelo peso", nome que ficou estreito depois que a tela
+passou a aceitar medida de trena e foto, com o peso recolhido como
+alternativa para quem tiver balança.
+
 ## 1.6.17 — 17/08/2026
 
 **Identificar a ponta sem etiqueta, medindo com trena.**

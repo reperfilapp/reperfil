@@ -18,6 +18,7 @@ import {
 import { useConfiguracoes, paraConfiguracaoCorte } from '@/dados/configuracoes'
 import { Botao } from '@/componentes/ui/Botao'
 import { Modal } from '@/componentes/ui/Modal'
+import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import { CampoMedida } from '@/componentes/ui/CampoMedida'
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import {
@@ -124,12 +125,14 @@ export default function Reservas() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-5 py-6">
-      <header className="mb-5 flex items-center gap-3">
-        <Clock aria-hidden="true" className="text-acao-600 size-7" />
-        <h1 className="text-2xl font-bold">Reservas</h1>
-      </header>
-
+    <PaginaLista
+      cabecalho={
+        <header className="mb-5 flex items-center gap-3">
+          <Clock aria-hidden="true" className="text-acao-600 size-7" />
+          <h1 className="text-2xl font-bold">Reservas</h1>
+        </header>
+      }
+    >
       {resultado && (
         <p
           role="status"
@@ -375,6 +378,6 @@ export default function Reservas() {
           </div>
         </div>
       </Modal>
-    </div>
+    </PaginaLista>
   )
 }

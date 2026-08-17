@@ -1,12 +1,21 @@
 import { lazy, Suspense, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, PackagePlus, ScanLine, Tag, ChevronRight } from 'lucide-react'
+import {
+  Search,
+  PackagePlus,
+  ScanLine,
+  Tag,
+  ChevronRight,
+  Layers,
+} from 'lucide-react'
 import { useSobras, type SobraDetalhada } from '@/dados/sobras'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
 import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { formatarComprimento } from '@/dominio/medidas'
+import { SEM_LINHA } from '@/dados/modelosPerfil'
+import { Botao } from '@/componentes/ui/Botao'
 /*
  * Carregamento tardio: o leitor de QR traz a biblioteca de decodificação e a
  * etiqueta traz a de geração — juntas, boa parte do JavaScript da aplicação.
@@ -25,7 +34,11 @@ const EtiquetaSobra = lazy(() =>
 )
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
+import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import type { StatusLote } from '@/tipos/banco'
+
+/** Valor de `linhaAberta` que significa "ignorar o agrupamento". */
+const TODAS = '__todas__'
 
 const ROTULO_STATUS: Record<StatusLote, string> = {
   disponivel: 'disponível',
@@ -74,63 +87,174 @@ export default function Sobras() {
   const [busca, setBusca] = useState('')
   const [lendoQr, setLendoQr] = useState(false)
   const [etiqueta, setEtiqueta] = useState<SobraDetalhada | null>(null)
+  /*
+   * Mesma porta de entrada das outras telas de perfil: primeiro a linha,
+   * depois as peças dela. O estoque cresce rápido, e rolar tudo para achar
+   * uma sobra da Suprema no meio das da Linha 25 é trabalho à toa.
+   *
+   * A busca e o QR Code ignoram o agrupamento: quem tem o código na mão
+   * quer a peça, não a linha dela.
+   */
+  const [linhaAberta, setLinhaAberta] = useState<string | null>(null)
 
-  const visiveis = (sobras ?? []).filter((sobra) => combina(sobra, busca))
+  const encontradas = (sobras ?? []).filter((sobra) => combina(sobra, busca))
+  const buscando = busca.trim() !== ''
+
+  // Agrupa pelas linhas dos perfis, contando as peças — não os modelos.
+  const grupos = [
+    ...encontradas
+      .reduce((mapa, sobra) => {
+        const linha = sobra.modelo?.linha?.trim() || SEM_LINHA
+        mapa.set(linha, (mapa.get(linha) ?? 0) + 1)
+        return mapa
+      }, new Map<string, number>())
+      .entries(),
+  ]
+    .map(([linha, quantidade]) => ({ linha, quantidade }))
+    .sort((a, b) => {
+      if (a.linha === SEM_LINHA) return 1
+      if (b.linha === SEM_LINHA) return -1
+      return a.linha.localeCompare(b.linha, 'pt-BR')
+    })
+
+  const visiveis = buscando
+    ? encontradas
+    : linhaAberta === TODAS
+      ? encontradas
+      : linhaAberta === null
+        ? []
+        : encontradas.filter(
+            (s) => (s.modelo?.linha?.trim() || SEM_LINHA) === linhaAberta,
+          )
+
+  const mostrandoLinhas = !buscando && linhaAberta === null
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-5 py-6">
-      <BotaoVoltar para="/" rotulo="Início" className="mb-4" />
+    <PaginaLista
+      cabecalho={
+        <>
+          <BotaoVoltar para="/" rotulo="Início" className="mb-4" />
 
-      <header className="mb-4 flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Sobras</h1>
-        {podeMovimentarEstoque(perfil) && (
-          <Link
-            to="/cadastrar"
-            className="bg-acao-600 flex min-h-12 items-center gap-2 rounded-xl px-4 font-semibold text-white"
+          <header className="mb-4 flex items-center justify-between gap-4">
+            <h1 className="text-2xl font-bold">Sobras</h1>
+            {podeMovimentarEstoque(perfil) && (
+              <Link
+                to="/cadastrar"
+                className="bg-acao-600 flex min-h-12 items-center gap-2 rounded-xl px-4 font-semibold text-white"
+              >
+                <PackagePlus aria-hidden="true" className="size-5" />
+                Nova
+              </Link>
+            )}
+          </header>
+
+          <div className="mb-4 flex gap-2">
+            <div className="relative flex-1">
+              <Search
+                aria-hidden="true"
+                className="text-texto-suave pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2"
+              />
+              <input
+                type="search"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Código, perfil, acabamento ou local"
+                aria-label="Buscar sobra"
+                className="border-borda bg-superficie min-h-12 w-full rounded-xl border-2 pr-4 pl-12"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setLendoQr(true)}
+              aria-label="Ler código pela câmera"
+              className="border-borda bg-superficie flex min-h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2"
+            >
+              <ScanLine aria-hidden="true" className="size-5" />
+            </button>
+          </div>
+
+          {/* Dentro de uma linha: diz onde se está e como voltar. Fica no
+              cabeçalho, junto da busca, e não some ao rolar a lista. */}
+          {!isPending && !buscando && linhaAberta !== null && (
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="min-w-0 truncate font-semibold">
+                {linhaAberta === TODAS ? 'Todas as sobras' : linhaAberta}
+                <span className="text-texto-suave ml-2 font-normal">
+                  ({visiveis.length})
+                </span>
+              </p>
+              <BotaoVoltar
+                onClick={() => setLinhaAberta(null)}
+                rotulo="Linhas"
+                className="shrink-0"
+              />
+            </div>
+          )}
+
+          <EstadoConsulta
+            carregando={isPending}
+            erro={error}
+            vazio={!mostrandoLinhas && visiveis.length === 0}
+            mensagemVazio={
+              busca
+                ? 'Nenhuma sobra encontrada com esse termo.'
+                : 'Nenhuma sobra nesta linha.'
+            }
+            aoTentarNovamente={() => void refetch()}
+          />
+        </>
+      }
+      rodape={
+        // Só na lista de linhas: dentro de uma delas, o atalho de voltar já
+        // está no cabeçalho, e um botão a mais aqui embaixo só ocuparia
+        // altura que a lista quer.
+        !isPending && mostrandoLinhas && grupos.length > 0 ? (
+          <Botao
+            variante="contorno"
+            tamanho="largura_total"
+            onClick={() => setLinhaAberta(TODAS)}
           >
-            <PackagePlus aria-hidden="true" className="size-5" />
-            Nova
-          </Link>
-        )}
-      </header>
+            Ver todas as sobras
+          </Botao>
+        ) : undefined
+      }
+    >
+      {/* Lista de linhas: a porta de entrada do estoque. */}
+      {!isPending && mostrandoLinhas && grupos.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {grupos.map(({ linha, quantidade }) => (
+            <li key={linha}>
+              <button
+                type="button"
+                onClick={() => setLinhaAberta(linha)}
+                className="bg-superficie hover:bg-superficie-2 flex min-h-16 w-full items-center gap-3 rounded-xl p-4 text-left shadow-sm"
+              >
+                <Layers
+                  aria-hidden="true"
+                  className="text-acao-600 size-5 shrink-0"
+                />
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {linha}
+                </span>
+                <span className="text-texto-suave shrink-0 text-sm">
+                  {quantidade} {quantidade === 1 ? 'peça' : 'peças'}
+                </span>
+                <ChevronRight
+                  aria-hidden="true"
+                  className="text-texto-suave size-4 shrink-0"
+                />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
-      <div className="mb-4 flex gap-2">
-        <div className="relative flex-1">
-          <Search
-            aria-hidden="true"
-            className="text-texto-suave pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2"
-          />
-          <input
-            type="search"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Código, perfil, acabamento ou local"
-            aria-label="Buscar sobra"
-            className="border-borda bg-superficie min-h-12 w-full rounded-xl border-2 pr-4 pl-12"
-          />
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setLendoQr(true)}
-          aria-label="Ler código pela câmera"
-          className="border-borda bg-superficie flex min-h-12 w-12 shrink-0 items-center justify-center rounded-xl border-2"
-        >
-          <ScanLine aria-hidden="true" className="size-5" />
-        </button>
-      </div>
-
-      <EstadoConsulta
-        carregando={isPending}
-        erro={error}
-        vazio={visiveis.length === 0}
-        mensagemVazio={
-          busca
-            ? 'Nenhuma sobra encontrada com esse termo.'
-            : 'Nenhuma sobra cadastrada ainda.'
-        }
-        aoTentarNovamente={() => void refetch()}
-      />
+      {!isPending && mostrandoLinhas && grupos.length === 0 && (
+        <p className="bg-superficie-2 text-texto-suave rounded-xl p-6 text-center">
+          Nenhuma sobra cadastrada ainda.
+        </p>
+      )}
 
       <ul className="flex flex-col gap-2">
         {visiveis.map((sobra) => {
@@ -220,6 +344,6 @@ export default function Sobras() {
           <EtiquetaSobra sobra={etiqueta} aoFechar={() => setEtiqueta(null)} />
         )}
       </Suspense>
-    </div>
+    </PaginaLista>
   )
 }
