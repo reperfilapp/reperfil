@@ -45,6 +45,28 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.12 — 17/08/2026
+
+**Correção: campos de acabamento e localização continuavam estreitos no
+iPhone.**
+
+A padronização de altura da versão 1.6.10 funcionou no Android e no
+computador, mas não no iPhone: lá os campos de acabamento e localização
+continuavam com cerca de 48px, enquanto os vizinhos tinham 64px.
+
+Causa: no iOS o Safari desenha o `<select>` com o controle nativo do
+sistema e ignora a altura pedida pelo CSS — por isso o defeito só
+aparecia lá. A correção é remover a aparência nativa
+(`appearance: none`), o que faz a altura passar a valer nos três
+lugares. Em troca, a seta do menu deixa de ser desenhada pelo sistema e
+passou a ser desenhada pelo app (o mesmo ícone nos três), garantindo
+que fique igual em qualquer aparelho.
+
+Verificado no navegador, nos dois temas: altura de 64px igual à dos
+campos vizinhos, largura cheia, seta centralizada, e o menu continua
+abrindo e selecionando normalmente. A correção precisa ser conferida no
+iPhone depois de publicada — é lá que o defeito aparecia.
+
 ## 1.6.11 — 17/08/2026
 
 **Aplicação do perfil aparece na ficha da sobra.**

@@ -213,17 +213,18 @@ export default function Relatorios() {
           <section>
             <h2 className="mb-2 font-semibold">Movimentações</h2>
 
-            <CampoSelecao
-              rotulo="Período"
-              value={String(dias)}
-              onChange={(e) => setDias(Number(e.target.value))}
-              className="mb-3"
-            >
-              <option value="7">Últimos 7 dias</option>
-              <option value="30">Últimos 30 dias</option>
-              <option value="90">Últimos 90 dias</option>
-              <option value="365">Último ano</option>
-            </CampoSelecao>
+            <div className="mb-3">
+              <CampoSelecao
+                rotulo="Período"
+                value={String(dias)}
+                onChange={(e) => setDias(Number(e.target.value))}
+              >
+                <option value="7">Últimos 7 dias</option>
+                <option value="30">Últimos 30 dias</option>
+                <option value="90">Últimos 90 dias</option>
+                <option value="365">Último ano</option>
+              </CampoSelecao>
+            </div>
 
             <EstadoConsulta
               carregando={movimentacoes.isPending}
