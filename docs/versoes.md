@@ -45,6 +45,24 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.7 — 16/08/2026
+
+**Botão de voltar mais evidente nas telas de detalhe.**
+
+O link "← Voltar" no topo de toda tela de detalhe (perfil, sobra,
+acabamento, localização, cliente) era só texto azul sublinhado ao
+passar o mouse — fácil de não notar, especialmente numa tela nova.
+
+Virou um botão de verdade: fundo, borda, cantos arredondados, alvo de
+toque confortável (40px de altura). Como é a mesma casca
+(`PaginaDetalhe`) usada pelas telas de sobra, acabamento, localização e
+cliente, a correção vale para as quatro de uma vez; a ficha de perfil
+tinha uma cópia própria do mesmo link e recebeu o mesmo ajuste.
+
+Verificado no navegador, celular e computador: botão visível e
+consistente nas duas telas testadas (perfil e acabamento), sem
+mudança de comportamento — continua levando para a lista de origem.
+
 ## 1.6.6 — 16/08/2026
 
 **Verificação de atualização mais confiável, com botão manual.**

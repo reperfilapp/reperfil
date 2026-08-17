@@ -81,7 +81,7 @@ export default function PerfilDetalhe() {
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
       <Link
         to="/perfis"
-        className="text-acao-600 mb-4 inline-flex items-center gap-1 text-sm hover:underline"
+        className="border-borda bg-superficie hover:bg-superficie-2 text-texto mb-4 inline-flex min-h-10 items-center gap-1.5 rounded-lg border-2 px-3 text-sm font-semibold"
       >
         <ArrowLeft aria-hidden="true" className="size-4" />
         Perfis
