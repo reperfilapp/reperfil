@@ -15,6 +15,13 @@ import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { formatarComprimento } from '@/dominio/medidas'
 import { SEM_LINHA } from '@/dados/modelosPerfil'
+import {
+  resumirPorLinha,
+  resumirPorPerfil,
+  resumoDe,
+  formatarResumo,
+  maiorPrimeiro,
+} from '@/dominio/estoqueResumo'
 import { Botao } from '@/componentes/ui/Botao'
 /*
  * Carregamento tardio: o leitor de QR traz a biblioteca de decodificação e a
@@ -96,38 +103,75 @@ export default function Sobras() {
    * quer a peça, não a linha dela.
    */
   const [linhaAberta, setLinhaAberta] = useState<string | null>(null)
+  /*
+   * Dentro da linha vem a lista de PERFIS, e só depois as peças. O depósito
+   * tem dezenas de peças por linha, e rolar todas para achar as do perfil
+   * que interessa é o mesmo trabalho que o agrupamento por linha já veio
+   * resolver um nível acima.
+   */
+  const [perfilAberto, setPerfilAberto] = useState<string | null>(null)
 
   const encontradas = (sobras ?? []).filter((sobra) => combina(sobra, busca))
   const buscando = busca.trim() !== ''
 
-  // Agrupa pelas linhas dos perfis, contando as peças — não os modelos.
-  const grupos = [
-    ...encontradas
-      .reduce((mapa, sobra) => {
-        const linha = sobra.modelo?.linha?.trim() || SEM_LINHA
-        mapa.set(linha, (mapa.get(linha) ?? 0) + 1)
-        return mapa
-      }, new Map<string, number>())
-      .entries(),
-  ]
-    .map(([linha, quantidade]) => ({ linha, quantidade }))
+  const linhaDaSobra = (sobra: SobraDetalhada) =>
+    sobra.modelo?.linha?.trim() || SEM_LINHA
+
+  // O resumo conta só o que está DISPONÍVEL, mas a lista continua mostrando
+  // todas as peças: o número serve para decidir por onde começar, e uma peça
+  // reservada ainda precisa poder ser aberta e consultada.
+  const porLinha = resumirPorLinha(encontradas, linhaDaSobra)
+  const porPerfil = resumirPorPerfil(encontradas)
+
+  const grupos = [...new Set(encontradas.map(linhaDaSobra))]
+    .map((linha) => ({ linha, resumo: resumoDe(porLinha, linha) }))
     .sort((a, b) => {
+      // "Sem linha" por último: é o resto, não uma linha de verdade.
       if (a.linha === SEM_LINHA) return 1
       if (b.linha === SEM_LINHA) return -1
-      return a.linha.localeCompare(b.linha, 'pt-BR')
+
+      const porTamanho = maiorPrimeiro(a.resumo, b.resumo)
+
+      // Alfabético só no empate — entre duas linhas sem estoque disponível,
+      // o nome é a única ordem que não parece aleatória.
+      return porTamanho !== 0
+        ? porTamanho
+        : a.linha.localeCompare(b.linha, 'pt-BR')
+    })
+
+  const daLinha =
+    linhaAberta === null || linhaAberta === TODAS
+      ? encontradas
+      : encontradas.filter((s) => linhaDaSobra(s) === linhaAberta)
+
+  /** Os perfis que têm peça na linha aberta, do maior estoque para o menor. */
+  const perfis = [
+    ...new Map(
+      daLinha.map((s) => [s.modelo_perfil_id, s.modelo] as const),
+    ).entries(),
+  ]
+    .map(([id, modelo]) => ({ id, modelo, resumo: resumoDe(porPerfil, id) }))
+    .sort((a, b) => {
+      const porTamanho = maiorPrimeiro(a.resumo, b.resumo)
+
+      return porTamanho !== 0
+        ? porTamanho
+        : (a.modelo?.codigo ?? '').localeCompare(
+            b.modelo?.codigo ?? '',
+            'pt-BR',
+          )
     })
 
   const visiveis = buscando
     ? encontradas
-    : linhaAberta === TODAS
-      ? encontradas
-      : linhaAberta === null
-        ? []
-        : encontradas.filter(
-            (s) => (s.modelo?.linha?.trim() || SEM_LINHA) === linhaAberta,
-          )
+    : perfilAberto === null
+      ? []
+      : daLinha.filter((s) => s.modelo_perfil_id === perfilAberto)
 
   const mostrandoLinhas = !buscando && linhaAberta === null
+  const mostrandoPerfis =
+    !buscando && linhaAberta !== null && perfilAberto === null
+  const perfilEmFoco = perfis.find((p) => p.id === perfilAberto)
 
   return (
     <PaginaLista
@@ -179,14 +223,29 @@ export default function Sobras() {
           {!isPending && !buscando && linhaAberta !== null && (
             <div className="mb-3 flex items-center justify-between gap-3">
               <p className="min-w-0 truncate font-semibold">
-                {linhaAberta === TODAS ? 'Todas as sobras' : linhaAberta}
+                {perfilEmFoco
+                  ? `${perfilEmFoco.modelo?.codigo ?? ''} ${perfilEmFoco.modelo?.descricao ?? ''}`
+                  : linhaAberta === TODAS
+                    ? 'Todas as sobras'
+                    : linhaAberta}
                 <span className="text-texto-suave ml-2 font-normal">
-                  ({visiveis.length})
+                  ({perfilEmFoco ? visiveis.length : perfis.length})
                 </span>
               </p>
+
+              {/* Volta um nível de cada vez: do perfil para os perfis da
+                  linha, e da linha para as linhas. Pular direto para o topo
+                  obrigaria a refazer a escolha da linha só para ver outro
+                  perfil dela. */}
               <BotaoVoltar
-                onClick={() => setLinhaAberta(null)}
-                rotulo="Linhas"
+                onClick={() => {
+                  if (perfilAberto !== null) {
+                    setPerfilAberto(null)
+                  } else {
+                    setLinhaAberta(null)
+                  }
+                }}
+                rotulo={perfilAberto !== null ? 'Perfis' : 'Linhas'}
                 className="shrink-0"
               />
             </div>
@@ -223,11 +282,14 @@ export default function Sobras() {
       {/* Lista de linhas: a porta de entrada do estoque. */}
       {!isPending && mostrandoLinhas && grupos.length > 0 && (
         <ul className="flex flex-col gap-2">
-          {grupos.map(({ linha, quantidade }) => (
+          {grupos.map(({ linha, resumo }) => (
             <li key={linha}>
               <button
                 type="button"
-                onClick={() => setLinhaAberta(linha)}
+                onClick={() => {
+                  setLinhaAberta(linha)
+                  setPerfilAberto(null)
+                }}
                 className="bg-superficie hover:bg-superficie-2 flex min-h-16 w-full items-center gap-3 rounded-xl p-4 text-left shadow-sm"
               >
                 <Layers
@@ -237,9 +299,48 @@ export default function Sobras() {
                 <span className="min-w-0 flex-1 truncate font-medium">
                   {linha}
                 </span>
-                <span className="text-texto-suave shrink-0 text-sm">
-                  {quantidade} {quantidade === 1 ? 'peça' : 'peças'}
+                <span className="text-texto-suave shrink-0 text-sm tabular-nums">
+                  {formatarResumo(resumo)}
                 </span>
+                <ChevronRight
+                  aria-hidden="true"
+                  className="text-texto-suave size-4 shrink-0"
+                />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Lista de perfis da linha: o segundo nível. Cada um com o que há
+          dele em estoque, do maior para o menor — é por onde se começa a
+          procurar o que aproveitar. */}
+      {!isPending && mostrandoPerfis && perfis.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {perfis.map(({ id, modelo, resumo }) => (
+            <li key={id}>
+              <button
+                type="button"
+                onClick={() => setPerfilAberto(id)}
+                className="bg-superficie hover:bg-superficie-2 flex min-h-16 w-full items-center gap-3 rounded-xl p-4 text-left shadow-sm"
+              >
+                <MiniaturaPerfil
+                  link={capas?.get(id)}
+                  codigo={modelo?.codigo ?? ''}
+                />
+
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">
+                    <span className="text-acao-600 font-mono">
+                      {modelo?.codigo}
+                    </span>{' '}
+                    {modelo?.descricao}
+                  </span>
+                  <span className="text-texto-suave block text-sm tabular-nums">
+                    {formatarResumo(resumo)}
+                  </span>
+                </span>
+
                 <ChevronRight
                   aria-hidden="true"
                   className="text-texto-suave size-4 shrink-0"

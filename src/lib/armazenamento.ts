@@ -24,6 +24,8 @@ export const BALDE_DESENHOS = 'desenhos-tecnicos'
 export const BALDE_FOTOS_PERFIL = 'fotos-perfis'
 /** Retrato do colaborador. Rosto de pessoa não se mistura com catálogo. */
 export const BALDE_FOTOS_COLABORADOR = 'fotos-colaboradores'
+/** Foto e desenho do produto acabado — a janela pronta, não o perfil. */
+export const BALDE_IMAGENS_PRODUTO = 'imagens-produtos'
 
 /** Quanto tempo o link temporário vale. Uma hora cobre qualquer sessão. */
 const VALIDADE_LINK_SEGUNDOS = 3600
@@ -121,6 +123,21 @@ export function enviarFotoPerfil(arquivo: File): Promise<ResultadoEnvio> {
  */
 export function enviarFotoColaborador(arquivo: File): Promise<ResultadoEnvio> {
   return enviar(BALDE_FOTOS_COLABORADOR, arquivo, COMPRESSAO_FOTO)
+}
+
+export function enviarFotoProduto(arquivo: File): Promise<ResultadoEnvio> {
+  return enviar(BALDE_IMAGENS_PRODUTO, arquivo, COMPRESSAO_FOTO)
+}
+
+/**
+ * Desenho do produto, com a compressão dos desenhos técnicos.
+ *
+ * Mais resolução que a foto: aqui há cota para ler, e quem lê está com a
+ * peça na bancada dando zoom. Comprimir como foto comum apagaria justamente
+ * o número.
+ */
+export function enviarDesenhoProduto(arquivo: File): Promise<ResultadoEnvio> {
+  return enviar(BALDE_IMAGENS_PRODUTO, arquivo, COMPRESSAO_DESENHO)
 }
 
 /**

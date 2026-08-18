@@ -249,3 +249,38 @@ export interface MovimentacaoEstoque {
   criado_em: string
   criado_por: string | null
 }
+
+/**
+ * Item pronto que a serralheria fabrica.
+ *
+ * As medidas são do produto ACABADO, não de corte: é assim que o cliente
+ * pede ("janela 1,50 por 1,00") e é assim que se procura na lista.
+ */
+export interface Produto {
+  id: string
+  organizacao_id: string
+  codigo: string
+  nome: string
+  descricao: string | null
+  largura_mm: number | null
+  altura_mm: number | null
+  observacoes: string | null
+  /** Caminhos no balde privado, não endereços públicos. */
+  foto_url: string | null
+  desenho_url: string | null
+  ativo: boolean
+  criado_em: string
+}
+
+/** Uma linha da lista técnica: um corte que entra numa unidade do produto. */
+export interface ItemListaTecnica {
+  id: string
+  organizacao_id: string
+  produto_id: string
+  modelo_perfil_id: string
+  comprimento_mm: number
+  /** Peças deste corte por UMA unidade do produto. */
+  quantidade: number
+  observacao: string | null
+  criado_em: string
+}

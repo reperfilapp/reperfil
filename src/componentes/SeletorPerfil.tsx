@@ -15,6 +15,14 @@ import {
   SEM_LINHA,
 } from '@/dados/modelosPerfil'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
+import { useSobras } from '@/dados/sobras'
+import {
+  resumirPorLinha,
+  resumirPorPerfil,
+  resumoDe,
+  formatarResumo,
+  maiorPrimeiro,
+} from '@/dominio/estoqueResumo'
 import { MiniaturaPerfil } from './MiniaturaPerfil'
 import { VisualizadorImagem } from './ui/VisualizadorImagem'
 import { BotaoVoltar } from './ui/BotaoVoltar'
@@ -51,6 +59,7 @@ export function SeletorPerfil({
   const { data: modelos, isPending } = useModelosPerfil()
   const { data: capas } = useCapasDesenhos('imagem')
   const { data: fotos } = useCapasDesenhos('foto')
+  const { data: sobras } = useSobras()
   const [busca, setBusca] = useState('')
   const [ampliado, setAmpliado] = useState<string | null>(null)
   /*
@@ -65,7 +74,32 @@ export function SeletorPerfil({
 
   const encontrados = filtrarModelos(modelos ?? [], busca)
   const buscando = busca.trim() !== ''
+
+  /*
+   * O estoque decide a ORDEM aqui, e não só na tela de sobras: quem lança
+   * uma peça está diante do mesmo depósito, e o perfil que a empresa mais
+   * tem é o que ela mais usa — logo, o mais provável de ser o próximo. Em
+   * ordem alfabética, o perfil de duas pontas esquecidas aparece antes do
+   * que tem quarenta peças.
+   */
+  const porPerfil = resumirPorPerfil(sobras ?? [])
+  const porLinha = resumirPorLinha(
+    sobras ?? [],
+    (sobra) => sobra.modelo?.linha?.trim() || SEM_LINHA,
+  )
+
   const grupos = agruparPorLinha(modelos ?? [])
+    .map((grupo) => ({ ...grupo, resumo: resumoDe(porLinha, grupo.linha) }))
+    .sort((a, b) => {
+      if (a.linha === SEM_LINHA) return 1
+      if (b.linha === SEM_LINHA) return -1
+
+      const porTamanho = maiorPrimeiro(a.resumo, b.resumo)
+
+      return porTamanho !== 0
+        ? porTamanho
+        : a.linha.localeCompare(b.linha, 'pt-BR')
+    })
 
   const visiveis = buscando
     ? encontrados
@@ -76,6 +110,19 @@ export function SeletorPerfil({
         : encontrados.filter(
             (m) => (m.linha?.trim() || SEM_LINHA) === linhaAberta,
           )
+
+  // Ordena uma cópia: `visiveis` vem de `filtrarModelos`, e ordenar no lugar
+  // mexeria no array que o React Query guarda em cache.
+  const visiveisOrdenados = [...visiveis].sort((a, b) => {
+    const porTamanho = maiorPrimeiro(
+      resumoDe(porPerfil, a.id),
+      resumoDe(porPerfil, b.id),
+    )
+
+    return porTamanho !== 0
+      ? porTamanho
+      : a.codigo.localeCompare(b.codigo, 'pt-BR')
+  })
 
   const mostrandoLinhas = !buscando && linhaAberta === null
 
@@ -261,7 +308,7 @@ export function SeletorPerfil({
           `max-h-full` cede em tela baixa, onde sete não cabem mesmo. */}
       {!isPending && mostrandoLinhas && grupos.length > 0 && (
         <ul className="border-borda flex h-[516px] max-h-full min-h-0 flex-col gap-2 overflow-y-auto rounded-xl border-2 p-2">
-          {grupos.map(({ linha, modelos: daLinha }) => (
+          {grupos.map(({ linha, modelos: daLinha, resumo }) => (
             <li key={linha}>
               <button
                 type="button"
@@ -275,8 +322,14 @@ export function SeletorPerfil({
                 <span className="min-w-0 flex-1 truncate font-medium">
                   {linha}
                 </span>
-                <span className="text-texto-suave shrink-0 text-sm">
-                  {daLinha.length} {daLinha.length === 1 ? 'perfil' : 'perfis'}
+                <span className="text-texto-suave shrink-0 text-right text-sm">
+                  <span className="block tabular-nums">
+                    {formatarResumo(resumo)}
+                  </span>
+                  <span className="block text-xs">
+                    {daLinha.length}{' '}
+                    {daLinha.length === 1 ? 'perfil' : 'perfis'}
+                  </span>
                 </span>
                 <ChevronRight
                   aria-hidden="true"
@@ -321,9 +374,9 @@ export function SeletorPerfil({
           Só existe quando há itens: com a lista vazia, quem preenche o
           espaço é a mensagem acima, não uma lista vazia disputando o
           mesmo espaço com ela. */}
-      {visiveis.length > 0 && (
+      {visiveisOrdenados.length > 0 && (
         <ul className="border-borda flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-xl border-2 p-2">
-          {visiveis.map((modelo) => (
+          {visiveisOrdenados.map((modelo) => (
             <li key={modelo.id}>
               <button
                 type="button"
@@ -345,11 +398,17 @@ export function SeletorPerfil({
                     </span>{' '}
                     {modelo.descricao}
                   </span>
-                  {modelo.linha && (
-                    <span className="text-texto-suave block truncate text-sm">
-                      {modelo.linha}
+                  <span className="text-texto-suave block truncate text-sm">
+                    {modelo.linha && `${modelo.linha} · `}
+                    {/* Sem estoque não é zero: é informação de que essa peça
+                        não está no depósito hoje, e quem lança uma sobra
+                        precisa saber que vai ser a primeira. */}
+                    <span className="tabular-nums">
+                      {resumoDe(porPerfil, modelo.id).pecas > 0
+                        ? formatarResumo(resumoDe(porPerfil, modelo.id))
+                        : 'sem estoque'}
                     </span>
-                  )}
+                  </span>
                 </span>
               </button>
             </li>

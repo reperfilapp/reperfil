@@ -45,6 +45,183 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.34 — 18/08/2026
+
+**O estoque ordenado por quem tem mais, e o destaque legível no escuro.**
+
+**O texto sumia no tema escuro.** O cartão de comprimento e quantidade usava
+tons fixos da paleta — fundo claro com texto escuro. No escuro, o fundo
+inverte e o texto não: sobrava texto escuro sobre fundo escuro, apagado
+justamente no tema que se usa no depósito. Passou a usar os tokens de
+destaque, que já invertem os papéis. O mesmo valia para o veredito de
+produção e o aviso da tela "O que dá para produzir".
+
+**As listas seguem o tamanho do estoque.** Em ordem alfabética, a linha com
+duas pontas esquecidas aparecia antes da que tem 121 peças. Quem abre o
+estoque quase sempre quer o que há em quantidade — é ali que existe o que
+aproveitar. A ordem alfabética serve a quem procura um item específico, e
+para isso existe a busca.
+
+**Um nível novo: linha → perfil → peças.** A linha abre a lista de PERFIS,
+cada um com o total em metros e o total de peças, do maior para o menor.
+Antes ela despejava todas as peças da linha de uma vez — 121, no caso da
+Suprema — e achar as de um perfil no meio disso era o mesmo trabalho que o
+agrupamento por linha veio resolver um nível acima.
+
+**Metros E peças, sempre juntos.** Um número sozinho engana: 30 metros podem
+ser uma barra inteira ou dez pontas de três metros, e a diferença decide se
+cabe o corte.
+
+**A conta usa só o que está disponível** — peça reservada tem dono, e
+consumida ou descartada não está mais na prateleira. As peças continuam
+todas visíveis nas listas; o que muda é a conta que decide a ordem.
+
+**O seletor de perfil também.** Ao cadastrar uma sobra, linhas e perfis
+aparecem na mesma ordem e mostram quanto há de cada um — o perfil que a
+empresa mais tem é o que ela mais usa, logo o mais provável de ser o
+próximo. Perfil sem estoque diz "sem estoque", e não zero: é informação de
+que aquela peça não está no depósito hoje, e quem lança sabe que vai ser a
+primeira.
+
+## 1.6.33 — 18/08/2026
+
+**Foto e desenho no cadastro do produto, e a lista técnica já no primeiro
+momento.**
+
+⚠️ **Mais uma migração:** `20260818150000_imagens_do_produto.sql`.
+
+**Duas imagens, e não uma.** Elas respondem a perguntas diferentes: a FOTO é
+a janela pronta, do jeito que o cliente vai ver — serve para mostrar no
+balcão e para conferir se o que saiu da oficina é o que foi combinado. O
+DESENHO é o esquema com as cotas, que quem monta consulta na bancada. Um
+campo só obrigaria a escolher qual perder.
+
+O desenho é comprimido com mais resolução que a foto, pelo mesmo motivo dos
+desenhos de perfil: aqui há cota para ler, e quem lê está dando zoom.
+
+Ambas opcionais. Não vale travar o cadastro de uma janela por falta de
+retrato dela.
+
+**Produto novo cai direto na lista técnica**, com o formulário do primeiro
+corte já aberto. Sem lista, o produto não responde a nada — a tela de
+viabilidade só sabe dizer "sem lista" — e quem acabou de cadastrar uma janela
+acabou de pensar nos perfis dela. Voltar à lista de produtos naquele momento
+era interromper o raciocínio no meio.
+
+O `?montar=1` que abre o formulário sai da URL em seguida: sem isso,
+recarregar a página ou voltar a ela pelo histórico reabriria o formulário sem
+ninguém ter pedido.
+
+**Lápis na tela do produto**, para corrigir código, nome, medida e imagens
+sem voltar para a lista. E as duas imagens aparecem ali, lado a lado, com
+legenda — a foto do produto pronto e o desenho técnico.
+
+O formulário virou um componente usado nos dois lugares. São o MESMO
+formulário: quem corrigiu a medida de uma janela espera encontrar os campos
+que usou para criá-la. Duas cópias divergiriam na primeira mudança — um campo
+novo entraria no cadastro e faltaria na edição, e ninguém notaria até alguém
+precisar corrigir justamente aquele campo.
+
+A lista técnica ficou FORA desse componente, na tela do produto. Um produto
+que ainda não existe não tem onde pendurar cortes, e guardá-los em memória
+para gravar depois criaria dois caminhos diferentes para a mesma coisa.
+
+## 1.6.32 — 18/08/2026
+
+**O menu "Mais" em duas seções, e o aviso de acesso que piscava a cada
+login.**
+
+**"Usuário não autorizado" aparecia num relâmpago e sumia.** Não era
+enfeite mal colocado: quando a senha é aceita, o Supabase registra a sessão
+na hora, mas o perfil da pessoa só chega numa segunda ida ao servidor. Entre
+uma coisa e outra havia sessão e nenhum perfil — e a tela protegida lê isso
+como "autenticado e sem acesso", que é exatamente o estado de quem foi
+barrado. Quem entrava certo via a acusação de um problema inexistente.
+
+Perfil nulo tinha dois significados misturados: "ainda não sei" e "procurei
+e não achei". Agora são distintos — enquanto a busca acontece, aparece o
+girador; o aviso só surge depois de procurar e não achar.
+
+Isso pedia um cuidado: o Supabase renova o token de hora em hora e cada
+renovação passa pelo mesmo caminho. Marcar "carregando" sempre trocaria o
+pisca do login por um pisca no meio do trabalho. Havendo perfil, a
+revalidação corre em silêncio.
+
+**O menu virou Fabricação e Administração.** A lista era uma só, na ordem em
+que as telas foram nascendo: "Clientes" caía em segundo lugar e empurrava
+"Modelos de perfil" e "Linhas" para baixo — cadastro de escritório separando
+duas telas que se usam juntas.
+
+A seção de fabricação agora segue a ordem do trabalho: do material que
+existe (sobras) para o que ele pode virar (produtos, viabilidade), e depois o
+que descreve e localiza esse material. Ela tem fundo próprio, mais escuro. A
+cor é o que distingue de longe: no depósito, com o celular na mão e às vezes
+de luva, ninguém lê o subtítulo da seção antes de tocar.
+
+## 1.6.31 — 18/08/2026
+
+**Produtos com lista técnica, e a resposta que o sistema existe para dar:
+"dá para fabricar isto com as sobras?".**
+
+⚠️ **Mais uma migração:** `20260818140000_produtos_e_lista_tecnica.sql`.
+
+Até aqui o RePerfil sabia o que havia no depósito e não sabia o que fazer com
+aquilo. A pergunta que aparece no balcão é outra: "chegou um pedido de janela
+integrada 1,50 × 1,00 — dá com o que está na prateleira, ou preciso comprar
+barra?" Responder isso exigia alguém que soubesse a receita de cabeça E
+lembrasse do estoque, duas memórias que raramente estão na mesma pessoa no
+mesmo dia.
+
+**Produtos.** Cadastro do que a empresa fabrica, com código, nome e a medida
+do produto ACABADO — como o cliente pede. Os cortes ficam na lista técnica,
+porque nunca batem com a medida externa: há folga, encaixe e sobreposição no
+meio.
+
+**Lista técnica.** Uma linha por corte: perfil, comprimento e quantidade
+**por unidade**. A quantidade responde "quantas peças destas entram em uma
+janela?", nunca "quantas comprar" — guardar o total de um pedido aqui
+misturaria a receita com a encomenda, e a receita seria reescrita a cada
+venda.
+
+**O que dá para produzir.** A pergunta invertida: em vez de "dá para fazer
+esta janela?", "o que dá para fazer com o que está na prateleira?". Cada
+produto aparece com o número de unidades que sai das sobras de hoje.
+
+### Três decisões que mudam o resultado
+
+**O acabamento separa tudo.** Ninguém entrega uma janela com o marco branco e
+a folha preta. Não basta ter metros suficientes: eles precisam estar no mesmo
+acabamento. O cálculo roda uma vez por acabamento e devolve o melhor — e é
+por isso que a resposta pode ser "2 em branco" mesmo havendo material de
+sobra em preto.
+
+**Peça reservada não conta.** Ela já tem dono. Prometer uma janela com o
+material que outra obra está esperando é criar o conflito na oficina, não
+evitá-lo.
+
+**O número é um piso, não um teto.** Distribuir cortes entre peças da melhor
+forma possível é o problema do empacotamento, que não tem solução rápida e
+exata. O cálculo atende os cortes do maior para o menor, cada um consumindo a
+menor sobra em que ainda cabe. Ele nunca promete o que não cabe, mas pode
+deixar de achar um arranjo melhor — então a tela diz "dá para fazer **pelo
+menos** 2". Prometer a mais seria muito pior: alguém corta a primeira peça e
+descobre no meio do serviço que falta material.
+
+E a serra entra na conta, pelo mesmo cálculo que a tela de corte já usava.
+Dois cortes de 3 m numa peça de 6 m não caberem é o tipo de detalhe que, se
+ignorado, promete uma janela que não sai.
+
+### Sobre a Fase 2
+
+A Fase 2 do roadmap prevê tipologias **paramétricas**: informa-se largura e
+altura e fórmulas versionadas calculam os cortes. Isto aqui é o degrau
+anterior — a lista é digitada à mão, para uma medida fixa.
+
+Não é desperdício. Quando as fórmulas existirem, elas passam a GERAR estas
+linhas, e a tela de viabilidade continua a mesma. O caminho contrário exigiria
+acertar o motor de regras antes de a empresa ter usado a coisa mais simples
+uma vez.
+
 ## 1.6.30 — 18/08/2026
 
 **Foto do colaborador, CPF, e a tela de cadastro só editando quando se pede.**

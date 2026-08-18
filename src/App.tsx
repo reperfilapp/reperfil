@@ -32,6 +32,9 @@ import Localizacoes from '@/paginas/cadastros/Localizacoes'
 import Clientes from '@/paginas/cadastros/Clientes'
 import Colaboradores from '@/paginas/cadastros/Colaboradores'
 import ColaboradorDetalhe from '@/paginas/detalhes/ColaboradorDetalhe'
+import Produtos from '@/paginas/cadastros/Produtos'
+import ProdutoDetalhe from '@/paginas/detalhes/ProdutoDetalhe'
+import OQueProduzir from '@/paginas/OQueProduzir'
 
 /**
  * Casca da aplicação.
@@ -70,6 +73,9 @@ export default function App() {
                 <Route path="/procurar" element={<PesquisarSobras />} />
                 <Route path="/reservas" element={<Reservas />} />
                 <Route path="/perfis" element={<ModelosPerfil />} />
+                <Route path="/produtos" element={<Produtos />} />
+                <Route path="/produtos/:id" element={<ProdutoDetalhe />} />
+                <Route path="/o-que-produzir" element={<OQueProduzir />} />
                 <Route path="/colaboradores" element={<Colaboradores />} />
                 <Route
                   path="/colaboradores/:id"

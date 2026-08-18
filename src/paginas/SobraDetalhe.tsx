@@ -164,16 +164,24 @@ export default function SobraDetalhe() {
           duas perguntas que trazem alguém a esta tela — "cabe o meu corte?"
           e "tem peça suficiente?". No meio de onze linhas iguais, elas
           exigiam procurar; aqui se leem de relance, de longe, no depósito. */}
-      <section className="bg-acao-50 grid grid-cols-2 gap-3 rounded-xl p-4">
+      {/* `destaque` em vez de um tom fixo da paleta: os tokens do tema
+          invertem os papéis no escuro — fundo azul profundo, texto claro. Com
+          `acao-50` e `acao-900` fixos, o cartão ficava com texto escuro sobre
+          fundo escuro e sumia justamente no tema que se usa no depósito. */}
+      <section className="bg-destaque border-destaque-borda grid grid-cols-2 gap-3 rounded-xl border p-4">
         <div>
-          <p className="text-acao-700 text-sm font-medium">Comprimento</p>
-          <p className="text-acao-900 text-3xl font-bold tabular-nums">
+          <p className="text-destaque-texto text-sm font-medium opacity-80">
+            Comprimento
+          </p>
+          <p className="text-destaque-texto text-3xl font-bold tabular-nums">
             {formatarComprimento(sobra.comprimento_mm)}
           </p>
         </div>
         <div>
-          <p className="text-acao-700 text-sm font-medium">Quantidade</p>
-          <p className="text-acao-900 text-3xl font-bold tabular-nums">
+          <p className="text-destaque-texto text-sm font-medium opacity-80">
+            Quantidade
+          </p>
+          <p className="text-destaque-texto text-3xl font-bold tabular-nums">
             {sobra.quantidade}
             <span className="ml-1 text-base font-medium">
               {sobra.quantidade === 1 ? 'peça' : 'peças'}

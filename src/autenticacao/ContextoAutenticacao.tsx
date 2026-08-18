@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -17,27 +18,63 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
   const [carregando, setCarregando] = useState(true)
   const [semAcesso, setSemAcesso] = useState(false)
 
-  const buscarPerfil = useCallback(async (idUsuario: string) => {
-    // `maybeSingle` em vez de `single`: usuário sem perfil é situação
-    // prevista, não erro. O RLS já garante que só vem o perfil dele.
-    const { data, error } = await supabase
-      .from('perfis_usuario')
-      .select('*')
-      .eq('id', idUsuario)
-      .eq('ativo', true)
-      .maybeSingle<PerfilUsuario>()
+  // Espelho do perfil para ser lido DENTRO de `buscarPerfil` sem entrar nas
+  // dependências dela. Como estado, obrigaria a recriar a função a cada
+  // mudança de perfil, e o efeito que assina o Supabase — que depende dela —
+  // se desmontaria e remontaria junto, derrubando a assinatura no meio do
+  // uso.
+  const perfilAtual = useRef<PerfilUsuario | null>(null)
 
-    if (error) {
-      console.error('Falha ao carregar o perfil do usuário:', error.message)
-      setPerfil(null)
-      setSemAcesso(true)
-      return
+  const buscarPerfil = useCallback(async (idUsuario: string) => {
+    // Marcar "carregando" AQUI, e não só na restauração inicial, é o que
+    // impede o aviso de "acesso não liberado" de piscar a cada login.
+    //
+    // O que acontecia: `onAuthStateChange` registra a sessão no mesmo
+    // instante em que a senha é aceita, mas o perfil chega depois, numa
+    // segunda ida ao servidor. Entre uma coisa e outra havia sessão e
+    // nenhum perfil — e a tela protegida lê isso como "autenticado e sem
+    // acesso", que é exatamente o estado de quem foi barrado. A pessoa
+    // entrando corretamente via a acusação de um problema que não existia.
+    //
+    // Perfil nulo tem dois significados, e eles precisavam ser distinguidos:
+    // "ainda não sei" e "procurei e não achei". Este sinalizador é o
+    // primeiro; `semAcesso` continua sendo o segundo.
+    //
+    // Só quando AINDA NÃO HÁ perfil, porém. O Supabase renova o token de
+    // hora em hora e cada renovação passa por aqui: marcar carregando
+    // sempre trocaria o pisca do login por um pisca no meio do trabalho, com
+    // a tela inteira virando girador sem ninguém ter pedido nada. Havendo
+    // perfil, a revalidação acontece em silêncio.
+    if (perfilAtual.current === null) {
+      setCarregando(true)
     }
 
-    setPerfil(data)
-    setSemAcesso(data === null)
+    try {
+      // `maybeSingle` em vez de `single`: usuário sem perfil é situação
+      // prevista, não erro. O RLS já garante que só vem o perfil dele.
+      const { data, error } = await supabase
+        .from('perfis_usuario')
+        .select('*')
+        .eq('id', idUsuario)
+        .eq('ativo', true)
+        .maybeSingle<PerfilUsuario>()
 
-    return data
+      if (error) {
+        console.error('Falha ao carregar o perfil do usuário:', error.message)
+        perfilAtual.current = null
+        setPerfil(null)
+        setSemAcesso(true)
+        return
+      }
+
+      perfilAtual.current = data
+      setPerfil(data)
+      setSemAcesso(data === null)
+
+      return data
+    } finally {
+      setCarregando(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -68,6 +105,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         if (novaSessao) {
           void buscarPerfil(novaSessao.user.id)
         } else {
+          perfilAtual.current = null
           setPerfil(null)
           setSemAcesso(false)
         }

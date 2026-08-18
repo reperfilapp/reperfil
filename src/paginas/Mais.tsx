@@ -14,6 +14,8 @@ import {
   SunMoon,
   Ruler,
   UsersRound,
+  PackageSearch,
+  Boxes,
 } from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import {
@@ -45,33 +47,21 @@ export default function Mais() {
   const { perfil, sair } = useAutenticacao()
   const { tema, definirTema } = useTema()
 
-  const itens = [
+  /**
+   * O que toca a fabricação, na ordem em que o trabalho acontece.
+   *
+   * Do material que existe (sobras) para o que ele pode virar (produtos e
+   * viabilidade), e depois o que descreve e localiza esse material. Antes,
+   * "Clientes" aparecia em segundo lugar e empurrava "Modelos de perfil" e
+   * "Linhas" para baixo — cadastro de escritório separando duas telas que se
+   * usam juntas.
+   */
+  const producao = [
     {
       para: '/sobras',
       rotulo: 'Estoque de sobras',
       descricao: 'Todas as peças, com etiqueta e QR Code',
       Icone: Package,
-      visivel: true,
-    },
-    {
-      para: '/clientes',
-      rotulo: 'Clientes',
-      descricao: 'Serão usados nos orçamentos da Fase 3',
-      Icone: Users,
-      visivel: true,
-    },
-    {
-      para: '/perfis',
-      rotulo: 'Modelos de perfil',
-      descricao: 'O catálogo de perfis da empresa',
-      Icone: Layers,
-      visivel: true,
-    },
-    {
-      para: '/identificar',
-      rotulo: 'Identificar perfil',
-      descricao: 'Descobrir o perfil de uma ponta sem etiqueta',
-      Icone: Ruler,
       visivel: true,
     },
     {
@@ -82,10 +72,45 @@ export default function Mais() {
       visivel: true,
     },
     {
+      para: '/perfis',
+      rotulo: 'Modelos de perfil',
+      descricao: 'O catálogo de perfis da empresa',
+      Icone: Layers,
+      visivel: true,
+    },
+    {
+      para: '/produtos',
+      rotulo: 'Produtos e listas técnicas',
+      descricao: 'O que a empresa fabrica e o que entra em cada item',
+      Icone: Boxes,
+      visivel: true,
+    },
+    {
+      para: '/o-que-produzir',
+      rotulo: 'O que dá para produzir',
+      descricao: 'Portas e janelas que saem das sobras de hoje',
+      Icone: PackageSearch,
+      visivel: true,
+    },
+    {
       para: '/acabamentos',
       rotulo: 'Cores e acabamentos',
       descricao: 'Pinturas, anodizados e códigos RAL',
       Icone: Palette,
+      visivel: true,
+    },
+    {
+      para: '/configuracoes',
+      rotulo: 'Configurações do cálculo',
+      descricao: 'Serra, margem e mínimo de sobra',
+      Icone: Settings,
+      visivel: eAdministrador(perfil),
+    },
+    {
+      para: '/identificar',
+      rotulo: 'Identificar perfil',
+      descricao: 'Descobrir o perfil de uma ponta sem etiqueta',
+      Icone: Ruler,
       visivel: true,
     },
     {
@@ -95,13 +120,10 @@ export default function Mais() {
       Icone: MapPin,
       visivel: true,
     },
-    {
-      para: '/relatorios',
-      rotulo: 'Relatórios',
-      descricao: 'Estoque, sobras paradas e movimentações em CSV',
-      Icone: FileSpreadsheet,
-      visivel: true,
-    },
+  ].filter((item) => item.visivel)
+
+  /** O que é escritório: pessoas, clientes e papel. */
+  const administracao = [
     {
       para: '/colaboradores',
       rotulo: 'Colaboradores',
@@ -110,11 +132,18 @@ export default function Mais() {
       visivel: podeGerenciarColaboradores(perfil),
     },
     {
-      para: '/configuracoes',
-      rotulo: 'Configurações do cálculo',
-      descricao: 'Serra, margem e mínimo de sobra',
-      Icone: Settings,
-      visivel: eAdministrador(perfil),
+      para: '/clientes',
+      rotulo: 'Clientes',
+      descricao: 'Serão usados nos orçamentos da Fase 3',
+      Icone: Users,
+      visivel: true,
+    },
+    {
+      para: '/relatorios',
+      rotulo: 'Relatórios',
+      descricao: 'Estoque, sobras paradas e movimentações em CSV',
+      Icone: FileSpreadsheet,
+      visivel: true,
     },
   ].filter((item) => item.visivel)
 
@@ -128,27 +157,12 @@ export default function Mais() {
         </p>
       </header>
 
-      <nav className="mb-8 flex flex-col gap-2">
-        {itens.map(({ para, rotulo, descricao, Icone }) => (
-          <Link
-            key={para}
-            to={para}
-            className="bg-superficie hover:bg-superficie-2 flex min-h-16 items-center gap-4 rounded-xl p-4 shadow-sm"
-          >
-            <Icone aria-hidden="true" className="text-acao-600 size-6" />
-            <span className="flex-1">
-              <span className="block font-medium">{rotulo}</span>
-              <span className="text-texto-suave block text-sm">
-                {descricao}
-              </span>
-            </span>
-            <ChevronRight
-              aria-hidden="true"
-              className="text-texto-suave size-5"
-            />
-          </Link>
-        ))}
-      </nav>
+      {/* Duas seções, com fundos diferentes: o que afeta a fabricação e o
+          que é escritório. A cor distingue à distância — no depósito, com o
+          celular na mão, ninguém lê subtítulo antes de tocar. */}
+      <Grupo titulo="Fabricação" itens={producao} destaque />
+
+      <Grupo titulo="Administração" itens={administracao} />
 
       {!podeMovimentarEstoque(perfil) && (
         <p className="bg-superficie-2 text-texto-suave mb-6 rounded-xl px-4 py-3 text-sm">
@@ -193,5 +207,68 @@ export default function Mais() {
 
       <SeloVersao className="mt-6" />
     </div>
+  )
+}
+
+interface ItemMenu {
+  para: string
+  rotulo: string
+  descricao: string
+  Icone: typeof Sun
+}
+
+/**
+ * Uma seção do menu.
+ *
+ * `destaque` marca o grupo da fabricação com fundo próprio. É a distinção
+ * que serve de longe: no depósito, com o celular na mão e às vezes de luva,
+ * ninguém lê o subtítulo da seção antes de tocar — mas a mancha de cor
+ * diferente separa "isto mexe na produção" de "isto é escritório" antes da
+ * leitura.
+ */
+function Grupo({
+  titulo,
+  itens,
+  destaque = false,
+}: {
+  titulo: string
+  itens: readonly ItemMenu[]
+  destaque?: boolean
+}) {
+  if (itens.length === 0) return null
+
+  return (
+    <section className="mb-6">
+      <h2 className="text-texto-suave mb-2 text-xs font-semibold tracking-wide uppercase">
+        {titulo}
+      </h2>
+
+      <nav className="flex flex-col gap-2">
+        {itens.map(({ para, rotulo, descricao, Icone }) => (
+          <Link
+            key={para}
+            to={para}
+            className={cn(
+              'flex min-h-16 items-center gap-4 rounded-xl p-4 shadow-sm',
+              destaque
+                ? 'bg-superficie-2 hover:bg-borda border-borda border'
+                : 'bg-superficie hover:bg-superficie-2',
+            )}
+          >
+            <Icone aria-hidden="true" className="text-acao-600 size-6" />
+            <span className="flex-1">
+              <span className="block font-medium">{rotulo}</span>
+              <span className="text-texto-suave block text-sm">
+                {descricao}
+              </span>
+            </span>
+            <ChevronRight
+              aria-hidden="true"
+              className="text-texto-suave size-5"
+            />
+          </Link>
+        ))}
+      </nav>
+    </section>
   )
 }
