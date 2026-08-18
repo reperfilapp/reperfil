@@ -1,6 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Pencil, ChevronRight } from 'lucide-react'
+import {
+  Plus,
+  Pencil,
+  ChevronRight,
+  Archive,
+  ArchiveRestore,
+} from 'lucide-react'
 import {
   useAcabamentos,
   useCriarAcabamento,
@@ -164,8 +170,17 @@ export default function Acabamentos() {
                   ativo: !acabamento.ativo,
                 })
               }
+              aria-label={`${acabamento.ativo ? 'Desativar' : 'Reativar'} ${acabamento.nome}`}
+              title={acabamento.ativo ? 'Desativar' : 'Reativar'}
             >
-              {acabamento.ativo ? 'Desativar' : 'Reativar'}
+              {/* Só o ícone: com o texto, em tela estreita, o botão comia a
+                  largura do nome do registro — que é o que se procura na
+                  lista. O rótulo continua no `aria-label` e na dica. */}
+              {acabamento.ativo ? (
+                <Archive aria-hidden="true" className="size-4" />
+              ) : (
+                <ArchiveRestore aria-hidden="true" className="size-4" />
+              )}
             </Botao>
           </li>
         ))}

@@ -15,6 +15,15 @@ export interface DadosModeloPerfil {
   preco_por_metro_centavos: number | null
   codigo_barras: string | null
   observacoes: string | null
+  /**
+   * Medidas da seção, em mm. As duas primeiras vêm calculadas do peso e do
+   * desenho (`scripts/calcular-secao.mjs`) e podem ser corrigidas à mão; as
+   * outras duas são cotas internas, que só saem medindo a peça.
+   */
+  largura_secao_mm: number | null
+  altura_secao_mm: number | null
+  medida_3_secao_mm: number | null
+  medida_4_secao_mm: number | null
 }
 
 export function useModelosPerfil(incluirInativos = false) {
@@ -173,6 +182,30 @@ export function useRenomearLinha() {
   })
 }
 
+/**
+ * Tira do envio as medidas extras quando estão vazias.
+ *
+ * As colunas `medida_3_secao_mm` e `medida_4_secao_mm` chegaram numa
+ * migração posterior à primeira versão desta tela. Enquanto ela não for
+ * aplicada, mandar essas chaves faz o banco recusar a gravação INTEIRA — e
+ * quem só queria corrigir uma descrição levava um erro incompreensível
+ * sobre coluna inexistente.
+ *
+ * Omitindo o que está vazio, o cadastro comum continua funcionando antes e
+ * depois da migração. Preencher uma medida extra sem a migração aplicada
+ * ainda falha, mas aí a mensagem é sobre exatamente o que se tentou fazer.
+ */
+function semMedidasExtrasVazias<T extends Partial<DadosModeloPerfil>>(
+  dados: T,
+): T {
+  const copia = { ...dados }
+
+  if (copia.medida_3_secao_mm == null) delete copia.medida_3_secao_mm
+  if (copia.medida_4_secao_mm == null) delete copia.medida_4_secao_mm
+
+  return copia
+}
+
 export function useCriarModeloPerfil() {
   const cliente = useQueryClient()
 
@@ -180,7 +213,7 @@ export function useCriarModeloPerfil() {
     mutationFn: async (dados: DadosModeloPerfil): Promise<ModeloPerfil> => {
       const { data, error } = await supabase
         .from('modelos_perfil')
-        .insert(dados)
+        .insert(semMedidasExtrasVazias(dados))
         .select()
         .single()
 
@@ -214,7 +247,7 @@ export function useEditarModeloPerfil() {
     }): Promise<ModeloPerfil> => {
       const { data, error } = await supabase
         .from('modelos_perfil')
-        .update(dados)
+        .update(semMedidasExtrasVazias(dados))
         .eq('id', id)
         .select()
         .single()

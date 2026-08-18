@@ -1,6 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Pencil, ChevronRight } from 'lucide-react'
+import {
+  Plus,
+  Pencil,
+  ChevronRight,
+  Archive,
+  ArchiveRestore,
+} from 'lucide-react'
 import {
   useLocalizacoes,
   useCriarLocalizacao,
@@ -158,8 +164,17 @@ export default function Localizacoes() {
                   ativo: !local.ativo,
                 })
               }
+              aria-label={`${local.ativo ? 'Desativar' : 'Reativar'} ${local.codigo}`}
+              title={local.ativo ? 'Desativar' : 'Reativar'}
             >
-              {local.ativo ? 'Desativar' : 'Reativar'}
+              {/* Só o ícone: com o texto, em tela estreita, o botão comia a
+                  largura do nome do registro — que é o que se procura na
+                  lista. O rótulo continua no `aria-label` e na dica. */}
+              {local.ativo ? (
+                <Archive aria-hidden="true" className="size-4" />
+              ) : (
+                <ArchiveRestore aria-hidden="true" className="size-4" />
+              )}
             </Botao>
           </li>
         ))}

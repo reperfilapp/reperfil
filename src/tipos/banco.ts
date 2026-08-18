@@ -84,6 +84,12 @@ export interface ModeloPerfil {
    */
   largura_secao_mm?: number | null
   altura_secao_mm?: number | null
+  /**
+   * Cotas internas (aba, câmara, encaixe), informadas à mão. Não saem do
+   * desenho como as duas acima — só medindo a peça. Opcionais.
+   */
+  medida_3_secao_mm?: number | null
+  medida_4_secao_mm?: number | null
   imagem_url: string | null
   codigo_barras: string | null
   comprimento_barra_mm: number

@@ -137,6 +137,19 @@ interface ComSecao {
    */
   largura_secao_mm?: number | null
   altura_secao_mm?: number | null
+  /* Cotas internas, informadas à mão. Quase sempre ausentes. */
+  medida_3_secao_mm?: number | null
+  medida_4_secao_mm?: number | null
+}
+
+/** As medidas que o catálogo conhece deste perfil, sem as ausentes. */
+export function medidasConhecidas(perfil: ComSecao): number[] {
+  return [
+    perfil.largura_secao_mm,
+    perfil.altura_secao_mm,
+    perfil.medida_3_secao_mm,
+    perfil.medida_4_secao_mm,
+  ].filter((d): d is number => d != null && d > 0)
 }
 
 /**
@@ -153,18 +166,18 @@ interface ComSecao {
  * catálogo conhece. Medida que não corresponde a nada não elimina o perfil,
  * porque provavelmente é uma cota interna que o catálogo ainda não tem.
  *
- * Consequência honesta: informar quatro medidas em vez de duas não deixa o
- * resultado mais preciso — deixa mais PROVÁVEL de acertar, porque aumenta a
- * chance de as duas que o app conhece estarem no meio. Quando o catálogo
- * ganhar as cotas internas, as medidas extras passam a restringir de fato,
- * sem mudar nada para quem usa.
+ * Quanto mais medidas o CATÁLOGO tiver daquele perfil, mais estreita fica a
+ * lista: cada dimensão conhecida precisa achar uma medida informada que a
+ * explique. Um perfil com as quatro cotas cadastradas é bem mais difícil de
+ * confundir do que um com só as duas externas.
  *
  * ── A TOLERÂNCIA ─────────────────────────────────────────────────────────
  *
- * Generosa de propósito. As medidas do catálogo são DERIVADAS do peso e do
- * desenho, com erro de 3 a 5%, e a trena numa ponta cortada erra parecido.
- * Apertar faria o perfil certo ficar de fora — a única falha cara aqui, já
- * que quem não encontra o perfil desiste e cadastra errado, ou não cadastra.
+ * Generosa de propósito. As duas primeiras medidas do catálogo são
+ * DERIVADAS do peso e do desenho, com erro de 3 a 5%, e a trena numa ponta
+ * cortada erra parecido. Apertar faria o perfil certo ficar de fora — a
+ * única falha cara aqui, já que quem não encontra o perfil desiste e
+ * cadastra errado, ou não cadastra.
  */
 export function candidatosPorMedida<T extends ComSecao>(
   perfis: readonly T[],
@@ -177,10 +190,7 @@ export function candidatosPorMedida<T extends ComSecao>(
 
   return perfis
     .flatMap((perfil) => {
-      const dimensoes = [
-        perfil.largura_secao_mm,
-        perfil.altura_secao_mm,
-      ].filter((d): d is number => d != null)
+      const dimensoes = medidasConhecidas(perfil)
 
       if (dimensoes.length === 0) return []
 

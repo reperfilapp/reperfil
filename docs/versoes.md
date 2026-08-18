@@ -45,6 +45,51 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.21 — 17/08/2026
+
+**Cadastro do perfil num lugar só, com as quatro medidas da seção.**
+
+⚠️ **Precisa aplicar a migração**
+`supabase/migrations/20260817220000_medidas_extras_da_secao.sql`. Sem
+ela, o cadastro continua funcionando normalmente — só preencher as duas
+medidas novas é que falha.
+
+**Tudo na mesma tela.** Desenho técnico e fotos ficavam atrás de um
+botão próprio, numa janela à parte do resto do cadastro. Ninguém edita
+"o texto" numa hora e "a imagem" noutra — edita o perfil. Agora o lápis
+abre tudo junto: dados, medidas, desenhos e fotos. O botão separado de
+imagens saiu da lista, que ficou mais limpa.
+
+**As quatro medidas.** A tela de identificação aceita até quatro
+medidas, mas o catálogo só conhecia duas — largura e altura, derivadas
+do peso e do desenho. Na prática, informar quatro medidas não estreitava
+mais a lista do que informar duas, porque as outras não tinham com o que
+casar.
+
+O cadastro agora tem os quatro campos. Largura e altura chegam
+calculadas e ficam editáveis, porque o cálculo erra de 3 a 5% e quem
+tem a peça na mão corrige; as outras duas são cotas internas (aba,
+câmara, encaixe), que não saem do desenho de jeito nenhum — só medindo.
+Todas opcionais: perfil sem elas continua sendo encontrado como antes.
+
+Quanto mais medidas o catálogo tiver de um perfil, mais estreita fica a
+lista na identificação — cada medida conhecida precisa achar uma
+informada que a explique.
+
+**Um cuidado no caminho:** enquanto a migração não é aplicada, mandar as
+colunas novas faria o banco recusar a gravação inteira, e quem só queria
+corrigir uma descrição levaria um erro incompreensível sobre coluna
+inexistente. O envio agora omite as medidas extras quando estão vazias,
+então o cadastro comum funciona antes e depois da migração.
+
+**Desativar virou ícone.** Nas listas de perfis, clientes, localizações e
+acabamentos, o botão escrito "Desativar" ocupava largura demais: em
+celular estreito ele espremia justamente o nome do registro, que é o que
+a pessoa está procurando. Agora é só o ícone de arquivar, do mesmo
+tamanho do lápis ao lado. O rótulo continua acessível — o leitor de tela
+anuncia "Desativar" com o nome do registro, e no computador aparece a
+dica ao passar o mouse.
+
 ## 1.6.19 — 17/08/2026
 
 **Atalho de identificação nos campos de perfil, estoque por linha e ícone

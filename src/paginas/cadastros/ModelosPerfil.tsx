@@ -4,10 +4,11 @@ import {
   Plus,
   Pencil,
   Search,
-  Images,
   ChevronRight,
   Layers,
   Camera,
+  Archive,
+  ArchiveRestore,
 } from 'lucide-react'
 import {
   useModelosPerfil,
@@ -35,6 +36,17 @@ import type { ModeloPerfil } from '@/tipos/banco'
 /** Valor de `linhaAberta` que significa "ignorar o agrupamento". */
 const TODAS = '__todas__'
 
+/** Campo vazio é ausência de medida, não zero. Vírgula vale como decimal. */
+function numeroDe(texto: string): number | null {
+  const n = Number(texto.replace(',', '.'))
+  return texto.trim() !== '' && Number.isFinite(n) && n > 0 ? n : null
+}
+
+/** Mostra 35,7 e não 35.7 — o campo é lido por quem escreve com vírgula. */
+function textoDe(valor: number | null): string {
+  return valor === null ? '' : String(valor).replace('.', ',')
+}
+
 const VAZIO: DadosModeloPerfil = {
   codigo: '',
   descricao: '',
@@ -47,6 +59,10 @@ const VAZIO: DadosModeloPerfil = {
   preco_por_metro_centavos: null,
   codigo_barras: null,
   observacoes: null,
+  largura_secao_mm: null,
+  altura_secao_mm: null,
+  medida_3_secao_mm: null,
+  medida_4_secao_mm: null,
 }
 
 /**
@@ -114,7 +130,6 @@ export default function ModelosPerfil() {
   const [editando, setEditando] = useState<ModeloPerfil | null>(null)
   const [form, setForm] = useState<DadosModeloPerfil>(VAZIO)
   const [erro, setErro] = useState<string | null>(null)
-  const [galeriaDe, setGaleriaDe] = useState<ModeloPerfil | null>(null)
 
   const encontrados = filtrarModelos(modelos ?? [], busca)
   const buscando = busca.trim() !== ''
@@ -155,6 +170,10 @@ export default function ModelosPerfil() {
       preco_por_metro_centavos: modelo.preco_por_metro_centavos,
       codigo_barras: modelo.codigo_barras,
       observacoes: modelo.observacoes,
+      largura_secao_mm: modelo.largura_secao_mm ?? null,
+      altura_secao_mm: modelo.altura_secao_mm ?? null,
+      medida_3_secao_mm: modelo.medida_3_secao_mm ?? null,
+      medida_4_secao_mm: modelo.medida_4_secao_mm ?? null,
     })
     setErro(null)
     setAberto(true)
@@ -355,14 +374,6 @@ export default function ModelosPerfil() {
 
             <Botao
               variante="secundaria"
-              onClick={() => setGaleriaDe(modelo)}
-              aria-label={`Imagens de ${modelo.codigo}`}
-            >
-              <Images aria-hidden="true" className="size-4" />
-            </Botao>
-
-            <Botao
-              variante="secundaria"
               onClick={() => abrirEdicao(modelo)}
               aria-label={`Editar ${modelo.codigo}`}
             >
@@ -377,8 +388,17 @@ export default function ModelosPerfil() {
                   ativo: !modelo.ativo,
                 })
               }
+              aria-label={`${modelo.ativo ? 'Desativar' : 'Reativar'} ${modelo.codigo}`}
+              title={modelo.ativo ? 'Desativar' : 'Reativar'}
             >
-              {modelo.ativo ? 'Desativar' : 'Reativar'}
+              {/* Só o ícone: com o texto, em tela estreita, o botão comia a
+                  largura do nome do registro — que é o que se procura na
+                  lista. O rótulo continua no `aria-label` e na dica. */}
+              {modelo.ativo ? (
+                <Archive aria-hidden="true" className="size-4" />
+              ) : (
+                <ArchiveRestore aria-hidden="true" className="size-4" />
+              )}
             </Botao>
           </li>
         ))}
@@ -464,6 +484,92 @@ export default function ModelosPerfil() {
             ajuda="Em gramas, número inteiro. Ex.: 1180 para 1,18 kg/m."
           />
 
+          {/* Medidas da seção — as que a trena alcança.
+              As duas primeiras chegam calculadas do peso e do desenho, e
+              ficam editáveis porque o cálculo erra uns 3 a 5%: quem tiver a
+              peça na mão corrige e o valor melhora. As duas últimas são
+              cotas internas, que não saem do desenho de jeito nenhum — só
+              medindo. Todas opcionais; quanto mais preenchidas, mais fácil
+              identificar a ponta depois. */}
+          <fieldset className="border-borda rounded-xl border-2 p-4">
+            <legend className="px-2 font-medium">Medidas da seção (mm)</legend>
+
+            <div className="grid grid-cols-2 gap-4">
+              <CampoTexto
+                rotulo="Largura"
+                type="text"
+                inputMode="decimal"
+                placeholder="0"
+                value={textoDe(form.largura_secao_mm)}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    largura_secao_mm: numeroDe(e.target.value),
+                  })
+                }
+              />
+              <CampoTexto
+                rotulo="Altura"
+                type="text"
+                inputMode="decimal"
+                placeholder="0"
+                value={textoDe(form.altura_secao_mm)}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    altura_secao_mm: numeroDe(e.target.value),
+                  })
+                }
+              />
+              <CampoTexto
+                rotulo="Outra medida"
+                type="text"
+                inputMode="decimal"
+                placeholder="0"
+                value={textoDe(form.medida_3_secao_mm)}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    medida_3_secao_mm: numeroDe(e.target.value),
+                  })
+                }
+              />
+              <CampoTexto
+                rotulo="Outra medida"
+                type="text"
+                inputMode="decimal"
+                placeholder="0"
+                value={textoDe(form.medida_4_secao_mm)}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    medida_4_secao_mm: numeroDe(e.target.value),
+                  })
+                }
+              />
+            </div>
+
+            <p className="text-texto-suave mt-2 text-sm">
+              Largura e altura vêm calculadas do peso e do desenho — corrija se
+              a peça disser outra coisa. As duas últimas são cotas internas
+              (aba, câmara, encaixe) e ajudam a identificar uma ponta sem
+              etiqueta.
+            </p>
+          </fieldset>
+
+          {/* Desenho e foto no mesmo lugar do resto do cadastro: eram uma
+              tela à parte, e ninguém edita "o texto" numa hora e "a imagem"
+              noutra — edita o perfil. Só na edição: o perfil precisa existir
+              para ter onde pendurar a imagem. */}
+          {editando && (
+            <div className="flex flex-col gap-6">
+              <GaleriaDesenhos modelo={editando} tipo="imagem" />
+              <div className="border-borda border-t pt-6">
+                <GaleriaDesenhos modelo={editando} tipo="foto" />
+              </div>
+            </div>
+          )}
+
           {erro && (
             <p
               role="alert"
@@ -491,21 +597,6 @@ export default function ModelosPerfil() {
             </Botao>
           </div>
         </form>
-      </Modal>
-
-      <Modal
-        aberto={galeriaDe !== null}
-        aoFechar={() => setGaleriaDe(null)}
-        titulo={galeriaDe ? `Imagens — ${galeriaDe.codigo}` : 'Imagens'}
-      >
-        {galeriaDe && (
-          <div className="flex flex-col gap-6">
-            <GaleriaDesenhos modelo={galeriaDe} tipo="imagem" />
-            <div className="border-borda border-t pt-6">
-              <GaleriaDesenhos modelo={galeriaDe} tipo="foto" />
-            </div>
-          </div>
-        )}
       </Modal>
     </PaginaLista>
   )
