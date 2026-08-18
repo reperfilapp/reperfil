@@ -6,7 +6,6 @@ import {
   candidatosPorPeso,
   candidatosPorMedida,
   formatarAreaSecao,
-  formatarSecao,
   formatarMedidasSecao,
   DENSIDADE_ALUMINIO_G_CM3,
 } from './secao'
@@ -235,20 +234,6 @@ describe('candidatos por medida de trena', () => {
   it('devolve vazio quando não há nenhuma medida utilizável', () => {
     expect(candidatosPorMedida(catalogo, [])).toEqual([])
     expect(candidatosPorMedida(catalogo, [0, NaN])).toEqual([])
-  })
-})
-
-describe('exibição da seção', () => {
-  it('mostra medidas inteiras sem casa decimal', () => {
-    expect(formatarSecao(30, 40)).toBe('30 × 40 mm')
-  })
-
-  it('usa vírgula nas quebradas', () => {
-    expect(formatarSecao(29, 35.7)).toBe('29 × 35,7 mm')
-  })
-
-  it('devolve nulo quando o perfil não tem medida', () => {
-    expect(formatarSecao(null, 40)).toBeNull()
   })
 })
 

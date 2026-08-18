@@ -18,7 +18,7 @@ import {
   candidatosPorPeso,
   candidatosPorMedida,
   formatarAreaSecao,
-  formatarSecao,
+  formatarMedidasSecao,
   areaSecaoMm2,
 } from '@/dominio/secao'
 import { interpretarMedidaDigitada } from '@/dominio/medidas'
@@ -412,10 +412,10 @@ export default function IdentificarPerfil() {
                     </span>
                     <span className="text-texto-suave block truncate text-sm">
                       {perfil.linha && `${perfil.linha} · `}
-                      {formatarSecao(
-                        perfil.largura_secao_mm,
-                        perfil.altura_secao_mm,
-                      ) ?? 'sem medida no catálogo'}
+                      {/* Todas as medidas conhecidas, não só as duas
+                          derivadas: é exatamente aqui que a pessoa compara
+                          com o que a trena deu. */}
+                      {formatarMedidasSecao(perfil) ?? 'sem medida no catálogo'}
                     </span>
                     {nota && (
                       <span className="text-texto-suave block text-xs">

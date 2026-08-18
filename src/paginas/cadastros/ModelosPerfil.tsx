@@ -496,7 +496,7 @@ export default function ModelosPerfil() {
 
             <div className="grid grid-cols-2 gap-4">
               <CampoTexto
-                rotulo="Largura"
+                rotulo="Medida 1"
                 type="text"
                 inputMode="decimal"
                 placeholder="0"
@@ -509,7 +509,7 @@ export default function ModelosPerfil() {
                 }
               />
               <CampoTexto
-                rotulo="Altura"
+                rotulo="Medida 2"
                 type="text"
                 inputMode="decimal"
                 placeholder="0"
@@ -522,7 +522,7 @@ export default function ModelosPerfil() {
                 }
               />
               <CampoTexto
-                rotulo="Outra medida"
+                rotulo="Medida 3"
                 type="text"
                 inputMode="decimal"
                 placeholder="0"
@@ -535,7 +535,7 @@ export default function ModelosPerfil() {
                 }
               />
               <CampoTexto
-                rotulo="Outra medida"
+                rotulo="Medida 4"
                 type="text"
                 inputMode="decimal"
                 placeholder="0"
@@ -549,11 +549,16 @@ export default function ModelosPerfil() {
               />
             </div>
 
+            {/* Aqui a ORDEM IMPORTA, ao contrário da tela de identificação:
+                é ela que casa com o que a ficha mostra e com o que o cálculo
+                do desenho grava. Por isso o texto abaixo diz o que é cada
+                número, já que os rótulos não dizem mais. */}
             <p className="text-texto-suave mt-2 text-sm">
-              Largura e altura vêm calculadas do peso e do desenho — corrija se
-              a peça disser outra coisa. As duas últimas são cotas internas
-              (aba, câmara, encaixe) e ajudam a identificar uma ponta sem
-              etiqueta.
+              As duas primeiras são a largura e a altura por fora, e vêm
+              calculadas do peso e do desenho — corrija se a peça disser outra
+              coisa. As duas últimas são cotas internas (aba, câmara, encaixe),
+              que só saem medindo. Todas opcionais: quanto mais o catálogo
+              souber, mais estreita fica a lista na identificação.
             </p>
           </fieldset>
 

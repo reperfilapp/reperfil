@@ -108,6 +108,35 @@ e compara com o que a trena deu, sem ir e voltar entre quatro linhas. O
 que falta não vira zero nem traço — simplesmente não entra, então perfil
 com duas medidas mostra duas.
 
+A tela de identificação passou a mostrar a mesma linha nos candidatos.
+É ali que a comparação acontece de verdade — a pessoa acabou de tirar
+até quatro medidas com a trena e via só duas na lista, sem como conferir
+as outras que ela mesma informou.
+
+Ficha e identificação leem as medidas pela mesma função, então não há
+como uma mostrar o que a outra esconde. A antiga `formatarSecao`, que só
+sabia de largura e altura, saiu junto com seus testes: ninguém mais a
+chamava.
+
+**Rótulos do cadastro iguais aos da identificação.** Os campos de medida
+no cadastro do perfil chamavam-se "Largura", "Altura" e duas vezes
+"Outra medida"; na identificação, "Medida 1" a "Medida 4". Agora os dois
+lugares falam a mesma língua: Medida 1, 2, 3 e 4.
+
+A ordem aqui importa — é ela que casa com o que a ficha mostra e com o
+que o cálculo do desenho grava — e os rótulos deixaram de dizer isso.
+Então o texto sob os campos passou a dizer: as duas primeiras são a
+largura e a altura por fora, vindas do cálculo; as duas últimas são
+cotas internas, que só saem medindo.
+
+**O script de cálculo aceita as credenciais no .env.** Ele só lia
+`REPERFIL_EMAIL` e `REPERFIL_SENHA` de variável de ambiente — que no
+PowerShell valem apenas para a janela onde foram definidas. Rodar o
+script noutra janela dava "Defina REPERFIL_EMAIL e REPERFIL_SENHA" sem
+pista do porquê, já que elas *tinham* sido definidas. Agora ele também
+lê essas duas linhas do `.env`, que não é versionado, e a mensagem de
+erro diz exatamente o que escrever e onde.
+
 ## 1.6.19 — 17/08/2026
 
 **Atalho de identificação nos campos de perfil, estoque por linha e ícone

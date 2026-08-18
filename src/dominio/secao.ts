@@ -256,17 +256,3 @@ export function formatarMedidasSecao(perfil: ComSecao): string | null {
 
   return `${medidas.map(formatar).join(' × ')} mm`
 }
-
-/** "30 × 42 mm" — a seção como se fala na oficina. */
-export function formatarSecao(
-  larguraMm: number | null | undefined,
-  alturaMm: number | null | undefined,
-): string | null {
-  // `== null` cobre nulo E ausente: antes da migração, a coluna nem vem.
-  if (larguraMm == null || alturaMm == null) return null
-
-  const formatar = (v: number) =>
-    Number.isInteger(v) ? String(v) : v.toFixed(1).replace('.', ',')
-
-  return `${formatar(larguraMm)} × ${formatar(alturaMm)} mm`
-}

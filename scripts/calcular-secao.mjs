@@ -38,7 +38,7 @@
  *   node scripts/calcular-secao.mjs              (só mostra, não grava)
  *   node scripts/calcular-secao.mjs --confirmar  (grava no banco)
  *
- * Credenciais, por variável de ambiente:
+ * Credenciais: duas linhas no .env (ou variáveis de ambiente de mesmo nome).
  *   REPERFIL_EMAIL   e-mail de um administrador
  *   REPERFIL_SENHA   senha
  */
@@ -163,11 +163,26 @@ async function principal() {
     env['VITE_SUPABASE_ANON_KEY'],
   )
 
-  const email = process.env['REPERFIL_EMAIL']
-  const senha = process.env['REPERFIL_SENHA']
+  // O .env também serve: definir variável de ambiente no PowerShell só vale
+  // para AQUELA janela, e é fácil rodar o script noutra e levar o erro sem
+  // entender por quê. No .env fica gravado — e ele não é versionado.
+  const email = process.env['REPERFIL_EMAIL'] || env['REPERFIL_EMAIL']
+  const senha = process.env['REPERFIL_SENHA'] || env['REPERFIL_SENHA']
 
   if (!email || !senha) {
-    console.error('Defina REPERFIL_EMAIL e REPERFIL_SENHA.')
+    console.error(
+      [
+        'Faltam as credenciais para entrar no Supabase.',
+        '',
+        'Acrescente estas duas linhas no fim do arquivo .env, com o e-mail e',
+        'a senha de um administrador da organização:',
+        '',
+        '  REPERFIL_EMAIL=voce@exemplo.com',
+        '  REPERFIL_SENHA=suasenha',
+        '',
+        'O .env não vai para o Git. Depois rode o comando de novo.',
+      ].join('\n'),
+    )
     process.exit(1)
   }
 
