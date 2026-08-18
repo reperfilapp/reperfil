@@ -1,10 +1,20 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { Search, ZoomIn, ExternalLink } from 'lucide-react'
-import { useModelosPerfil } from '@/dados/modelosPerfil'
+import { Search, ZoomIn, ExternalLink, Pencil } from 'lucide-react'
+import {
+  useModelosPerfil,
+  useEditarModeloPerfil,
+  type DadosModeloPerfil,
+} from '@/dados/modelosPerfil'
 import { useDesenhosTecnicos } from '@/dados/desenhosTecnicos'
 import { useSobras } from '@/dados/sobras'
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
+import { useAutenticacao } from '@/autenticacao/useAutenticacao'
+import { podeGerenciarCadastros } from '@/autenticacao/contexto'
+import { Botao } from '@/componentes/ui/Botao'
+import { Modal } from '@/componentes/ui/Modal'
+import { FormularioModeloPerfil } from '@/componentes/perfil/FormularioModeloPerfil'
+import type { ModeloPerfil } from '@/tipos/banco'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
 import { formatarComprimento } from '@/dominio/medidas'
@@ -43,6 +53,14 @@ export default function PerfilDetalhe() {
   const { data: fotos } = useDesenhosTecnicos(id ?? null, 'foto')
   const { data: sobras } = useSobras()
   const [ampliado, setAmpliado] = useState<string | null>(null)
+
+  const { perfil: usuario } = useAutenticacao()
+  const podeEditar = podeGerenciarCadastros(usuario)
+  const editar = useEditarModeloPerfil()
+
+  const [editando, setEditando] = useState(false)
+  const [form, setForm] = useState<DadosModeloPerfil | null>(null)
+  const [erroEdicao, setErroEdicao] = useState<string | null>(null)
 
   const modelo = modelos?.find((m) => m.id === id)
 
@@ -98,9 +116,71 @@ export default function PerfilDetalhe() {
     lista.sort((a, b) => a.comprimentoMm - b.comprimentoMm)
   }
 
+  // Recebe o modelo por parâmetro em vez de fechar sobre a variável: o
+  // TypeScript não mantém, dentro de uma função, a garantia de que `modelo`
+  // existe — garantia essa que vem do `return` mais acima.
+  function abrirEdicao(perfilAtual: ModeloPerfil) {
+    setForm({
+      codigo: perfilAtual.codigo,
+      descricao: perfilAtual.descricao,
+      fabricante: perfilAtual.fabricante,
+      linha: perfilAtual.linha,
+      categoria: perfilAtual.categoria,
+      aplicacao: perfilAtual.aplicacao,
+      comprimento_barra_mm: perfilAtual.comprimento_barra_mm,
+      peso_por_metro_g: perfilAtual.peso_por_metro_g,
+      preco_por_metro_centavos: perfilAtual.preco_por_metro_centavos,
+      codigo_barras: perfilAtual.codigo_barras,
+      observacoes: perfilAtual.observacoes,
+      // `?? null` porque estas colunas chegaram em migrações posteriores:
+      // num banco ainda sem elas, o campo vem AUSENTE, e ausente não é o
+      // mesmo que vazio para quem vai gravar.
+      largura_secao_mm: perfilAtual.largura_secao_mm ?? null,
+      altura_secao_mm: perfilAtual.altura_secao_mm ?? null,
+      medida_3_secao_mm: perfilAtual.medida_3_secao_mm ?? null,
+      medida_4_secao_mm: perfilAtual.medida_4_secao_mm ?? null,
+    })
+    setErroEdicao(null)
+    setEditando(true)
+  }
+
+  const idDoPerfil = modelo.id
+
+  async function salvarEdicao(evento: FormEvent) {
+    evento.preventDefault()
+    setErroEdicao(null)
+
+    if (form === null) return
+
+    if (form.codigo.trim() === '' || form.descricao.trim() === '') {
+      setErroEdicao('Código e descrição são obrigatórios.')
+      return
+    }
+
+    try {
+      await editar.mutateAsync({ id: idDoPerfil, dados: form })
+      setEditando(false)
+    } catch (e) {
+      setErroEdicao(e instanceof Error ? e.message : 'Não foi possível salvar.')
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
-      <BotaoVoltar para={voltarPara} rotulo={rotuloVoltar} className="mb-4" />
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <BotaoVoltar para={voltarPara} rotulo={rotuloVoltar} />
+
+        {/* Editar aqui, e não só no catálogo: quem chegou pela lista técnica
+            de um produto ou por uma sobra está justamente olhando o dado que
+            quer corrigir, e voltar ao catálogo para achá-lo de novo é
+            trabalho que a ficha pode poupar. */}
+        {podeEditar && (
+          <Botao variante="secundaria" onClick={() => abrirEdicao(modelo)}>
+            <Pencil aria-hidden="true" className="size-4" />
+            Editar
+          </Botao>
+        )}
+      </div>
 
       <header className="mb-5">
         <p className="text-acao-600 font-mono text-lg font-bold">
@@ -336,6 +416,24 @@ export default function PerfilDetalhe() {
           aoFechar={() => setAmpliado(null)}
         />
       )}
+
+      <Modal
+        aberto={editando && form !== null}
+        aoFechar={() => setEditando(false)}
+        titulo="Editar perfil"
+      >
+        {form && (
+          <FormularioModeloPerfil
+            form={form}
+            aoMudar={setForm}
+            modelo={modelo}
+            aoSalvar={salvarEdicao}
+            aoCancelar={() => setEditando(false)}
+            salvando={editar.isPending}
+            erro={erroEdicao}
+          />
+        )}
+      </Modal>
     </div>
   )
 }

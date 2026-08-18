@@ -9,6 +9,13 @@ import {
 } from '@/dados/modelosPerfil'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeGerenciarCadastros } from '@/autenticacao/contexto'
+import { useSobras } from '@/dados/sobras'
+import {
+  resumirPorLinha,
+  resumoDe,
+  formatarResumo,
+  maiorPrimeiro,
+} from '@/dominio/estoqueResumo'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoSugestao } from '@/componentes/ui/CampoSugestao'
@@ -41,6 +48,7 @@ export default function Linhas() {
   const podeEditar = podeGerenciarCadastros(perfil)
 
   const { data: modelos, isPending } = useModelosPerfil(true)
+  const { data: sobras } = useSobras()
   const renomear = useRenomearLinha()
 
   const [editando, setEditando] = useState<string | null>(null)
@@ -48,7 +56,26 @@ export default function Linhas() {
   const [erro, setErro] = useState<string | null>(null)
   const [resultado, setResultado] = useState<string | null>(null)
 
+  // Mesma ordem do resto do app: quem tem mais estoque primeiro. Aqui a
+  // lista serve para faxina de nomes repetidos, e a linha com material é a
+  // que mais dói ver duplicada.
+  const porLinha = resumirPorLinha(
+    sobras ?? [],
+    (sobra) => sobra.modelo?.linha?.trim() || SEM_LINHA,
+  )
+
   const grupos = agruparPorLinha(modelos ?? [])
+    .map((grupo) => ({ ...grupo, resumo: resumoDe(porLinha, grupo.linha) }))
+    .sort((a, b) => {
+      if (a.linha === SEM_LINHA) return 1
+      if (b.linha === SEM_LINHA) return -1
+
+      const porTamanho = maiorPrimeiro(a.resumo, b.resumo)
+
+      return porTamanho !== 0
+        ? porTamanho
+        : a.linha.localeCompare(b.linha, 'pt-BR')
+    })
   // "Sem linha" não é uma linha: é a ausência dela. Renomear ali significaria
   // atribuir linha a perfis que não têm, que é trabalho do cadastro do
   // perfil, um a um, com o desenho à vista.
@@ -140,7 +167,7 @@ export default function Linhas() {
       )}
 
       <ul className="flex flex-col gap-2">
-        {renomeaveis.map(({ linha, modelos: daLinha }) => (
+        {renomeaveis.map(({ linha, modelos: daLinha, resumo }) => (
           <li
             key={linha}
             className="bg-superficie flex items-center gap-3 rounded-xl p-4 shadow-sm"
@@ -157,8 +184,13 @@ export default function Linhas() {
               {linha}
             </Link>
 
-            <span className="text-texto-suave shrink-0 text-sm">
-              {daLinha.length} {daLinha.length === 1 ? 'perfil' : 'perfis'}
+            <span className="text-texto-suave shrink-0 text-right text-sm">
+              <span className="block tabular-nums">
+                {formatarResumo(resumo)}
+              </span>
+              <span className="block text-xs">
+                {daLinha.length} {daLinha.length === 1 ? 'perfil' : 'perfis'}
+              </span>
             </span>
 
             {podeEditar && (

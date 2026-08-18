@@ -45,6 +45,34 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.37 — 18/08/2026
+
+**Editar na ficha do perfil, e a ordem por estoque valendo no app inteiro.**
+
+**Lápis na ficha do perfil**, para quem pode mexer nos cadastros. Quem chegou
+ali pela lista técnica de um produto ou por uma sobra está justamente olhando
+o dado que quer corrigir; voltar ao catálogo para achá-lo de novo é trabalho
+que a ficha pode poupar.
+
+O formulário virou um componente usado nos dois lugares — mesmo motivo do
+formulário de produto: duas cópias divergiriam na primeira mudança. Ele passou
+a buscar as próprias sugestões de linha, fabricante e aplicação, em vez de
+recebê-las: são três consultas que existem só por causa daqueles campos, e
+passá-las de fora obrigaria cada tela a saber disso.
+
+**A ordem por estoque agora vale em todas as listas de linha e de perfil**:
+catálogo de perfis, cadastro de linhas, seletor de perfil e estoque de sobras.
+Quem tem mais material aparece primeiro, com metros e peças ao lado.
+
+Em ordem alfabética, a linha com duas pontas esquecidas vinha antes da que
+tem 121 peças. Quem abre qualquer uma dessas telas quase sempre quer o que há
+em quantidade — e para achar um item específico existe a busca, que continua
+ignorando o agrupamento.
+
+Perfil sem nada no depósito mostra "sem estoque", e não zero: é informação de
+que aquela peça não está lá hoje, diferente de um número que se confunde com
+medida.
+
 ## 1.6.36 — 18/08/2026
 
 **"E se forem cinco?" — a quantidade a produzir na tela do produto.**

@@ -15,7 +15,6 @@ import {
   useCriarModeloPerfil,
   useEditarModeloPerfil,
   useDesativarModeloPerfil,
-  useValoresUsados,
   filtrarModelos,
   agruparPorLinha,
   SEM_LINHA,
@@ -25,30 +24,25 @@ import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeGerenciarCadastros } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
-import { CampoTexto } from '@/componentes/ui/CampoTexto'
-import { CampoSugestao } from '@/componentes/ui/CampoSugestao'
 import { Modal } from '@/componentes/ui/Modal'
+import { FormularioModeloPerfil } from '@/componentes/perfil/FormularioModeloPerfil'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
-import { GaleriaDesenhos } from '@/componentes/GaleriaDesenhos'
 import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
-import { formatarComprimento } from '@/dominio/medidas'
+import { useSobras } from '@/dados/sobras'
+import {
+  resumirPorLinha,
+  resumirPorPerfil,
+  resumoDe,
+  formatarResumo,
+  maiorPrimeiro,
+} from '@/dominio/estoqueResumo'
 import type { ModeloPerfil } from '@/tipos/banco'
 
 /** Valor de `linhaAberta` que significa "ignorar o agrupamento". */
 const TODAS = '__todas__'
 
 /** Campo vazio é ausência de medida, não zero. Vírgula vale como decimal. */
-function numeroDe(texto: string): number | null {
-  const n = Number(texto.replace(',', '.'))
-  return texto.trim() !== '' && Number.isFinite(n) && n > 0 ? n : null
-}
-
-/** Mostra 35,7 e não 35.7 — o campo é lido por quem escreve com vírgula. */
-function textoDe(valor: number | null): string {
-  return valor === null ? '' : String(valor).replace('.', ',')
-}
-
 const VAZIO: DadosModeloPerfil = {
   codigo: '',
   descricao: '',
@@ -67,39 +61,6 @@ const VAZIO: DadosModeloPerfil = {
   medida_4_secao_mm: null,
 }
 
-/**
- * Sugestões iniciais para o campo Aplicação.
- *
- * O campo é texto livre — a nomenclatura varia entre fabricantes e entre
- * empresas, então travar numa lista fechada obrigaria a digitar "outro" toda
- * hora. A `datalist` sugere sem impedir: digitar algo fora da lista continua
- * funcionando normalmente.
- *
- * Esta lista é só o ponto de partida, para quem ainda não cadastrou nada.
- * A partir daí a lista de sugestões passa a crescer sozinha: ver
- * `useAplicacoesUsadas`, que traz o que a própria empresa já digitou. Não há
- * uma tela de administração porque não precisa — usar uma aplicação nova já
- * é o cadastro dela.
- */
-const SUGESTOES_INICIAIS = [
-  'Lateral da porta',
-  'Base da janela',
-  'Travessa superior',
-  'Travessa inferior',
-  'Montante',
-  'Marco',
-  'Contramarco',
-  'Folha móvel',
-  'Folha fixa',
-  'Batente',
-  'Requadro',
-  'Soleira',
-  'Peitoril',
-  'Puxador',
-  'Trilho de correr',
-  'Perfil de vedação',
-] as const
-
 export default function ModelosPerfil() {
   const { perfil } = useAutenticacao()
   // Esconder o que o banco recusaria: um botão que sempre devolve
@@ -111,16 +72,7 @@ export default function ModelosPerfil() {
   const editar = useEditarModeloPerfil()
   const desativar = useDesativarModeloPerfil()
   const { data: capas } = useCapasDesenhos()
-  const { data: aplicacoesUsadas } = useValoresUsados('aplicacao')
-  const { data: linhasUsadas } = useValoresUsados('linha')
-  const { data: fabricantesUsados } = useValoresUsados('fabricante')
-
-  // As 16 iniciais aparecem sempre, para quem ainda não usou nenhuma; o que
-  // a empresa já digitou entra junto, sem repetir.
-  const sugestoesAplicacao = [
-    ...new Set([...SUGESTOES_INICIAIS, ...(aplicacoesUsadas ?? [])]),
-  ].sort((a, b) => a.localeCompare(b, 'pt-BR'))
-
+  const { data: sobras } = useSobras()
   const [busca, setBusca] = useState('')
   /*
    * Linha escolhida para ver, `null` enquanto a pessoa está na lista de
@@ -140,7 +92,31 @@ export default function ModelosPerfil() {
 
   const encontrados = filtrarModelos(modelos ?? [], busca)
   const buscando = busca.trim() !== ''
+  /*
+   * A ordem de TODA lista de linha e de perfil no app é a mesma: quem tem
+   * mais estoque primeiro. Em ordem alfabética, a linha com duas pontas
+   * esquecidas aparece antes da que tem 121 peças, e quem abre o catálogo
+   * quase sempre quer o que há em quantidade. Para achar um item específico
+   * existe a busca.
+   */
+  const porPerfil = resumirPorPerfil(sobras ?? [])
+  const porLinha = resumirPorLinha(
+    sobras ?? [],
+    (sobra) => sobra.modelo?.linha?.trim() || SEM_LINHA,
+  )
+
   const grupos = agruparPorLinha(modelos ?? [])
+    .map((grupo) => ({ ...grupo, resumo: resumoDe(porLinha, grupo.linha) }))
+    .sort((a, b) => {
+      if (a.linha === SEM_LINHA) return 1
+      if (b.linha === SEM_LINHA) return -1
+
+      const porTamanho = maiorPrimeiro(a.resumo, b.resumo)
+
+      return porTamanho !== 0
+        ? porTamanho
+        : a.linha.localeCompare(b.linha, 'pt-BR')
+    })
 
   // Buscando: mostra o resultado, venha de que linha vier. Senão, respeita
   // a linha aberta — e, sem linha aberta, a tela é a lista de linhas.
@@ -153,6 +129,19 @@ export default function ModelosPerfil() {
         : encontrados.filter(
             (m) => (m.linha?.trim() || SEM_LINHA) === linhaAberta,
           )
+
+  // Cópia antes de ordenar: `visiveis` sai de `filtrarModelos`, e ordenar no
+  // lugar mexeria no array guardado pelo React Query.
+  const visiveisOrdenados = [...visiveis].sort((a, b) => {
+    const porTamanho = maiorPrimeiro(
+      resumoDe(porPerfil, a.id),
+      resumoDe(porPerfil, b.id),
+    )
+
+    return porTamanho !== 0
+      ? porTamanho
+      : a.codigo.localeCompare(b.codigo, 'pt-BR')
+  })
 
   const mostrandoLinhas = !buscando && linhaAberta === null
 
@@ -300,7 +289,7 @@ export default function ModelosPerfil() {
       {/* Lista de linhas: a porta de entrada do catálogo. */}
       {!isPending && mostrandoLinhas && grupos.length > 0 && (
         <ul className="flex flex-col gap-2">
-          {grupos.map(({ linha, modelos: daLinha }) => (
+          {grupos.map(({ linha, modelos: daLinha, resumo }) => (
             <li key={linha}>
               <button
                 type="button"
@@ -315,7 +304,13 @@ export default function ModelosPerfil() {
                   {linha}
                 </span>
                 <span className="text-texto-suave shrink-0 text-sm">
-                  {daLinha.length} {daLinha.length === 1 ? 'perfil' : 'perfis'}
+                  <span className="block tabular-nums">
+                    {formatarResumo(resumo)}
+                  </span>
+                  <span className="block text-xs">
+                    {daLinha.length}{' '}
+                    {daLinha.length === 1 ? 'perfil' : 'perfis'}
+                  </span>
                 </span>
                 <ChevronRight
                   aria-hidden="true"
@@ -342,7 +337,7 @@ export default function ModelosPerfil() {
       )}
 
       <ul className="flex flex-col gap-2">
-        {visiveis.map((modelo) => (
+        {visiveisOrdenados.map((modelo) => (
           <li
             key={modelo.id}
             className="bg-superficie flex items-center gap-3 rounded-xl p-4 shadow-sm"
@@ -375,7 +370,11 @@ export default function ModelosPerfil() {
                 </span>
                 <span className="text-texto-suave block truncate text-sm">
                   {modelo.linha && `${modelo.linha} · `}
-                  barra de {formatarComprimento(modelo.comprimento_barra_mm)}
+                  <span className="tabular-nums">
+                    {resumoDe(porPerfil, modelo.id).pecas > 0
+                      ? formatarResumo(resumoDe(porPerfil, modelo.id))
+                      : 'sem estoque'}
+                  </span>
                   {modelo.aplicacao && ` · ${modelo.aplicacao}`}
                 </span>
               </span>
@@ -422,199 +421,15 @@ export default function ModelosPerfil() {
         aoFechar={() => setAberto(false)}
         titulo={editando ? 'Editar perfil' : 'Novo perfil'}
       >
-        <form onSubmit={aoEnviar} className="flex flex-col gap-4" noValidate>
-          <CampoTexto
-            rotulo="Código interno"
-            value={form.codigo}
-            onChange={(e) => setForm({ ...form, codigo: e.target.value })}
-            ajuda="O código que a sua empresa já usa para este perfil."
-            required
-          />
-
-          <CampoTexto
-            rotulo="Descrição"
-            value={form.descricao}
-            onChange={(e) => setForm({ ...form, descricao: e.target.value })}
-            required
-          />
-
-          <div className="grid grid-cols-2 gap-4">
-            <CampoSugestao
-              rotulo="Linha ou sistema"
-              valor={form.linha ?? ''}
-              aoMudar={(v) => setForm({ ...form, linha: v || null })}
-              sugestoes={linhasUsadas ?? []}
-              ajuda="Escolha uma já usada ou digite uma nova."
-            />
-            <CampoSugestao
-              rotulo="Fabricante"
-              valor={form.fabricante ?? ''}
-              aoMudar={(v) => setForm({ ...form, fabricante: v || null })}
-              sugestoes={fabricantesUsados ?? []}
-              ajuda="Escolha um já usado ou digite um novo."
-            />
-          </div>
-
-          <CampoSugestao
-            rotulo="Aplicação"
-            valor={form.aplicacao ?? ''}
-            aoMudar={(v) => setForm({ ...form, aplicacao: v || null })}
-            sugestoes={sugestoesAplicacao}
-            ajuda="Onde este perfil é usado na esquadria: lateral da porta, base da janela, montante…"
-          />
-
-          <CampoTexto
-            rotulo="Comprimento da barra nova (mm)"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            max={18000}
-            value={form.comprimento_barra_mm}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                comprimento_barra_mm: Number(e.target.value),
-              })
-            }
-            ajuda="Normalmente 6000 mm."
-            required
-          />
-
-          <CampoTexto
-            rotulo="Peso por metro em gramas (opcional)"
-            type="number"
-            inputMode="numeric"
-            min={1}
-            value={form.peso_por_metro_g ?? ''}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                peso_por_metro_g: e.target.value
-                  ? Number(e.target.value)
-                  : null,
-              })
-            }
-            ajuda="Em gramas, número inteiro. Ex.: 1180 para 1,18 kg/m."
-          />
-
-          {/* Medidas da seção — as que a trena alcança.
-              As duas primeiras chegam calculadas do peso e do desenho, e
-              ficam editáveis porque o cálculo erra uns 3 a 5%: quem tiver a
-              peça na mão corrige e o valor melhora. As duas últimas são
-              cotas internas, que não saem do desenho de jeito nenhum — só
-              medindo. Todas opcionais; quanto mais preenchidas, mais fácil
-              identificar a ponta depois. */}
-          <fieldset className="border-borda rounded-xl border-2 p-4">
-            <legend className="px-2 font-medium">Medidas da seção (mm)</legend>
-
-            <div className="grid grid-cols-2 gap-4">
-              <CampoTexto
-                rotulo="Medida 1"
-                type="text"
-                inputMode="decimal"
-                placeholder="0"
-                value={textoDe(form.largura_secao_mm)}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    largura_secao_mm: numeroDe(e.target.value),
-                  })
-                }
-              />
-              <CampoTexto
-                rotulo="Medida 2"
-                type="text"
-                inputMode="decimal"
-                placeholder="0"
-                value={textoDe(form.altura_secao_mm)}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    altura_secao_mm: numeroDe(e.target.value),
-                  })
-                }
-              />
-              <CampoTexto
-                rotulo="Medida 3"
-                type="text"
-                inputMode="decimal"
-                placeholder="0"
-                value={textoDe(form.medida_3_secao_mm)}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    medida_3_secao_mm: numeroDe(e.target.value),
-                  })
-                }
-              />
-              <CampoTexto
-                rotulo="Medida 4"
-                type="text"
-                inputMode="decimal"
-                placeholder="0"
-                value={textoDe(form.medida_4_secao_mm)}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    medida_4_secao_mm: numeroDe(e.target.value),
-                  })
-                }
-              />
-            </div>
-
-            {/* Aqui a ORDEM IMPORTA, ao contrário da tela de identificação:
-                é ela que casa com o que a ficha mostra e com o que o cálculo
-                do desenho grava. Por isso o texto abaixo diz o que é cada
-                número, já que os rótulos não dizem mais. */}
-            <p className="text-texto-suave mt-2 text-sm">
-              As duas primeiras são a largura e a altura por fora, e vêm
-              calculadas do peso e do desenho — corrija se a peça disser outra
-              coisa. As duas últimas são cotas internas (aba, câmara, encaixe),
-              que só saem medindo. Todas opcionais: quanto mais o catálogo
-              souber, mais estreita fica a lista na identificação.
-            </p>
-          </fieldset>
-
-          {/* Desenho e foto no mesmo lugar do resto do cadastro: eram uma
-              tela à parte, e ninguém edita "o texto" numa hora e "a imagem"
-              noutra — edita o perfil. Só na edição: o perfil precisa existir
-              para ter onde pendurar a imagem. */}
-          {editando && (
-            <div className="flex flex-col gap-6">
-              <GaleriaDesenhos modelo={editando} tipo="imagem" />
-              <div className="border-borda border-t pt-6">
-                <GaleriaDesenhos modelo={editando} tipo="foto" />
-              </div>
-            </div>
-          )}
-
-          {erro && (
-            <p
-              role="alert"
-              className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3"
-            >
-              {erro}
-            </p>
-          )}
-
-          <div className="flex gap-3">
-            <Botao
-              type="button"
-              variante="contorno"
-              onClick={() => setAberto(false)}
-              className="flex-1"
-            >
-              Cancelar
-            </Botao>
-            <Botao
-              type="submit"
-              carregando={criar.isPending || editar.isPending}
-              className="flex-1"
-            >
-              Salvar
-            </Botao>
-          </div>
-        </form>
+        <FormularioModeloPerfil
+          form={form}
+          aoMudar={setForm}
+          modelo={editando}
+          aoSalvar={aoEnviar}
+          aoCancelar={() => setAberto(false)}
+          salvando={criar.isPending || editar.isPending}
+          erro={erro}
+        />
       </Modal>
     </PaginaLista>
   )
