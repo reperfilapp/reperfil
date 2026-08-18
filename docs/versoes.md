@@ -90,6 +90,12 @@ tamanho do lápis ao lado. O rótulo continua acessível — o leitor de tela
 anuncia "Desativar" com o nome do registro, e no computador aparece a
 dica ao passar o mouse.
 
+**E o erro dessa migração agora fala português.** Sem a migração
+aplicada, preencher a terceira ou a quarta medida devolvia
+"Could not find the 'medida_3_secao_mm' column of 'modelos_perfil' in
+the schema cache". Agora a tela diz qual migração falta e avisa que o
+resto do cadastro grava normalmente com esses dois campos em branco.
+
 ## 1.6.19 — 17/08/2026
 
 **Atalho de identificação nos campos de perfil, estoque por linha e ícone

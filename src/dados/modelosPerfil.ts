@@ -206,6 +206,29 @@ function semMedidasExtrasVazias<T extends Partial<DadosModeloPerfil>>(
   return copia
 }
 
+/**
+ * Traduz o erro de coluna inexistente para o que a pessoa pode fazer.
+ *
+ * Quando a migração das medidas extras ainda não foi aplicada, o Supabase
+ * devolve algo como "Could not find the 'medida_3_secao_mm' column of
+ * 'modelos_perfil' in the schema cache" — em inglês, falando de cache de
+ * esquema. Quem está no depósito com a peça na mão não tem como saber que
+ * isso quer dizer "falta rodar um SQL no banco", nem que as outras medidas
+ * teriam gravado normalmente.
+ */
+function traduzirErro(mensagem: string): string {
+  if (/medida_[34]_secao_mm/.test(mensagem)) {
+    return (
+      'A terceira e a quarta medida ainda não existem no banco desta ' +
+      'organização. Peça para aplicar a migração ' +
+      '20260817220000_medidas_extras_da_secao.sql. Até lá, o perfil grava ' +
+      'normalmente com as outras informações — deixe esses dois campos em branco.'
+    )
+  }
+
+  return mensagem
+}
+
 export function useCriarModeloPerfil() {
   const cliente = useQueryClient()
 
@@ -223,7 +246,7 @@ export function useCriarModeloPerfil() {
             `Já existe um perfil com o código ${dados.codigo}. O código interno precisa ser único.`,
           )
         }
-        throw new Error(error.message)
+        throw new Error(traduzirErro(error.message))
       }
 
       return data as ModeloPerfil
@@ -256,7 +279,7 @@ export function useEditarModeloPerfil() {
         if (error.code === '23505') {
           throw new Error('Já existe um perfil com este código.')
         }
-        throw new Error(error.message)
+        throw new Error(traduzirErro(error.message))
       }
 
       return data as ModeloPerfil
