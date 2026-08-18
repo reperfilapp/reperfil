@@ -222,3 +222,75 @@ export function useSobra(id: string | null) {
     },
   })
 }
+
+/**
+ * Acrescenta peças a um lote existente, em vez de criar outro.
+ *
+ * Chama a mesma família de funções do banco que o cadastro usa: a soma e a
+ * movimentação de entrada acontecem na mesma transação, e a linha do lote
+ * fica travada enquanto isso. Duas pessoas lançando a mesma remessa ao mesmo
+ * tempo somariam 8 e 8, não 8.
+ */
+export function useSomarAoLote() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      loteId,
+      quantidade,
+      origem,
+    }: {
+      loteId: string
+      quantidade: number
+      origem: string | null
+    }): Promise<LoteSobra> => {
+      const { data, error } = await supabase.rpc('somar_ao_lote', {
+        p_lote_id: loteId,
+        p_quantidade: quantidade,
+        p_origem: origem,
+      })
+
+      if (error) throw new Error(error.message)
+
+      return data as LoteSobra
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.sobras })
+    },
+  })
+}
+
+/**
+ * Move as peças de um lote para outro equivalente.
+ *
+ * Uma chamada só, e não "somar aqui, encerrar ali": se a rede caísse entre
+ * as duas, o material apareceria em dobro ou sumiria do estoque — e sumir é
+ * o pior tipo de erro num depósito, porque só é descoberto quando alguém vai
+ * buscar a peça. O banco confere de novo o trio perfil/acabamento/
+ * comprimento, porque a tela pode estar mostrando dados de um minuto atrás.
+ */
+export function useJuntarLotes() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      destinoId,
+      origemId,
+    }: {
+      destinoId: string
+      origemId: string
+    }): Promise<LoteSobra> => {
+      const { data, error } = await supabase.rpc('juntar_lotes', {
+        p_destino_id: destinoId,
+        p_origem_id: origemId,
+      })
+
+      if (error) throw new Error(error.message)
+
+      return data as LoteSobra
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.sobras })
+    },
+  })
+}

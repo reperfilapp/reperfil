@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import { CheckCircle2, Copy, PackagePlus } from 'lucide-react'
-import { useCadastrarSobra, type DadosNovaSobra } from '@/dados/sobras'
+import {
+  useCadastrarSobra,
+  useSomarAoLote,
+  useSobras,
+  type DadosNovaSobra,
+} from '@/dados/sobras'
+import { loteEquivalente } from '@/dominio/duplicidade'
 import { useAcabamentos } from '@/dados/acabamentos'
 import { useLocalizacoes, descreverLocalizacao } from '@/dados/localizacoes'
 import { SeletorPerfil } from '@/componentes/SeletorPerfil'
@@ -51,6 +57,8 @@ interface UltimoLancamento {
 
 export default function CadastrarSobra() {
   const cadastrar = useCadastrarSobra()
+  const somar = useSomarAoLote()
+  const { data: sobras } = useSobras()
   const { data: acabamentos } = useAcabamentos()
   const { data: locais } = useLocalizacoes()
 
@@ -77,6 +85,24 @@ export default function CadastrarSobra() {
     setFotoCaminho(caminho)
     setFotoPrevia(await obterLinkTemporario(BALDE_FOTOS, caminho))
   }
+
+  /*
+   * O lote que já guarda peças iguais às que estão sendo lançadas — mesmo
+   * perfil, mesmo acabamento, mesmo comprimento.
+   *
+   * Aparece ANTES de salvar, e não como erro depois: quem está lançando uma
+   * remessa tem a informação na hora de decidir, e a decisão continua sendo
+   * dele. Há motivo legítimo para manter separado (uma remessa que veio com
+   * defeito e vai ser devolvida, por exemplo), então o aviso não bloqueia.
+   */
+  const jaExiste =
+    modelo !== null && acabamentoId !== '' && comprimentoMm !== null
+      ? loteEquivalente(sobras ?? [], {
+          modelo_perfil_id: modelo.id,
+          acabamento_id: acabamentoId,
+          comprimento_mm: comprimentoMm,
+        })
+      : null
 
   const prontoParaSalvar =
     modelo !== null &&
@@ -124,6 +150,45 @@ export default function CadastrarSobra() {
       }
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível salvar.')
+    }
+  }
+
+  async function somarAoExistente(continuarCadastrando: boolean) {
+    if (!modelo || jaExiste === null) return
+
+    setErro(null)
+
+    try {
+      await somar.mutateAsync({
+        loteId: jaExiste.id,
+        quantidade,
+        origem: origem.trim() === '' ? null : origem.trim(),
+      })
+
+      setUltimo({
+        modelo,
+        dados: {
+          modelo_perfil_id: modelo.id,
+          acabamento_id: acabamentoId,
+          comprimento_mm: comprimentoMm ?? 0,
+          quantidade,
+          localizacao_id: localizacaoId === '' ? null : localizacaoId,
+          estado,
+          origem: origem.trim() === '' ? null : origem.trim(),
+          observacoes: null,
+          foto_url: fotoCaminho,
+        },
+        codigoGerado: jaExiste.codigo,
+      })
+
+      setTextoMedida('')
+      setQuantidade(1)
+      setFotoCaminho(null)
+      setFotoPrevia(null)
+
+      if (!continuarCadastrando) setModelo(null)
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Não foi possível somar.')
     }
   }
 
@@ -351,6 +416,45 @@ export default function CadastrarSobra() {
               </section>
             )}
 
+            {/* Já existe lote igual: avisa e oferece somar. O aviso NÃO
+                bloqueia — há motivo legítimo para manter separado, como uma
+                remessa com defeito que vai voltar para o fornecedor. Quem
+                decide é quem está com as peças na mão. */}
+            {prontoParaSalvar && jaExiste && (
+              <section
+                aria-label="Lote igual já cadastrado"
+                className="border-atencao-300 bg-atencao-50 rounded-xl border-2 p-4"
+              >
+                <p className="text-atencao-700 font-semibold">
+                  Já existe um lote igual: {jaExiste.codigo}
+                </p>
+                <p className="text-grafite-800 mt-1 text-sm">
+                  Mesmo perfil, mesmo acabamento e mesmo comprimento, com{' '}
+                  {jaExiste.quantidade}{' '}
+                  {jaExiste.quantidade === 1 ? 'peça' : 'peças'}. Somando, ele
+                  passa a ter {jaExiste.quantidade + quantidade}.
+                </p>
+
+                <div className="mt-3 flex flex-col gap-2">
+                  <Botao
+                    tamanho="largura_total"
+                    carregando={somar.isPending}
+                    onClick={() => void somarAoExistente(true)}
+                  >
+                    Somar a {jaExiste.codigo} e continuar
+                  </Botao>
+                  <Botao
+                    variante="contorno"
+                    tamanho="largura_total"
+                    carregando={somar.isPending}
+                    onClick={() => void somarAoExistente(false)}
+                  >
+                    Somar a {jaExiste.codigo} e encerrar
+                  </Botao>
+                </div>
+              </section>
+            )}
+
             {erro && (
               <p
                 role="alert"
@@ -363,11 +467,14 @@ export default function CadastrarSobra() {
             <div className="flex flex-col gap-3">
               <Botao
                 tamanho="largura_total"
+                variante={jaExiste ? 'contorno' : 'primaria'}
                 disabled={!prontoParaSalvar}
                 carregando={cadastrar.isPending}
                 onClick={() => void salvar(true)}
               >
-                Salvar e cadastrar outra
+                {jaExiste
+                  ? 'Cadastrar separado e continuar'
+                  : 'Salvar e cadastrar outra'}
               </Botao>
 
               <Botao
@@ -377,7 +484,9 @@ export default function CadastrarSobra() {
                 carregando={cadastrar.isPending}
                 onClick={() => void salvar(false)}
               >
-                Salvar e encerrar
+                {jaExiste
+                  ? 'Cadastrar separado e encerrar'
+                  : 'Salvar e encerrar'}
               </Botao>
             </div>
 

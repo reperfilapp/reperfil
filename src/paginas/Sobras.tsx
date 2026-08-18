@@ -7,6 +7,7 @@ import {
   Tag,
   ChevronRight,
   Layers,
+  Copy,
 } from 'lucide-react'
 import { useSobras, type SobraDetalhada } from '@/dados/sobras'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
@@ -15,6 +16,7 @@ import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { formatarComprimento } from '@/dominio/medidas'
 import { SEM_LINHA } from '@/dados/modelosPerfil'
+import { duplicadosNoEstoque } from '@/dominio/duplicidade'
 import {
   resumirPorLinha,
   resumirPorPerfil,
@@ -168,6 +170,8 @@ export default function Sobras() {
       ? []
       : daLinha.filter((s) => s.modelo_perfil_id === perfilAberto)
 
+  const repetidos = duplicadosNoEstoque(sobras ?? []).length
+
   const mostrandoLinhas = !buscando && linhaAberta === null
   const mostrandoPerfis =
     !buscando && linhaAberta !== null && perfilAberto === null
@@ -279,6 +283,35 @@ export default function Sobras() {
         ) : undefined
       }
     >
+      {/* Aviso de material contado duas vezes. Só na porta de entrada, e
+          só quando existe: quem vê "8 peças" e "51 peças" separadas desiste
+          de um corte que caberia nas 59. */}
+      {!isPending && mostrandoLinhas && repetidos > 0 && (
+        <Link
+          to="/sobras/repetidos"
+          className="bg-atencao-50 border-atencao-300 mb-3 flex items-center gap-3 rounded-xl border p-4"
+        >
+          <Copy
+            aria-hidden="true"
+            className="text-atencao-700 size-5 shrink-0"
+          />
+          <span className="min-w-0 flex-1 text-sm">
+            <span className="text-atencao-700 block font-semibold">
+              {repetidos === 1
+                ? '1 material aparece em lotes repetidos'
+                : `${repetidos} materiais aparecem em lotes repetidos`}
+            </span>
+            <span className="text-texto-suave">
+              Mesmo perfil, acabamento e comprimento em cadastros separados.
+            </span>
+          </span>
+          <ChevronRight
+            aria-hidden="true"
+            className="text-texto-suave size-4 shrink-0"
+          />
+        </Link>
+      )}
+
       {/* Lista de linhas: a porta de entrada do estoque. */}
       {!isPending && mostrandoLinhas && grupos.length > 0 && (
         <ul className="flex flex-col gap-2">

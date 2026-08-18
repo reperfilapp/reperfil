@@ -35,6 +35,7 @@ import ColaboradorDetalhe from '@/paginas/detalhes/ColaboradorDetalhe'
 import Produtos from '@/paginas/cadastros/Produtos'
 import ProdutoDetalhe from '@/paginas/detalhes/ProdutoDetalhe'
 import OQueProduzir from '@/paginas/OQueProduzir'
+import LotesRepetidos from '@/paginas/LotesRepetidos'
 
 /**
  * Casca da aplicação.
@@ -68,6 +69,7 @@ export default function App() {
                 />
                 <Route path="/" element={<Inicio />} />
                 <Route path="/sobras" element={<Sobras />} />
+                <Route path="/sobras/repetidos" element={<LotesRepetidos />} />
                 <Route path="/sobras/:id" element={<SobraDetalhe />} />
                 <Route path="/cadastrar" element={<CadastrarSobra />} />
                 <Route path="/procurar" element={<PesquisarSobras />} />

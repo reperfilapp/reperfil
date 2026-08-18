@@ -45,6 +45,58 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.35 — 18/08/2026
+
+**Material contado duas vezes: aviso no cadastro e faxina no que já existe.**
+
+⚠️ **Mais uma migração:** `20260818160000_somar_ao_lote.sql`.
+
+Quem cadastra uma remessa nova do que já está na prateleira acabava criando
+um segundo lote. O depósito passava a ter dois códigos, duas etiquetas e duas
+prateleiras possíveis para peças que são a mesma coisa — e quem procura
+material via "8 peças" e "51 peças" em vez de 59, desistindo de um corte que
+caberia.
+
+**No cadastro**, ao escolher perfil, acabamento e comprimento, o sistema
+avisa se já existe lote igual e oferece somar: "Já existe SB-87GN com 51
+peças. Somando, ele passa a ter 59."
+
+O aviso **não bloqueia**. Há motivo legítimo para manter separado — uma
+remessa com defeito que vai voltar para o fornecedor, por exemplo. Quem
+decide é quem está com as peças na mão; o botão de cadastrar separado
+continua ali, só deixa de ser o primeiro.
+
+**Lotes repetidos**, em Sobras, encontra o que já foi cadastrado em dobro e
+junta. O aviso resolve daqui para a frente; o estoque atual foi montado antes
+dele, por importação de planilha ou por duas pessoas lançando a mesma
+remessa.
+
+### O que define "a mesma coisa"
+
+Perfil, acabamento e comprimento. Nada além disso — é o que decide se as
+peças são intercambiáveis na hora do corte. Comprimento é comparação
+**exata**: 5.980 mm não é 6.000, e quem contar com os 20 mm a mais descobre
+no meio do corte.
+
+A localização fica de fora de propósito: peças iguais em prateleiras
+diferentes ainda são a mesma coisa para quem procura material.
+
+### Juntar não apaga nada
+
+As peças passam para o lote mais antigo — o que já está etiquetado na
+prateleira e conhecido pela equipe — e o esvaziado fica registrado como
+consumido, com duas movimentações de transferência ligando um ao outro. Dá
+para reconstituir o que aconteceu.
+
+Lote com peça **reservada** fica de fora: a reserva aponta para ele, e mover
+as peças a deixaria apontando para o vazio.
+
+**Tudo numa transação só no banco.** Somar num lugar e encerrar noutro, em
+duas chamadas, deixaria o material contado em dobro ou sumido se a rede
+caísse no meio — e sumir é o pior tipo de erro num depósito, porque só
+aparece quando alguém vai buscar a peça. O banco confere o trio de novo, por
+conta própria: a tela pode estar mostrando dados de um minuto atrás.
+
 ## 1.6.34 — 18/08/2026
 
 **O estoque ordenado por quem tem mais, e o destaque legível no escuro.**
