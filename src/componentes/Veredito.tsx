@@ -26,6 +26,7 @@ export function Veredito({
   unidades,
   desejada,
   atendePedido,
+  soFaltaAcabamento,
   acabamento,
   semReceita,
   faltas,
@@ -36,6 +37,8 @@ export function Veredito({
   desejada: number
   /** O estoque cobre a quantidade desejada? */
   atendePedido: boolean
+  /** Há material para todos os cortes, mas espalhado em acabamentos? */
+  soFaltaAcabamento: boolean
   acabamento: string | null
   semReceita: boolean
   faltas: readonly Falta[]
@@ -110,7 +113,16 @@ export function Veredito({
           </p>
         )}
 
-        {faltas.length === 0 ? (
+        {soFaltaAcabamento ? (
+          /* Tudo verde na lista e "não dá" aqui em cima seria
+             incompreensível sem esta frase. */
+          <p className="text-texto-suave mt-1 text-sm">
+            Há material para todos os cortes, mas em acabamentos diferentes — e
+            uma peça sai toda do mesmo acabamento. Junte o que falta num
+            acabamento só, ou confira se as sobras estão cadastradas com o
+            acabamento certo.
+          </p>
+        ) : faltas.length === 0 ? (
           <p className="text-texto-suave mt-1 text-sm">
             Não há sobra disponível dos perfis desta lista.
           </p>

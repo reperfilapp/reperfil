@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { unidadesProduziveis, type SobraDisponivel } from './producao'
+import {
+  unidadesProduziveis,
+  cortesAtendidos,
+  chaveDoCorte,
+  type SobraDisponivel,
+} from './producao'
 import { CONFIGURACAO_CORTE_PADRAO } from './corte'
 
 const CONFIG = CONFIGURACAO_CORTE_PADRAO
@@ -179,5 +184,73 @@ describe('quantas unidades saem das sobras', () => {
     )
 
     expect(resultado.unidades).toBe(1)
+  })
+})
+
+describe('cortes atendidos, um perfil de cada vez', () => {
+  it('marca o corte que tem material, mesmo em outro acabamento', () => {
+    // O caso que motivou a função: uma janela precisa de dois perfis, e cada
+    // um só existe num acabamento diferente. A peça inteira não sai — mas
+    // dizer que FALTA material para os dois cortes é mentira: os dois estão
+    // na prateleira.
+    const lista = [
+      { modelo_perfil_id: MARCO, comprimento_mm: 1455, quantidade: 1 },
+      { modelo_perfil_id: FOLHA, comprimento_mm: 1455, quantidade: 1 },
+    ]
+
+    const estoque = [
+      sobra(MARCO, 6000, 1, BRANCO),
+      sobra(FOLHA, 3870, 1, PRETO),
+    ]
+
+    const atendidos = cortesAtendidos(lista, estoque, CONFIG)
+
+    expect(atendidos.get(chaveDoCorte(lista[0]!))).toBe(true)
+    expect(atendidos.get(chaveDoCorte(lista[1]!))).toBe(true)
+
+    // E a peça inteira continua não saindo, porque ninguém entrega janela
+    // metade branca — as duas respostas convivem.
+    expect(unidadesProduziveis(lista, estoque, CONFIG).unidades).toBe(0)
+  })
+
+  it('marca como falta o corte sem material nenhum', () => {
+    const lista = [
+      { modelo_perfil_id: MARCO, comprimento_mm: 1455, quantidade: 1 },
+    ]
+
+    expect(
+      cortesAtendidos(lista, [], CONFIG).get(chaveDoCorte(lista[0]!)),
+    ).toBe(false)
+  })
+
+  it('resolve juntos os cortes do mesmo perfil', () => {
+    // Duas peças de 3 m pedidas de uma barra de 6 m: com a serra no meio, a
+    // segunda não cabe. Perguntar corte a corte, isolado, diria que sim.
+    const lista = [
+      { modelo_perfil_id: MARCO, comprimento_mm: 3000, quantidade: 2 },
+    ]
+
+    expect(
+      cortesAtendidos(lista, [sobra(MARCO, 6000, 1)], CONFIG).get(
+        chaveDoCorte(lista[0]!),
+      ),
+    ).toBe(false)
+  })
+
+  it('escolhe o acabamento que atende mais cortes do perfil', () => {
+    const lista = [
+      { modelo_perfil_id: MARCO, comprimento_mm: 2000, quantidade: 1 },
+      { modelo_perfil_id: MARCO, comprimento_mm: 1000, quantidade: 1 },
+    ]
+
+    // Branco cobre os dois; preto cobriria só o curto.
+    const atendidos = cortesAtendidos(
+      lista,
+      [sobra(MARCO, 6000, 1, BRANCO), sobra(MARCO, 1100, 1, PRETO)],
+      CONFIG,
+    )
+
+    expect(atendidos.get(chaveDoCorte(lista[0]!))).toBe(true)
+    expect(atendidos.get(chaveDoCorte(lista[1]!))).toBe(true)
   })
 })

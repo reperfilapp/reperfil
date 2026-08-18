@@ -254,3 +254,112 @@ function tentarUmaUnidade(
 
   return faltas
 }
+
+/**
+ * Quais cortes da lista têm material, olhando um perfil de cada vez.
+ *
+ * ── POR QUE ISTO É DIFERENTE DE `unidadesProduziveis` ────────────────────
+ *
+ * Aquela função responde "dá para fazer a peça inteira?", e por isso exige
+ * que TUDO saia do mesmo acabamento. Esta responde outra pergunta, mais
+ * simples: "tenho material para este corte?".
+ *
+ * As duas precisam existir porque a tela mostra as duas coisas. O veredito
+ * fala da peça; cada linha da lista fala de si mesma. Colorir as linhas pela
+ * primeira função produzia o absurdo de marcar em vermelho um corte com
+ * material sobrando na prateleira — só porque o acabamento escolhido para a
+ * peça inteira era outro.
+ *
+ * ── POR QUE POR PERFIL, E NÃO POR CORTE ──────────────────────────────────
+ *
+ * Dois cortes do mesmo perfil disputam as mesmas peças: pedir 2 × 3.000 mm e
+ * 1 × 2.000 mm de um perfil que só tem uma barra de 6 m não é três perguntas
+ * independentes. Então cada perfil é resolvido junto, e dentro dele escolhe-se
+ * o acabamento que atende mais cortes.
+ */
+export function cortesAtendidos(
+  lista: readonly ItemNecessario[],
+  sobras: readonly SobraDisponivel[],
+  config: ConfiguracaoCorte,
+): Map<string, boolean> {
+  const atendidos = new Map<string, boolean>()
+  const perfis = new Set(lista.map((item) => item.modelo_perfil_id))
+
+  for (const perfilId of perfis) {
+    const doPerfil = lista.filter((item) => item.modelo_perfil_id === perfilId)
+    const sobrasDoPerfil = sobras.filter(
+      (sobra) => sobra.modelo_perfil_id === perfilId,
+    )
+    const acabamentos = [...new Set(sobrasDoPerfil.map((s) => s.acabamento_id))]
+
+    let melhor: Map<string, boolean> | null = null
+    let melhorAcertos = -1
+
+    for (const acabamento of acabamentos) {
+      const resultado = atenderNoAcabamento(
+        doPerfil,
+        sobrasDoPerfil.filter((s) => s.acabamento_id === acabamento),
+        config,
+      )
+      const acertos = [...resultado.values()].filter(Boolean).length
+
+      if (acertos > melhorAcertos) {
+        melhor = resultado
+        melhorAcertos = acertos
+      }
+    }
+
+    // Perfil sem sobra nenhuma: todos os cortes dele ficam por atender.
+    const resultado =
+      melhor ?? new Map(doPerfil.map((item) => [chaveDoCorte(item), false]))
+
+    for (const [chave, valor] of resultado) atendidos.set(chave, valor)
+  }
+
+  return atendidos
+}
+
+/** Identidade de um corte na lista: perfil e comprimento. */
+export function chaveDoCorte(item: {
+  modelo_perfil_id: string
+  comprimento_mm: number
+}): string {
+  return `${item.modelo_perfil_id}|${item.comprimento_mm}`
+}
+
+function atenderNoAcabamento(
+  itens: readonly ItemNecessario[],
+  sobras: readonly SobraDisponivel[],
+  config: ConfiguracaoCorte,
+): Map<string, boolean> {
+  const pecas: PecaEmUso[] = []
+
+  for (const sobra of sobras) {
+    for (let i = 0; i < sobra.quantidade; i++) {
+      pecas.push({
+        comprimento_mm: sobra.comprimento_mm,
+        restante_mm: sobra.comprimento_mm,
+      })
+    }
+  }
+
+  const resultado = new Map<string, boolean>()
+
+  // Do corte mais longo para o mais curto, pelo mesmo motivo de sempre: peça
+  // longa é a difícil de encaixar.
+  const ordenados = [...itens].sort(
+    (a, b) => b.comprimento_mm - a.comprimento_mm,
+  )
+
+  for (const item of ordenados) {
+    let atendidos = 0
+
+    for (let i = 0; i < item.quantidade; i++) {
+      if (consumirCorte(pecas, item.comprimento_mm, config)) atendidos++
+    }
+
+    resultado.set(chaveDoCorte(item), atendidos >= item.quantidade)
+  }
+
+  return resultado
+}

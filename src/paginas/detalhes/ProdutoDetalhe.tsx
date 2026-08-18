@@ -25,7 +25,11 @@ import { useAcabamentos } from '@/dados/acabamentos'
 import { useConfiguracoes, paraConfiguracaoCorte } from '@/dados/configuracoes'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeGerenciarCadastros } from '@/autenticacao/contexto'
-import { unidadesProduziveis } from '@/dominio/producao'
+import {
+  unidadesProduziveis,
+  cortesAtendidos,
+  chaveDoCorte,
+} from '@/dominio/producao'
 import { resumirPorPerfil, resumoDe } from '@/dominio/estoqueResumo'
 import { sobrasDisponiveis } from '@/dominio/estoqueParaProducao'
 import { formatarMedidaProduto } from '@/dominio/produto'
@@ -80,6 +84,15 @@ export default function ProdutoDetalhe() {
    * se pergunta "e três?".
    */
   const [desejada, setDesejada] = useState(1)
+  /*
+   * Ligado por padrão porque é a verdade da oficina: ninguém entrega uma
+   * janela com o marco branco e a folha preta. Desligar serve para a
+   * pergunta anterior — "tenho o material, independente da cor?" —, que é o
+   * que se quer saber antes de decidir mandar pintar.
+   */
+  const [mesmaCor, setMesmaCor] = useState(true)
+  /** Acabamento fixado pela pessoa. Nulo = o sistema escolhe o que rende mais. */
+  const [corEscolhida, setCorEscolhida] = useState<string | null>(null)
 
   // `?montar=1` chega de quem acabou de cadastrar o produto: o formulário do
   // primeiro corte já abre. O parâmetro sai da URL em seguida, senão
@@ -201,7 +214,19 @@ export default function ProdutoDetalhe() {
     ? paraConfiguracaoCorte(config)
     : CONFIGURACAO_CORTE_PADRAO
 
-  const disponiveis = sobrasDisponiveis(sobras ?? [])
+  const todasDisponiveis = sobrasDisponiveis(sobras ?? [])
+
+  /*
+   * As opções da tela viram uma transformação das sobras, e não um
+   * parâmetro novo no cálculo: "ignorar a cor" é o mesmo que dizer que tudo
+   * está no mesmo acabamento, e "usar esta cor" é o mesmo que só existir ela
+   * no depósito. O cálculo continua com uma regra só.
+   */
+  const disponiveis = !mesmaCor
+    ? todasDisponiveis.map((sobra) => ({ ...sobra, acabamento_id: 'qualquer' }))
+    : corEscolhida === null
+      ? todasDisponiveis
+      : todasDisponiveis.filter((s) => s.acabamento_id === corEscolhida)
 
   const lista = (itens ?? []).map((item) => ({
     modelo_perfil_id: item.modelo_perfil_id,
@@ -233,18 +258,38 @@ export default function ProdutoDetalhe() {
 
   const atendePedido = pedido.unidades >= 1
 
-  /** Os perfis que não fecham o pedido — usados para colorir as linhas. */
-  const faltando = new Set(
-    pedido.faltas.map(
-      (falta) => `${falta.modelo_perfil_id}|${falta.comprimento_mm}`,
-    ),
+  /*
+   * A cor de cada linha vem do atendimento POR CORTE, não das faltas do
+   * pedido. As faltas nascem do cálculo da peça inteira, que exige um único
+   * acabamento — e assim um corte com material sobrando na prateleira
+   * aparecia em vermelho só porque o acabamento escolhido para a peça era
+   * outro. A linha responde por si; o veredito responde pela peça.
+   */
+  const atendidos = cortesAtendidos(
+    lista.map((item) => ({
+      ...item,
+      quantidade: item.quantidade * desejada,
+    })),
+    disponiveis,
+    configCorte,
   )
+
+  /*
+   * Todo corte tem material e mesmo assim a peça não sai: é o acabamento
+   * que impede. Sem dizer isso, a tela fica incompreensível — tudo verde e
+   * um aviso vermelho em cima.
+   */
+  const soFaltaAcabamento =
+    mesmaCor &&
+    !atendePedido &&
+    lista.length > 0 &&
+    lista.every((item) => atendidos.get(chaveDoCorte(item)) === true)
 
   const estoquePorPerfil = resumirPorPerfil(sobras ?? [])
 
-  const acabamentoDoResultado = acabamentos?.find(
-    (a) => a.id === resultado.acabamento_id,
-  )
+  const acabamentoDoResultado = mesmaCor
+    ? acabamentos?.find((a) => a.id === resultado.acabamento_id)
+    : undefined
 
   return (
     <PaginaDetalhe
@@ -254,17 +299,20 @@ export default function ProdutoDetalhe() {
       titulo={produto.nome}
       subtitulo={formatarMedidaProduto(produto)}
       acoes={
-        // A quantidade fica encostada na margem direita, e o Editar na
-        // esquerda: são coisas de natureza diferente — uma muda o cadastro,
-        // a outra só faz uma pergunta ao estoque.
-        <div className="flex w-full items-center justify-between gap-3">
-          {podeEditar ? (
-            <Botao variante="secundaria" onClick={abrirEdicao}>
+        // Tudo numa faixa só: o que se ajusta para fazer a pergunta ao
+        // estoque fica junto, e o lápis vira só o ícone para caber. Em tela
+        // estreita a faixa quebra em duas — melhor do que espremer os
+        // controles até o toque errar o alvo.
+        <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2">
+          {podeEditar && (
+            <Botao
+              variante="secundaria"
+              onClick={abrirEdicao}
+              aria-label="Editar produto"
+              title="Editar"
+            >
               <Pencil aria-hidden="true" className="size-4" />
-              Editar
             </Botao>
-          ) : (
-            <span />
           )}
 
           <label className="flex items-center gap-2">
@@ -276,6 +324,45 @@ export default function ProdutoDetalhe() {
               compacto
             />
           </label>
+
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="size-5"
+              checked={mesmaCor}
+              onChange={(e) => {
+                setMesmaCor(e.target.checked)
+                // Some a cor fixada junto: ela não significa nada com a
+                // regra desligada, e voltaria a valer sozinha ao religar,
+                // sem ninguém ter pedido.
+                if (!e.target.checked) setCorEscolhida(null)
+              }}
+            />
+            Mesma cor
+          </label>
+
+          {/* Só aparece quando a cor importa. Um seletor inerte ao lado de
+              uma opção desligada convida a mexer no que não tem efeito.
+
+              No celular ocupa a linha inteira: sozinho na segunda fileira,
+              um campo estreito deixa um vazio à direita e ainda corta nomes
+              como "Amadeirado marrom". No desktop volta a caber na mesma
+              linha dos outros controles, que é onde ele pertence. */}
+          {mesmaCor && (
+            <select
+              value={corEscolhida ?? ''}
+              onChange={(e) => setCorEscolhida(e.target.value || null)}
+              aria-label="Cor a considerar"
+              className="border-borda bg-superficie min-h-11 w-full rounded-xl border-2 px-2 text-sm sm:w-auto"
+            >
+              <option value="">Melhor cor</option>
+              {acabamentos?.map((acabamento) => (
+                <option key={acabamento.id} value={acabamento.id}>
+                  {acabamento.nome}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       }
     >
@@ -283,6 +370,7 @@ export default function ProdutoDetalhe() {
         unidades={resultado.unidades}
         desejada={desejada}
         atendePedido={atendePedido}
+        soFaltaAcabamento={soFaltaAcabamento}
         acabamento={acabamentoDoResultado?.nome ?? null}
         semReceita={(itens ?? []).length === 0}
         faltas={pedido.faltas.map((falta) => ({
@@ -312,9 +400,7 @@ export default function ProdutoDetalhe() {
             {itens?.map((item) => {
               const desenho = capas?.get(item.modelo_perfil_id)
               const estoque = resumoDe(estoquePorPerfil, item.modelo_perfil_id)
-              const falta = faltando.has(
-                `${item.modelo_perfil_id}|${item.comprimento_mm}`,
-              )
+              const falta = atendidos.get(chaveDoCorte(item)) !== true
 
               return (
                 <li

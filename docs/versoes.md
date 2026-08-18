@@ -45,6 +45,46 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.38 — 18/08/2026
+
+**Código do perfil conferido enquanto se digita, e a cor como opção no
+cálculo de produção.**
+
+**O código repetido só era acusado ao salvar**, pelo erro do banco, depois de
+a pessoa ter preenchido o formulário inteiro. Agora, a cada tecla: o campo
+fica vermelho com "Já existe: MN-002 — Marco intermediário" e o Salvar
+desabilita.
+
+E abaixo do campo aparecem os códigos da mesma série — digitando `MN-0`,
+mostra MN-001, MN-002, MN-032… É o catálogo aberto ao lado da bancada: dá
+para ver qual número está livre antes de escolher.
+
+A comparação **ignora maiúsculas e espaços**. O banco distingue `MN-003` de
+`mn-003` e aceitaria os dois; para quem usa são o mesmo perfil, e esse é o
+pior caso possível — a busca acha um, a sobra é lançada no outro, e o estoque
+fica dividido entre dois cadastros que ninguém percebe serem iguais. Perfis
+inativos também bloqueiam o código: continuam ocupando ele.
+
+**A cor da linha estava mentindo.** Um corte com material sobrando aparecia
+em vermelho. A cor vinha do cálculo da peça inteira, que exige um acabamento
+só — e o número entre parênteses, que soma todos, dizia o contrário. Número e
+cor contando histórias diferentes.
+
+Agora são duas perguntas separadas: cada linha responde por si ("tenho
+material para este corte?"), e o veredito responde pela peça ("dá para montar
+a janela?"). Cortes do mesmo perfil continuam resolvidos juntos, porque
+disputam as mesmas peças.
+
+**"Mesma cor" virou opção, ligada por padrão.** Ligada, é a verdade da
+oficina: ninguém entrega janela com o marco branco e a folha preta.
+Desligada, responde a pergunta anterior — "tenho o material, independente da
+cor?" —, que é o que se quer saber antes de decidir mandar pintar. E há um
+seletor para fixar uma cor específica em vez de deixar o sistema escolher a
+que rende mais.
+
+Quando só o acabamento impede, o veredito passa a dizer isso. Ver a lista
+toda verde e "não dá" em cima seria incompreensível sem a frase.
+
 ## 1.6.37 — 18/08/2026
 
 **Editar na ficha do perfil, e a ordem por estoque valendo no app inteiro.**
