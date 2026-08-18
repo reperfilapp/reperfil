@@ -45,6 +45,32 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.39 — 18/08/2026
+
+**Perfil digitável ao acrescentar corte, e o campo de cor inteiro no
+celular.**
+
+**O campo Perfil só aceitava escolher da lista.** O catálogo passa de oitenta
+perfis, e rolar até o MN-007 numa lista suspensa de celular é pior do que
+digitar "MN-0". Agora é campo de texto com sugestões — digitando "MN-0", a
+lista fica só com os seis da série. Quem prefere escolher continua podendo: a
+lista abre ao tocar no campo.
+
+É o mesmo componente usado nos campos de linha e fabricante, que já resolve o
+problema de lista suspensa dentro de modal — o Chromium desenha o menu do
+`datalist` abaixo da camada do `<dialog>`, e as sugestões existiriam sem
+ninguém nunca as ver.
+
+O texto digitado é guardado à parte do perfil escolhido: enquanto se digita
+"MN-0" nenhum perfil está selecionado, e fazer o id acompanhar cada tecla
+escolheria o primeiro parecido sem ninguém ter pedido. Texto pela metade
+deixa a escolha vazia, e o botão avisa que falta escolher.
+
+**O campo de cor ocupa a largura toda no celular** e volta para a linha dos
+outros controles no computador, onde sobra espaço. Sozinho na segunda
+fileira, um campo estreito deixava um vazio à direita e ainda cortava nomes
+como "Amadeirado marrom".
+
 ## 1.6.38 — 18/08/2026
 
 **Código do perfil conferido enquanto se digita, e a cor como opção no

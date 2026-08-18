@@ -40,7 +40,7 @@ import { PaginaDetalhe, FichaDados } from '@/componentes/PaginaDetalhe'
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import { Botao } from '@/componentes/ui/Botao'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
-import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
+import { CampoSugestao } from '@/componentes/ui/CampoSugestao'
 import { CampoQuantidade } from '@/componentes/ui/CampoQuantidade'
 import { cn } from '@/lib/utilitarios'
 import { Modal } from '@/componentes/ui/Modal'
@@ -78,6 +78,13 @@ export default function ProdutoDetalhe() {
   })
   const [erro, setErro] = useState<string | null>(null)
   const [ampliado, setAmpliado] = useState<string | null>(null)
+  /*
+   * O texto digitado é guardado à parte do id escolhido: enquanto a pessoa
+   * digita "MN-0", nenhum perfil está selecionado ainda, e forçar o id a
+   * acompanhar cada tecla selecionaria o primeiro parecido sem ela ter
+   * pedido.
+   */
+  const [textoPerfil, setTextoPerfil] = useState('')
   /*
    * Quantas unidades se quer produzir. Padrão 1 porque a pergunta mais
    * comum é "dá para fazer esta janela?" — só quando a resposta é sim é que
@@ -149,6 +156,27 @@ export default function ProdutoDetalhe() {
     const modelo = modelos?.find((m) => m.id === modeloId)
 
     return modelo ? `${modelo.codigo} ${modelo.descricao}` : 'perfil removido'
+  }
+
+  /** "MN-007 — Guia da persiana": o que se lê e o que se digita. */
+  function rotuloDoPerfil(modelo: { codigo: string; descricao: string }) {
+    return `${modelo.codigo} — ${modelo.descricao}`
+  }
+
+  /*
+   * Resolve o id a partir do texto. Só casa quando o texto é exatamente o
+   * rótulo de um perfil — ou seja, quando a pessoa escolheu da lista ou
+   * digitou o nome inteiro. Texto pela metade deixa o id vazio, e o envio
+   * avisa que falta escolher.
+   */
+  function escolherPerfil(texto: string) {
+    setTextoPerfil(texto)
+
+    const escolhido = (modelos ?? []).find(
+      (modelo) => rotuloDoPerfil(modelo) === texto,
+    )
+
+    setForm({ ...form, modelo_perfil_id: escolhido?.id ?? '' })
   }
 
   async function aoEnviar(evento: FormEvent) {
@@ -540,20 +568,18 @@ export default function ProdutoDetalhe() {
         titulo="Acrescentar corte"
       >
         <form onSubmit={aoEnviar} className="flex flex-col gap-4" noValidate>
-          <CampoSelecao
+          {/* Campo de texto com sugestões, e não uma lista fechada: o
+              catálogo passa de oitenta perfis, e rolar até achar o MN-007
+              numa lista suspensa de celular é pior do que digitar "MN-0".
+              Quem prefere escolher continua podendo — a lista abre ao tocar
+              no campo. */}
+          <CampoSugestao
             rotulo="Perfil"
-            value={form.modelo_perfil_id}
-            onChange={(e) =>
-              setForm({ ...form, modelo_perfil_id: e.target.value })
-            }
-          >
-            <option value="">Escolha…</option>
-            {modelos?.map((modelo) => (
-              <option key={modelo.id} value={modelo.id}>
-                {modelo.codigo} — {modelo.descricao}
-              </option>
-            ))}
-          </CampoSelecao>
+            valor={textoPerfil}
+            aoMudar={escolherPerfil}
+            sugestoes={(modelos ?? []).map(rotuloDoPerfil)}
+            ajuda="Digite o código ou o nome, ou toque para ver a lista."
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <CampoTexto
