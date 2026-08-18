@@ -24,11 +24,18 @@ interface Falta {
  */
 export function Veredito({
   unidades,
+  desejada,
+  atendePedido,
   acabamento,
   semReceita,
   faltas,
 }: {
+  /** Quantas unidades saem do estoque, no total. */
   unidades: number
+  /** Quantas se quer produzir. */
+  desejada: number
+  /** O estoque cobre a quantidade desejada? */
+  atendePedido: boolean
   acabamento: string | null
   semReceita: boolean
   faltas: readonly Falta[]
@@ -48,7 +55,7 @@ export function Veredito({
     )
   }
 
-  if (unidades > 0) {
+  if (atendePedido) {
     return (
       <section className="bg-destaque border-destaque-borda flex items-start gap-3 rounded-xl border p-4">
         <CheckCircle2
@@ -57,11 +64,19 @@ export function Veredito({
         />
         <div>
           <p className="text-destaque-texto text-2xl font-bold">
-            Dá para fazer pelo menos {unidades}
-            <span className="ml-1 text-base font-medium">
-              {unidades === 1 ? 'unidade' : 'unidades'}
-            </span>
+            {desejada === 1
+              ? 'Dá para fazer'
+              : `Dá para fazer as ${desejada} unidades`}
           </p>
+
+          {/* O total também, quando sobra: quem pediu 3 e pode fazer 7 tem
+              margem para o cliente aumentar o pedido — e essa é a
+              informação que faz a sobra virar venda. */}
+          {unidades > desejada && (
+            <p className="text-destaque-texto mt-1 text-sm opacity-80">
+              O estoque de hoje dá para até {unidades} no total.
+            </p>
+          )}
           {acabamento && (
             <p className="text-destaque-texto mt-1 text-sm opacity-80">
               Com as sobras em <strong>{acabamento}</strong>. Uma unidade sai
@@ -81,8 +96,19 @@ export function Veredito({
       />
       <div className="min-w-0">
         <p className="text-atencao-700 font-semibold">
-          Não dá com as sobras de hoje.
+          {desejada === 1
+            ? 'Não dá com as sobras de hoje.'
+            : `Não dá para as ${desejada} unidades com as sobras de hoje.`}
         </p>
+
+        {/* Quantas dariam, quando dá alguma: "não dá para 5, mas dá para 2"
+            é resposta melhor do que "não dá", e às vezes resolve o pedido
+            pela metade enquanto o material novo não chega. */}
+        {unidades > 0 && (
+          <p className="text-texto-suave mt-1 text-sm">
+            Dá para {unidades} {unidades === 1 ? 'unidade' : 'unidades'}.
+          </p>
+        )}
 
         {faltas.length === 0 ? (
           <p className="text-texto-suave mt-1 text-sm">

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Search, ZoomIn, ExternalLink } from 'lucide-react'
 import { useModelosPerfil } from '@/dados/modelosPerfil'
 import { useDesenhosTecnicos } from '@/dados/desenhosTecnicos'
@@ -23,6 +23,21 @@ import {
  */
 export default function PerfilDetalhe() {
   const { id } = useParams<{ id: string }>()
+
+  /*
+   * De onde a pessoa veio, para o "voltar" devolvê-la ao mesmo lugar.
+   *
+   * A ficha do perfil é aberta de vários pontos — do catálogo, da lista
+   * técnica de um produto, de uma sobra. Um "voltar" fixo para /perfis
+   * mandaria quem estava montando uma receita para o catálogo, e a receita
+   * ficaria para trás no meio do trabalho.
+   *
+   * Vai na URL, e não no state da navegação, porque assim sobrevive a
+   * recarregar a página e a compartilhar o endereço.
+   */
+  const [parametros] = useSearchParams()
+  const voltarPara = parametros.get('de') ?? '/perfis'
+  const rotuloVoltar = parametros.get('rotulo') ?? 'Perfis'
   const { data: modelos, isPending, error } = useModelosPerfil(true)
   const { data: desenhos } = useDesenhosTecnicos(id ?? null, 'imagem')
   const { data: fotos } = useDesenhosTecnicos(id ?? null, 'foto')
@@ -85,7 +100,7 @@ export default function PerfilDetalhe() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
-      <BotaoVoltar para="/perfis" rotulo="Perfis" className="mb-4" />
+      <BotaoVoltar para={voltarPara} rotulo={rotuloVoltar} className="mb-4" />
 
       <header className="mb-5">
         <p className="text-acao-600 font-mono text-lg font-bold">

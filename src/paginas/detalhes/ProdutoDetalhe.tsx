@@ -1,6 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
-import { Plus, Trash2, ListChecks, PackageCheck, Pencil } from 'lucide-react'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
+import {
+  Plus,
+  Trash2,
+  ListChecks,
+  PackageCheck,
+  Pencil,
+  ChevronRight,
+} from 'lucide-react'
 import {
   useProduto,
   useListaTecnica,
@@ -10,12 +17,16 @@ import {
   type DadosProduto,
 } from '@/dados/produtos'
 import { useModelosPerfil } from '@/dados/modelosPerfil'
+import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
+import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
+import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
 import { useSobras } from '@/dados/sobras'
 import { useAcabamentos } from '@/dados/acabamentos'
 import { useConfiguracoes, paraConfiguracaoCorte } from '@/dados/configuracoes'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeGerenciarCadastros } from '@/autenticacao/contexto'
 import { unidadesProduziveis } from '@/dominio/producao'
+import { resumirPorPerfil, resumoDe } from '@/dominio/estoqueResumo'
 import { sobrasDisponiveis } from '@/dominio/estoqueParaProducao'
 import { formatarMedidaProduto } from '@/dominio/produto'
 import { formatarComprimento } from '@/dominio/medidas'
@@ -26,6 +37,8 @@ import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import { Botao } from '@/componentes/ui/Botao'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
+import { CampoQuantidade } from '@/componentes/ui/CampoQuantidade'
+import { cn } from '@/lib/utilitarios'
 import { Modal } from '@/componentes/ui/Modal'
 import { Veredito } from '@/componentes/Veredito'
 import { FormularioProduto } from '@/componentes/produto/FormularioProduto'
@@ -40,6 +53,7 @@ export default function ProdutoDetalhe() {
 
   const { data: itens } = useListaTecnica(id)
   const { data: modelos } = useModelosPerfil()
+  const { data: capas } = useCapasDesenhos('imagem')
   const { data: sobras } = useSobras()
   const { data: acabamentos } = useAcabamentos()
   const { data: config } = useConfiguracoes()
@@ -59,6 +73,13 @@ export default function ProdutoDetalhe() {
     quantidade: '1',
   })
   const [erro, setErro] = useState<string | null>(null)
+  const [ampliado, setAmpliado] = useState<string | null>(null)
+  /*
+   * Quantas unidades se quer produzir. Padrão 1 porque a pergunta mais
+   * comum é "dá para fazer esta janela?" — só quando a resposta é sim é que
+   * se pergunta "e três?".
+   */
+  const [desejada, setDesejada] = useState(1)
 
   // `?montar=1` chega de quem acabou de cadastrar o produto: o formulário do
   // primeiro corte já abre. O parâmetro sai da URL em seguida, senão
@@ -180,15 +201,46 @@ export default function ProdutoDetalhe() {
     ? paraConfiguracaoCorte(config)
     : CONFIGURACAO_CORTE_PADRAO
 
-  const resultado = unidadesProduziveis(
-    (itens ?? []).map((item) => ({
-      modelo_perfil_id: item.modelo_perfil_id,
-      comprimento_mm: item.comprimento_mm,
-      quantidade: item.quantidade,
+  const disponiveis = sobrasDisponiveis(sobras ?? [])
+
+  const lista = (itens ?? []).map((item) => ({
+    modelo_perfil_id: item.modelo_perfil_id,
+    comprimento_mm: item.comprimento_mm,
+    quantidade: item.quantidade,
+  }))
+
+  // Quantas unidades saem no total — é o que o veredito anuncia.
+  const resultado = unidadesProduziveis(lista, disponiveis, configCorte)
+
+  /*
+   * O pedido inteiro tratado como UMA unidade grande: cada corte
+   * multiplicado pela quantidade desejada, e o cálculo perguntado se fecha
+   * uma vez.
+   *
+   * É o que dá as FALTAS certas. Perguntar "quantas unidades saem" devolve
+   * o que faltou para a unidade seguinte — informação boa para "dá para mais
+   * uma?", inútil para "dá para as cinco que o cliente pediu?".
+   */
+  const pedido = unidadesProduziveis(
+    lista.map((item) => ({
+      ...item,
+      quantidade: item.quantidade * desejada,
     })),
-    sobrasDisponiveis(sobras ?? []),
+    disponiveis,
     configCorte,
+    1,
   )
+
+  const atendePedido = pedido.unidades >= 1
+
+  /** Os perfis que não fecham o pedido — usados para colorir as linhas. */
+  const faltando = new Set(
+    pedido.faltas.map(
+      (falta) => `${falta.modelo_perfil_id}|${falta.comprimento_mm}`,
+    ),
+  )
+
+  const estoquePorPerfil = resumirPorPerfil(sobras ?? [])
 
   const acabamentoDoResultado = acabamentos?.find(
     (a) => a.id === resultado.acabamento_id,
@@ -202,19 +254,38 @@ export default function ProdutoDetalhe() {
       titulo={produto.nome}
       subtitulo={formatarMedidaProduto(produto)}
       acoes={
-        podeEditar && (
-          <Botao variante="secundaria" onClick={abrirEdicao}>
-            <Pencil aria-hidden="true" className="size-4" />
-            Editar
-          </Botao>
-        )
+        // A quantidade fica encostada na margem direita, e o Editar na
+        // esquerda: são coisas de natureza diferente — uma muda o cadastro,
+        // a outra só faz uma pergunta ao estoque.
+        <div className="flex w-full items-center justify-between gap-3">
+          {podeEditar ? (
+            <Botao variante="secundaria" onClick={abrirEdicao}>
+              <Pencil aria-hidden="true" className="size-4" />
+              Editar
+            </Botao>
+          ) : (
+            <span />
+          )}
+
+          <label className="flex items-center gap-2">
+            <span className="text-texto-suave text-sm">Produzir</span>
+            <CampoQuantidade
+              valor={desejada}
+              aoMudar={setDesejada}
+              rotulo="Quantidade a produzir"
+              compacto
+            />
+          </label>
+        </div>
       }
     >
       <Veredito
         unidades={resultado.unidades}
+        desejada={desejada}
+        atendePedido={atendePedido}
         acabamento={acabamentoDoResultado?.nome ?? null}
         semReceita={(itens ?? []).length === 0}
-        faltas={resultado.faltas.map((falta) => ({
+        faltas={pedido.faltas.map((falta) => ({
           ...falta,
           perfil: nomeDoPerfil(falta.modelo_perfil_id),
         }))}
@@ -238,33 +309,94 @@ export default function ProdutoDetalhe() {
           </p>
         ) : (
           <ul className="flex flex-col gap-2">
-            {itens?.map((item) => (
-              <li
-                key={item.id}
-                className="bg-superficie flex items-center gap-3 rounded-xl p-4"
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-medium">
-                    {nomeDoPerfil(item.modelo_perfil_id)}
-                  </span>
-                  <span className="text-texto-suave block text-sm tabular-nums">
-                    {item.quantidade} ×{' '}
-                    {formatarComprimento(item.comprimento_mm)}
-                  </span>
-                </span>
+            {itens?.map((item) => {
+              const desenho = capas?.get(item.modelo_perfil_id)
+              const estoque = resumoDe(estoquePorPerfil, item.modelo_perfil_id)
+              const falta = faltando.has(
+                `${item.modelo_perfil_id}|${item.comprimento_mm}`,
+              )
 
-                {podeEditar && (
-                  <Botao
-                    variante="contorno"
-                    onClick={() => void remover.mutateAsync(item.id)}
-                    aria-label={`Remover ${nomeDoPerfil(item.modelo_perfil_id)} da lista técnica`}
-                    title="Remover"
+              return (
+                <li
+                  key={item.id}
+                  className={cn(
+                    'flex items-center gap-3 rounded-xl border p-2',
+                    // Verde e vermelho claros, não fortes: a lista inteira
+                    // fica colorida, e cor forte em tudo cansa a vista e
+                    // deixa de significar alguma coisa.
+                    // `economia` é o verde do tema — "economia,
+                    // aproveitamento, disponível" —, que é exatamente o que
+                    // uma linha atendida significa aqui.
+                    falta
+                      ? 'border-erro-100 bg-erro-50'
+                      : 'border-economia-100 bg-economia-50',
+                  )}
+                >
+                  {/* O desenho amplia; a linha abre a ficha. São dois
+                      destinos diferentes no mesmo item, então o desenho
+                      precisa ser um botão próprio e parar a propagação —
+                      senão "ver a seção de perto" viraria uma navegação
+                      para outra tela sem ninguém ter pedido. */}
+                  <button
+                    type="button"
+                    onClick={() => desenho && setAmpliado(desenho)}
+                    disabled={!desenho}
+                    aria-label={`Ampliar desenho de ${nomeDoPerfil(item.modelo_perfil_id)}`}
+                    className="shrink-0 disabled:cursor-default"
                   >
-                    <Trash2 aria-hidden="true" className="size-4" />
-                  </Botao>
-                )}
-              </li>
-            ))}
+                    <MiniaturaPerfil
+                      link={desenho ?? null}
+                      codigo={
+                        modelos?.find((m) => m.id === item.modelo_perfil_id)
+                          ?.codigo ?? ''
+                      }
+                    />
+                  </button>
+
+                  <Link
+                    to={`/perfis/${item.modelo_perfil_id}?de=${encodeURIComponent(`/produtos/${produto.id}`)}&rotulo=${encodeURIComponent('Lista técnica')}`}
+                    className="flex min-w-0 flex-1 items-center gap-2"
+                    aria-label={`Ver ficha de ${nomeDoPerfil(item.modelo_perfil_id)}`}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">
+                        {nomeDoPerfil(item.modelo_perfil_id)}
+                      </span>
+                      <span className="text-texto-suave block text-sm tabular-nums">
+                        {item.quantidade} ×{' '}
+                        {formatarComprimento(item.comprimento_mm)}{' '}
+                        {/* O estoque do PERFIL, somando comprimentos e
+                            acabamentos. É contexto: diz se há matéria-prima
+                            por perto, enquanto a cor da linha responde se ela
+                            serve para este corte nesta quantidade. */}
+                        <span className="whitespace-nowrap">
+                          ({estoque.pecas} pç /{' '}
+                          {(estoque.milimetros / 1000)
+                            .toFixed(1)
+                            .replace('.', ',')}{' '}
+                          m)
+                        </span>
+                      </span>
+                    </span>
+                    <ChevronRight
+                      aria-hidden="true"
+                      className="text-texto-suave size-4 shrink-0"
+                    />
+                  </Link>
+
+                  {podeEditar && (
+                    <Botao
+                      variante="contorno"
+                      onClick={() => void remover.mutateAsync(item.id)}
+                      aria-label={`Remover ${nomeDoPerfil(item.modelo_perfil_id)} da lista técnica`}
+                      title="Remover"
+                    >
+                      <Trash2 aria-hidden="true" className="size-4" />
+                    </Botao>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         )}
 
@@ -386,6 +518,14 @@ export default function ProdutoDetalhe() {
           </div>
         </form>
       </Modal>
+
+      {ampliado && (
+        <VisualizadorImagem
+          src={ampliado}
+          alt="Desenho técnico do perfil"
+          aoFechar={() => setAmpliado(null)}
+        />
+      )}
     </PaginaDetalhe>
   )
 }

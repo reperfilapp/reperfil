@@ -45,6 +45,36 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.36 — 18/08/2026
+
+**"E se forem cinco?" — a quantidade a produzir na tela do produto.**
+
+Ao lado do botão Editar, encostado na margem direita, um campo de quantidade
+com mais e menos. Padrão 1, porque a pergunta mais comum é "dá para fazer
+esta janela?" — só quando a resposta é sim é que se pergunta "e três?".
+
+**Cada linha da lista técnica diz se fecha.** Verde claro quando o estoque
+cobre aquele corte na quantidade pedida, vermelho claro quando não. Tons
+claros de propósito: a lista inteira fica colorida, e cor forte em tudo cansa
+a vista e deixa de significar alguma coisa.
+
+**E mostra o que há daquele perfil**, entre parênteses depois da medida:
+`1 × 1.455 mm (2 pç / 3,0 m)`. É contexto — diz se há matéria-prima por perto
+—, enquanto a cor responde se ela serve para este corte nesta quantidade.
+
+**O veredito passou a responder sobre o pedido**, não sobre a unidade
+seguinte. "Não dá para as 5 unidades" com a lista do que falta para as cinco,
+e não do que faltou para a sexta. Quando dá, e o estoque permite mais, ele
+avisa: "o estoque de hoje dá para até 7 no total" — é a informação que faz a
+sobra virar venda maior. Quando não dá para cinco mas dá para duas, diz isso
+também: resolve metade do pedido enquanto o material novo não chega.
+
+Por dentro, o pedido é calculado como UMA unidade grande — cada corte
+multiplicado pela quantidade. É o que produz as faltas certas: perguntar
+"quantas unidades saem" devolve o que faltou para a unidade seguinte,
+informação boa para "dá para mais uma?" e inútil para "dá para as cinco que o
+cliente pediu?".
+
 ## 1.6.35 — 18/08/2026
 
 **Material contado duas vezes: aviso no cadastro e faxina no que já existe.**
