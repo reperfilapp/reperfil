@@ -5,6 +5,9 @@ import { useAutenticacao } from './useAutenticacao'
 import { Botao } from '@/componentes/ui/Botao'
 import type { PapelUsuario } from '@/tipos/banco'
 
+/** Onde o cadastro se completa. Fora daqui, ninguém sem foto passa. */
+const CAMINHO_CADASTRO = '/completar-cadastro'
+
 interface PropsRotaProtegida {
   children: ReactNode
   /** Se informado, só estes papéis entram. Vazio significa qualquer um. */
@@ -70,6 +73,20 @@ export function RotaProtegida({
         </Botao>
       </main>
     )
+  }
+
+  // Cadastro sem foto não entra. A regra vale para quem já usava o sistema
+  // antes dela existir, e não só para quem chega agora: a foto serve para
+  // identificar quem mexeu em cada peça, e um histórico onde metade das
+  // pessoas tem rosto e a outra metade não responde à pergunta pela metade.
+  //
+  // `=== null` de propósito, e não `== null`: antes da migração a coluna nem
+  // vem do banco e o campo chega AUSENTE. Ausente quer dizer "este sistema
+  // ainda não pede foto"; nulo quer dizer "pede, e esta pessoa não tem". Só
+  // o segundo caso barra — senão a empresa inteira ficaria trancada no
+  // instante em que o código subisse, antes de a migração ser aplicada.
+  if (perfil.foto_url === null && localizacao.pathname !== CAMINHO_CADASTRO) {
+    return <Navigate to={CAMINHO_CADASTRO} replace />
   }
 
   if (papeisPermitidos && !papeisPermitidos.includes(perfil.papel)) {

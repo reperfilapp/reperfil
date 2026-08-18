@@ -7,6 +7,7 @@ import {
 } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { registrarAcesso } from '@/dados/colaboradores'
 import type { PerfilUsuario } from '@/tipos/banco'
 import { ContextoAutenticacao, type EstadoAutenticacao } from './contexto'
 
@@ -35,6 +36,8 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
 
     setPerfil(data)
     setSemAcesso(data === null)
+
+    return data
   }, [])
 
   useEffect(() => {
@@ -77,16 +80,31 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
     }
   }, [buscarPerfil])
 
-  const entrar = useCallback(async (email: string, senha: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password: senha,
-    })
+  const entrar = useCallback(
+    async (email: string, senha: string) => {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: senha,
+      })
 
-    if (error) {
-      throw error
-    }
-  }, [])
+      if (error) {
+        throw error
+      }
+
+      // Anotado aqui, e não no `onAuthStateChange`: aquele evento também
+      // dispara quando a sessão é apenas restaurada ou renovada, e cada
+      // abertura do aplicativo viraria um "acesso" — o histórico contaria
+      // aberturas de tela em vez de dias trabalhados.
+      const perfilAtual = await buscarPerfil(data.user.id)
+
+      if (perfilAtual) {
+        // Sem `await`: o histórico é informação de administrador, não
+        // condição para trabalhar. Falhando, a pessoa entra do mesmo jeito.
+        void registrarAcesso(perfilAtual.id, perfilAtual.organizacao_id)
+      }
+    },
+    [buscarPerfil],
+  )
 
   const sair = useCallback(async () => {
     const { error } = await supabase.auth.signOut()

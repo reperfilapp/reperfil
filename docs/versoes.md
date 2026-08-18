@@ -45,6 +45,143 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.30 — 18/08/2026
+
+**Foto do colaborador, CPF, e a tela de cadastro só editando quando se pede.**
+
+⚠️ **Mais uma migração:** `20260818130000_foto_e_cpf_do_colaborador.sql`.
+
+**A foto.** O histórico de uma peça diz "quem cadastrou: J. Silva". Numa
+empresa com dois Silvas isso não identifica ninguém — e é justamente quando
+algo deu errado que se vai olhar. Agora o cadastro tem retrato, e ele
+aparece ao lado do nome; sem foto, ficam as iniciais, que já separam a Ana
+do Bruno melhor do que um ícone igual para todos.
+
+**Ela é exigida para entrar**, e a exigência vale para quem já usava o
+sistema antes dela existir. Um histórico onde metade das pessoas tem rosto e
+a outra metade não responde à pergunta pela metade. Quem entra sem foto cai
+numa tela que mostra o cadastro para conferência — nome e telefone foram
+digitados pelo administrador, de cabeça, no momento do convite — e pede o
+retrato para concluir.
+
+Pedir a foto depois, num sistema que já funciona, seria pedir para nunca:
+ninguém volta a uma tela que não precisa.
+
+**As permissões pararam de ficar editáveis o tempo todo.** A tela abria com
+as caixas marcáveis à mostra, numa página que se abre para consultar — e
+mudar permissão de colega não é coisa que se faça sem querer. Agora, fora da
+edição, é uma lista curta do que a pessoa PODE; as caixas só aparecem depois
+do botão Editar.
+
+**Os três botões numa linha.** Em tela estreita, "Tirar acesso" quebrava
+para a fileira de baixo e ficava parecendo outra coisa. Ficaram menores e
+mais curtos — Editar, Senha, Desligar — e agora se leem como um conjunto.
+
+**CPF** entrou no cadastro do colaborador, opcional: serve ao cadastro de
+pessoal da empresa, e nada no sistema depende dele. Exigir documento de quem
+só vai procurar uma sobra seria pedir dado sensível sem ter o que fazer com
+ele.
+
+**E-mail conferido** no convite e no cadastro de clientes. A regra é
+deliberadamente frouxa: pega espaço no meio, arroba faltando e domínio sem
+ponto, mas aceita endereço de forma estranha. Validação rígida rejeita
+e-mail legítimo, e aí a pessoa não tem como convencer o sistema de que o
+próprio endereço existe.
+
+## 1.6.29 — 18/08/2026
+
+**Cadastro do colaborador em tela própria, máscaras nos documentos e a peça
+com o essencial em destaque.**
+
+⚠️ **Mais uma migração:** `20260818120000_acessos_ao_sistema.sql`.
+
+**A tela do colaborador.** A lista fazia tudo — trocar cargo, ajustar
+permissão, ligar e desligar — e ficava larga demais para caber num celular.
+Agora ela mostra só nome, e-mail, cargo e o botão de acesso; tocar na linha
+abre o cadastro, e é lá que se edita.
+
+Dentro, o botão **Editar** aparece para quem administra e também para o
+próprio dono do cadastro — corrigir o próprio nome e telefone não deveria
+depender de pedir a ninguém. Cargo, permissões, senha e acesso continuam
+sendo de quem administra. O e-mail não é editável em lugar nenhum: ele é a
+identidade da conta, e trocá-lo aqui deixaria o cadastro apontando para um
+login que não existe.
+
+**Redefinir senha** manda ao colaborador o e-mail para ele mesmo criar uma
+nova. Não é o administrador definindo senha alheia: isso exigiria a chave de
+administração do projeto e significaria alguém conhecendo a senha de outra
+pessoa.
+
+**Desligado sai da lista**, com um "Exibir inativos" no fim. No fim, e não
+no cabeçalho: desligado é exceção, e quem procura por um já leu a lista
+inteira sem achar.
+
+**Últimos acessos**, recolhido, com as dez últimas entradas. Só data e hora
+— nada de endereço, aparelho ou localização. A pergunta que o administrador
+tem é "esta pessoa ainda usa o sistema?", e para isso basta o instante;
+guardar mais seria vigiar funcionário, o que não é a função deste sistema.
+
+**Máscara e conferência em CPF, CNPJ e telefone**, no cadastro de clientes e
+no de colaboradores. A máscara sozinha só arruma a aparência:
+"111.111.111-11" tem cara de CPF e não é CPF nenhum. Agora o dígito
+verificador é conferido, e o telefone digitado sem DDD é apontado — o erro
+mais comum, porque quem digita esquece que quem vai ligar pode estar noutro
+estado.
+
+O aviso não trava o salvamento. Quem cadastra costuma estar copiando de um
+papel, e às vezes o papel está errado: travar faria a pessoa inventar um
+número para conseguir seguir, o que é pior do que o campo vazio. E o erro só
+aparece ao sair do campo — acusar "CPF inválido" desde o primeiro dígito
+treina a pessoa a ignorar o aviso justamente quando ele passa a valer.
+
+**A peça, com o que se veio ver em primeiro lugar.** Comprimento e
+quantidade saíram do meio de onze linhas iguais e agora abrem a tela em
+corpo grande, sobre fundo próprio. São as duas perguntas que trazem alguém
+ali: "cabe o meu corte?" e "tem peça suficiente?".
+
+E o bloco "Do perfil" virou **Lista técnica**, recolhido. É conferência, não
+o trabalho do dia — o título continua dizendo que a informação está ali, que
+é diferente de escondê-la.
+
+## 1.6.28 — 18/08/2026
+
+**E-mails em português, com a marca — e o link deixando de apontar para a
+máquina de quem desenvolve.**
+
+⚠️ **Passos no painel do Supabase**, ver `supabase/emails/README.md`.
+
+**Descoberta no caminho:** o Supabase não deixa mais editar template sem
+SMTP próprio — o painel mostra "Set up custom SMTP to edit templates" e não
+salva nada. Os arquivos ficam prontos para quando houver SMTP. Enquanto
+isso, o atalho é desligar "Confirm email": quem barra estranho é o convite,
+não a confirmação, e aí não há e-mail nenhum no caminho. O cadastro já
+detecta esse caso e entra direto, sem mandar ninguém esperar uma mensagem
+que não vem.
+
+O e-mail de confirmação chegava em inglês, sem identidade nenhuma, e quem
+recebe é justamente alguém entrando no sistema pela primeira vez — o pior
+momento possível para uma mensagem que parece golpe. Agora sai em
+português, com o logo e um texto que diz de onde vem e por quê.
+
+O logo usa `{{ .SiteURL }}` em vez de um endereço fixo: o Supabase troca
+pela URL do projeto, então a imagem acompanha sozinha se o endereço mudar.
+Endereço fixo quebraria calado, e ninguém revisa template de e-mail. O nome
+"RePerfil" também aparece em texto logo abaixo, porque boa parte dos
+programas de e-mail bloqueia imagem até a pessoa liberar.
+
+**O link que ia para o localhost.** Tocar no link pelo celular levava a
+`localhost:5173` — endereço que só existe na máquina de quem desenvolve. O
+Supabase monta o link a partir do "Site URL" do projeto, e ele estava
+apontando para lá.
+
+O cadastro agora informa a origem de onde a pessoa REALMENTE está, como a
+recuperação de senha já fazia. Mas isso só resolve metade: o Supabase
+ignora o pedido se o endereço não estiver em Redirect URLs. Os dois ajustes
+no painel estão no README.
+
+Também dois arquivos de e-mail: confirmação de cadastro e redefinição de
+senha. Não fazia sentido traduzir um e deixar o outro em inglês.
+
 ## 1.6.27 — 18/08/2026
 
 **Permissões por pessoa: liberar uma tarefa sem promover ninguém.**

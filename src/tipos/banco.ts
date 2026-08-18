@@ -71,6 +71,9 @@ export interface PerfilUsuario {
   nome: string
   email: string
   telefone: string | null
+  cpf: string | null
+  /** Caminho no balde privado, não endereço público. */
+  foto_url: string | null
   papel: PapelUsuario
   pode_informar_sobra_resultante: boolean
   /**

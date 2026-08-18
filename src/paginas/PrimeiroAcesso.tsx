@@ -54,12 +54,29 @@ export default function PrimeiroAcesso() {
     setEnviando(true)
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password: senha,
+        options: {
+          // Sem isto, o link do e-mail de confirmação aponta para o "Site
+          // URL" do projeto — que costuma estar apontando para a máquina de
+          // quem desenvolve. O colaborador tocava no link do celular e caía
+          // num endereço que só existe naquele computador. Mandando a origem
+          // de onde a pessoa REALMENTE está, o link volta para o mesmo lugar.
+          //
+          // O endereço precisa estar em Authentication → URL Configuration →
+          // Redirect URLs, senão o Supabase ignora e usa o Site URL de novo.
+          emailRedirectTo: `${window.location.origin}/entrar`,
+        },
       })
 
       if (error) throw error
+
+      // Com a confirmação de e-mail desligada no projeto, o cadastro já
+      // devolve sessão: mandar a pessoa para uma tela de "confirme seu
+      // e-mail" que nunca vai chegar seria só um obstáculo inventado. O
+      // redesenho das rotas leva ela para dentro sozinho.
+      if (data.session) return
 
       setPronto(true)
     } catch (e) {
@@ -82,8 +99,8 @@ export default function PrimeiroAcesso() {
       {pronto ? (
         <div className="flex flex-col gap-5">
           <p className="bg-superficie-2 rounded-xl p-4">
-            Conta criada. Se o seu projeto pedir confirmação por e-mail, abra a
-            mensagem que acabou de chegar antes de entrar.
+            Conta criada. Abra a mensagem de confirmação que acabou de chegar no
+            seu e-mail e depois entre aqui.
           </p>
 
           <Link

@@ -1,31 +1,27 @@
 import { useState, type FormEvent } from 'react'
-import { UserPlus, MailX, Power, PowerOff, KeyRound } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { UserPlus, MailX, Power, PowerOff, ChevronRight } from 'lucide-react'
 import {
   useColaboradores,
   useConvitesAbertos,
   useConvidarColaborador,
   useCancelarConvite,
-  useTrocarCargo,
   useAtivarColaborador,
-  useAjustarPermissoes,
 } from '@/dados/colaboradores'
 import {
   CARGOS_ATIVOS,
   rotuloCargo,
-  descreverPermissoes,
-  permissoesEfetivas,
   permissoesAjustadas,
-  permissoesIniciais,
-  PERMISSOES_EXPLICADAS,
 } from '@/dominio/cargos'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
+import { CampoMascarado } from '@/componentes/ui/CampoMascarado'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
-import type { PapelUsuario, PerfilUsuario } from '@/tipos/banco'
+import type { PapelUsuario } from '@/tipos/banco'
 
 const VAZIO = {
   nome: '',
@@ -36,28 +32,18 @@ const VAZIO = {
 
 export default function Colaboradores() {
   const { perfil } = useAutenticacao()
-  const { data: colaboradores, isPending } = useColaboradores()
+  const [mostrarInativos, setMostrarInativos] = useState(false)
+  const { data: colaboradores, isPending } = useColaboradores(mostrarInativos)
   const { data: convites } = useConvitesAbertos()
 
   const convidar = useConvidarColaborador()
   const cancelar = useCancelarConvite()
-  const trocarCargo = useTrocarCargo()
   const ativar = useAtivarColaborador()
-  const ajustar = useAjustarPermissoes()
 
   const [aberto, setAberto] = useState(false)
   const [form, setForm] = useState(VAZIO)
   const [erro, setErro] = useState<string | null>(null)
   const [convidado, setConvidado] = useState<string | null>(null)
-  const [permissoesDe, setPermissoesDe] = useState<PerfilUsuario | null>(null)
-
-  // Relê a pessoa da lista recarregada: o modal fica aberto enquanto se
-  // marca uma caixa atrás da outra, e sem isto ele mostraria o estado
-  // congelado do momento em que abriu.
-  const emEdicao =
-    permissoesDe === null
-      ? null
-      : (colaboradores?.find((p) => p.id === permissoesDe.id) ?? permissoesDe)
 
   async function aoEnviar(evento: FormEvent) {
     evento.preventDefault()
@@ -171,67 +157,36 @@ export default function Colaboradores() {
           return (
             <li
               key={pessoa.id}
-              className="bg-superficie flex flex-wrap items-center gap-3 rounded-xl p-4 shadow-sm"
+              className="bg-superficie flex items-center gap-3 rounded-xl p-4 shadow-sm"
             >
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium">
-                  {pessoa.nome}
-                </span>
-                <span className="text-texto-suave block truncate text-sm">
-                  {pessoa.email}
-                </span>
-                <span className="text-texto-suave block truncate text-xs">
-                  {/* Os selos vêm ANTES do texto longo: no nome, o
-                      truncamento comia justamente o "você" e o "sem
-                      acesso", que é o que precisa ser visto de relance. */}
-                  {souEu && <span className="mr-2">você</span>}
-                  {!pessoa.ativo && (
-                    <span className="bg-superficie-2 mr-2 rounded px-2 py-0.5">
-                      sem acesso
-                    </span>
-                  )}
-                  {descreverPermissoes(permissoesEfetivas(pessoa))}
-                  {permissoesAjustadas(pessoa).length > 0 && (
-                    <span className="text-atencao-700 ml-2">· ajustado</span>
-                  )}
-                </span>
-              </span>
-
-              {/* O próprio cargo não é editável aqui. O banco recusaria de
-                  qualquer forma (gatilho contra autopromoção), e um campo
-                  que devolve erro ensina a pessoa a desconfiar da tela. */}
-              <CampoSelecao
-                rotulo="Cargo"
-                rotuloOculto
-                className="w-36 shrink-0"
-                value={pessoa.papel}
-                disabled={souEu}
-                onChange={(e) =>
-                  void trocarCargo.mutateAsync({
-                    id: pessoa.id,
-                    papel: e.target.value as PapelUsuario,
-                  })
-                }
+              {/* A linha inteira leva ao cadastro: é lá que se edita, troca
+                  cargo, ajusta permissão e redefine senha. Aqui ficam só as
+                  três informações que se procura de relance. */}
+              <Link
+                to={`/colaboradores/${pessoa.id}`}
+                className="flex min-w-0 flex-1 items-center gap-2"
+                aria-label={`Abrir cadastro de ${pessoa.nome}`}
               >
-                {CARGOS_ATIVOS.map((papel) => (
-                  <option key={papel} value={papel}>
-                    {rotuloCargo(papel)}
-                  </option>
-                ))}
-                {/* O cargo legado só aparece para quem ainda o tem. */}
-                {pessoa.papel === 'estoque' && (
-                  <option value="estoque">{rotuloCargo('estoque')}</option>
-                )}
-              </CampoSelecao>
-
-              <Botao
-                variante="secundaria"
-                onClick={() => setPermissoesDe(pessoa)}
-                aria-label={`Permissões de ${pessoa.nome}`}
-                title="Permissões"
-              >
-                <KeyRound aria-hidden="true" className="size-4" />
-              </Botao>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">
+                    {pessoa.nome}
+                  </span>
+                  <span className="text-texto-suave block truncate text-sm">
+                    {pessoa.email}
+                  </span>
+                  <span className="text-texto-suave block truncate text-xs">
+                    {souEu && <span className="mr-2">você</span>}
+                    {rotuloCargo(pessoa.papel)}
+                    {permissoesAjustadas(pessoa).length > 0 && (
+                      <span className="text-atencao-700 ml-2">· ajustado</span>
+                    )}
+                  </span>
+                </span>
+                <ChevronRight
+                  aria-hidden="true"
+                  className="text-texto-suave size-4 shrink-0"
+                />
+              </Link>
 
               <Botao
                 variante="contorno"
@@ -256,77 +211,13 @@ export default function Colaboradores() {
         })}
       </ul>
 
-      <Modal
-        aberto={emEdicao !== null}
-        aoFechar={() => setPermissoesDe(null)}
-        titulo={emEdicao ? `Permissões de ${emEdicao.nome}` : 'Permissões'}
-      >
-        {emEdicao && (
-          <div className="flex flex-col gap-4">
-            <p className="text-texto-suave text-sm">
-              O cargo <strong>{rotuloCargo(emEdicao.papel)}</strong> define o
-              ponto de partida. Aqui você libera ou tira uma tarefa desta
-              pessoa, sem mudar o cargo dela.
-            </p>
-
-            {PERMISSOES_EXPLICADAS.map(({ chave, rotulo, detalhe }) => {
-              const efetivas = permissoesEfetivas(emEdicao)
-              const padrao = permissoesIniciais(emEdicao.papel)
-              const fogeDoPadrao = efetivas[chave] !== padrao[chave]
-              const souEu = emEdicao.id === perfil?.id
-
-              return (
-                <label
-                  key={chave}
-                  className="bg-superficie-2 flex items-start gap-3 rounded-xl p-4"
-                >
-                  <input
-                    type="checkbox"
-                    className="mt-1 size-5 shrink-0"
-                    checked={efetivas[chave]}
-                    /* Ninguém tira o próprio acesso: o banco recusaria pelo
-                       gatilho contra autopromoção, e uma caixa que volta
-                       sozinha ensina a desconfiar da tela. */
-                    disabled={souEu || ajustar.isPending}
-                    onChange={(e) =>
-                      void ajustar.mutateAsync({
-                        id: emEdicao.id,
-                        permissoes: { [chave]: e.target.checked },
-                      })
-                    }
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-medium">
-                      {rotulo}
-                      {fogeDoPadrao && (
-                        <span className="text-atencao-700 ml-2 text-xs">
-                          diferente do cargo
-                        </span>
-                      )}
-                    </span>
-                    <span className="text-texto-suave block text-sm">
-                      {detalhe}
-                    </span>
-                  </span>
-                </label>
-              )
-            })}
-
-            <p className="text-texto-suave text-sm">
-              Procurar peça, reservar e confirmar o que usou não está aqui: todo
-              colaborador ativo faz isso.
-            </p>
-
-            <Botao
-              variante="contorno"
-              onClick={() => setPermissoesDe(null)}
-              className="w-full"
-            >
-              Fechar
-            </Botao>
-          </div>
-        )}
-      </Modal>
+      {/* No fim da lista, e não no cabeçalho: desligado é exceção, e quem
+          procura por um já leu a lista inteira sem achar. */}
+      <div className="mt-3 flex justify-center">
+        <Botao variante="texto" onClick={() => setMostrarInativos((v) => !v)}>
+          {mostrarInativos ? 'Ocultar inativos' : 'Exibir inativos'}
+        </Botao>
+      </div>
 
       <Modal
         aberto={aberto}
@@ -341,23 +232,19 @@ export default function Colaboradores() {
             required
           />
 
-          <CampoTexto
+          <CampoMascarado
             rotulo="E-mail"
-            type="email"
-            inputMode="email"
-            autoCapitalize="none"
+            tipo="email"
             value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            onChange={(email) => setForm({ ...form, email })}
             ajuda="Precisa ser o mesmo e-mail que ele vai usar para entrar."
-            required
           />
 
-          <CampoTexto
+          <CampoMascarado
             rotulo="Telefone (opcional)"
-            type="tel"
-            inputMode="tel"
+            tipo="telefone"
             value={form.telefone}
-            onChange={(e) => setForm({ ...form, telefone: e.target.value })}
+            onChange={(telefone) => setForm({ ...form, telefone })}
           />
 
           <CampoSelecao

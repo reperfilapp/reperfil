@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Tag, MapPin, ChevronRight, History } from 'lucide-react'
+import { Tag, MapPin, ChevronRight, History, Layers } from 'lucide-react'
 import { useSobra, useHistoricoDoLote } from '@/dados/sobras'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
 import { obterLinkTemporario, BALDE_FOTOS } from '@/lib/armazenamento'
 import { PaginaDetalhe, FichaDados } from '@/componentes/PaginaDetalhe'
+import { Secao } from '@/componentes/ui/Secao'
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { EtiquetaSobra } from '@/componentes/EtiquetaSobra'
@@ -159,14 +160,31 @@ export default function SobraDetalhe() {
         </section>
       )}
 
+      {/* Comprimento e quantidade fora da lista e em corpo grande: são as
+          duas perguntas que trazem alguém a esta tela — "cabe o meu corte?"
+          e "tem peça suficiente?". No meio de onze linhas iguais, elas
+          exigiam procurar; aqui se leem de relance, de longe, no depósito. */}
+      <section className="bg-acao-50 grid grid-cols-2 gap-3 rounded-xl p-4">
+        <div>
+          <p className="text-acao-700 text-sm font-medium">Comprimento</p>
+          <p className="text-acao-900 text-3xl font-bold tabular-nums">
+            {formatarComprimento(sobra.comprimento_mm)}
+          </p>
+        </div>
+        <div>
+          <p className="text-acao-700 text-sm font-medium">Quantidade</p>
+          <p className="text-acao-900 text-3xl font-bold tabular-nums">
+            {sobra.quantidade}
+            <span className="ml-1 text-base font-medium">
+              {sobra.quantidade === 1 ? 'peça' : 'peças'}
+            </span>
+          </p>
+        </div>
+      </section>
+
       <FichaDados
         titulo="Dados da peça"
         linhas={[
-          {
-            rotulo: 'Comprimento',
-            valor: formatarComprimento(sobra.comprimento_mm),
-          },
-          { rotulo: 'Quantidade', valor: sobra.quantidade },
           { rotulo: 'Reservadas', valor: sobra.quantidade_reservada },
           { rotulo: 'Livres', valor: livres },
           {
@@ -198,57 +216,63 @@ export default function SobraDetalhe() {
             rotulo: 'Cadastrada em',
             valor: new Date(sobra.criado_em).toLocaleString('pt-BR'),
           },
-
-          // A ficha do perfil repetida aqui, e não só no card acima com um
-          // link. Quem abriu esta tela está com a ponta na mão conferindo se
-          // é mesmo este perfil — mandar para outra tela para ver as medidas
-          // é perder o que se estava comparando.
-          { grupo: 'Do perfil' },
-          { rotulo: 'Código', valor: sobra.modelo?.codigo },
-          { rotulo: 'Linha', valor: sobra.modelo?.linha },
-          { rotulo: 'Fabricante', valor: sobra.modelo?.fabricante },
-          {
-            rotulo: 'Medidas (aprox.)',
-            valor: sobra.modelo ? formatarMedidasSecao(sobra.modelo) : null,
-          },
-          {
-            rotulo: 'Barra padrão',
-            valor: sobra.modelo
-              ? formatarComprimento(sobra.modelo.comprimento_barra_mm)
-              : null,
-          },
-          {
-            rotulo: 'Peso por metro',
-            valor: sobra.modelo?.peso_por_metro_g
-              ? `${(sobra.modelo.peso_por_metro_g / 1000)
-                  .toFixed(3)
-                  .replace('.', ',')} kg/m`
-              : null,
-          },
-          // Peso DESTA peça, não o da barra nova como na ficha do perfil:
-          // aqui a unidade que se pega na mão é a sobra, com o comprimento
-          // que ela realmente tem.
-          {
-            rotulo: 'Peso da peça',
-            valor: sobra.modelo?.peso_por_metro_g
-              ? `${(
-                  (sobra.modelo.peso_por_metro_g * sobra.comprimento_mm) /
-                  1_000_000
-                )
-                  .toFixed(2)
-                  .replace('.', ',')} kg`
-              : null,
-          },
-          {
-            rotulo: 'Área da seção',
-            valor: areaSecaoMm2(sobra.modelo?.peso_por_metro_g ?? null)
-              ? formatarAreaSecao(
-                  areaSecaoMm2(sobra.modelo?.peso_por_metro_g ?? null)!,
-                )
-              : null,
-          },
         ]}
       />
+
+      {/* Recolhida: é conferência, não o trabalho do dia. Quem abriu a peça
+          quer saber se ela serve; a ficha do perfil só entra em cena quando
+          a dúvida é "este é mesmo o perfil?". Fica aqui, e não só atrás do
+          link para o catálogo, porque sair da tela perde o que se estava
+          comparando. */}
+      <Secao titulo="Lista técnica" icone={Layers}>
+        <FichaDados
+          linhas={[
+            { rotulo: 'Código', valor: sobra.modelo?.codigo },
+            { rotulo: 'Linha', valor: sobra.modelo?.linha },
+            { rotulo: 'Fabricante', valor: sobra.modelo?.fabricante },
+            {
+              rotulo: 'Medidas (aprox.)',
+              valor: sobra.modelo ? formatarMedidasSecao(sobra.modelo) : null,
+            },
+            {
+              rotulo: 'Barra padrão',
+              valor: sobra.modelo
+                ? formatarComprimento(sobra.modelo.comprimento_barra_mm)
+                : null,
+            },
+            {
+              rotulo: 'Peso por metro',
+              valor: sobra.modelo?.peso_por_metro_g
+                ? `${(sobra.modelo.peso_por_metro_g / 1000)
+                    .toFixed(3)
+                    .replace('.', ',')} kg/m`
+                : null,
+            },
+            // Peso DESTA peça, não o da barra nova como na ficha do perfil:
+            // aqui a unidade que se pega na mão é a sobra, com o comprimento
+            // que ela realmente tem.
+            {
+              rotulo: 'Peso da peça',
+              valor: sobra.modelo?.peso_por_metro_g
+                ? `${(
+                    (sobra.modelo.peso_por_metro_g * sobra.comprimento_mm) /
+                    1_000_000
+                  )
+                    .toFixed(2)
+                    .replace('.', ',')} kg`
+                : null,
+            },
+            {
+              rotulo: 'Área da seção',
+              valor: areaSecaoMm2(sobra.modelo?.peso_por_metro_g ?? null)
+                ? formatarAreaSecao(
+                    areaSecaoMm2(sobra.modelo?.peso_por_metro_g ?? null)!,
+                  )
+                : null,
+            },
+          ]}
+        />
+      </Secao>
 
       {/* Histórico: o que aconteceu com esta peça, sem nada apagado. */}
       <section>

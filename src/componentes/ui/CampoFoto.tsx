@@ -18,6 +18,15 @@ interface PropsCampoFoto {
   previa: string | null
   aoRemover: () => void
   aoConcluir: (caminho: string) => void
+  /**
+   * Abre a câmera frontal em vez da traseira.
+   *
+   * Para retrato de pessoa: com a traseira, quem se fotografa não vê o
+   * próprio enquadramento e sai meio rosto na foto.
+   */
+  cameraFrontal?: boolean
+  /** Texto do botão. "Tirar foto" nem sempre é o que se está fazendo. */
+  rotuloBotao?: string
 }
 
 /**
@@ -41,6 +50,8 @@ export function CampoFoto({
   previa,
   aoRemover,
   aoConcluir,
+  cameraFrontal = false,
+  rotuloBotao = 'Tirar foto',
 }: PropsCampoFoto) {
   const entradaCamera = useRef<HTMLInputElement>(null)
   const entradaGaleria = useRef<HTMLInputElement>(null)
@@ -78,7 +89,7 @@ export function CampoFoto({
         ref={entradaCamera}
         type="file"
         accept="image/*"
-        capture="environment"
+        capture={cameraFrontal ? 'user' : 'environment'}
         onChange={(e) => void escolheu(e)}
         className="hidden"
         aria-hidden="true"
@@ -134,7 +145,7 @@ export function CampoFoto({
             ) : (
               <Camera aria-hidden="true" className="size-5" />
             )}
-            {enviando ? 'Enviando…' : 'Tirar foto'}
+            {enviando ? 'Enviando…' : rotuloBotao}
           </button>
 
           <button

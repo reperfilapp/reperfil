@@ -22,6 +22,8 @@ export const BALDE_FOTOS = 'fotos-sobras'
 export const BALDE_DESENHOS = 'desenhos-tecnicos'
 /** Fotografia da peça real, separada do desenho de catálogo. */
 export const BALDE_FOTOS_PERFIL = 'fotos-perfis'
+/** Retrato do colaborador. Rosto de pessoa não se mistura com catálogo. */
+export const BALDE_FOTOS_COLABORADOR = 'fotos-colaboradores'
 
 /** Quanto tempo o link temporário vale. Uma hora cobre qualquer sessão. */
 const VALIDADE_LINK_SEGUNDOS = 3600
@@ -109,6 +111,16 @@ export function enviarDesenhoTecnico(arquivo: File): Promise<ResultadoEnvio> {
  */
 export function enviarFotoPerfil(arquivo: File): Promise<ResultadoEnvio> {
   return enviar(BALDE_FOTOS_PERFIL, arquivo, COMPRESSAO_DESENHO)
+}
+
+/**
+ * Retrato do colaborador.
+ *
+ * Compressão de foto comum, não a de desenho: aqui ninguém vai dar zoom
+ * procurando cota — a imagem é vista pequena, ao lado do nome.
+ */
+export function enviarFotoColaborador(arquivo: File): Promise<ResultadoEnvio> {
+  return enviar(BALDE_FOTOS_COLABORADOR, arquivo, COMPRESSAO_FOTO)
 }
 
 /**

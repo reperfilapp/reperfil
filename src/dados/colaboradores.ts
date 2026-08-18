@@ -2,20 +2,29 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { chaves } from '@/lib/consultas'
 import { permissoesIniciais, type Permissoes } from '@/dominio/cargos'
+import { apenasDigitos } from '@/dominio/documentos'
 import type {
   ConviteColaborador,
   PapelUsuario,
   PerfilUsuario,
 } from '@/tipos/banco'
 
-/** A equipe, com quem está desligado por último. */
-export function useColaboradores() {
+/**
+ * A equipe.
+ *
+ * Quem está desligado fica FORA por padrão: a lista serve para o dia a dia,
+ * e ex-colaborador no meio dela é ruído que cresce com o tempo. A tela tem
+ * um botão para trazê-los quando a pergunta for outra.
+ */
+export function useColaboradores(incluirInativos = false) {
   return useQuery({
-    queryKey: chaves.colaboradores,
+    queryKey: [...chaves.colaboradores, { incluirInativos }],
     queryFn: async (): Promise<PerfilUsuario[]> => {
-      const { data, error } = await supabase
-        .from('perfis_usuario')
-        .select('*')
+      let consulta = supabase.from('perfis_usuario').select('*')
+
+      if (!incluirInativos) consulta = consulta.eq('ativo', true)
+
+      const { data, error } = await consulta
         .order('ativo', { ascending: false })
         .order('nome')
 
@@ -200,4 +209,125 @@ export function useAjustarPermissoes() {
       void cliente.invalidateQueries({ queryKey: chaves.colaboradores })
     },
   })
+}
+
+/** Um colaborador só, para a tela de detalhe. */
+export function useColaborador(id: string | null) {
+  return useQuery({
+    queryKey: [...chaves.colaboradores, 'um', id],
+    enabled: id !== null,
+    queryFn: async (): Promise<PerfilUsuario | null> => {
+      const { data, error } = await supabase
+        .from('perfis_usuario')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle()
+
+      if (error) throw new Error(error.message)
+
+      return data as PerfilUsuario | null
+    },
+  })
+}
+
+/** Os últimos acessos de uma pessoa, do mais recente para o mais antigo. */
+export function useAcessos(usuarioId: string | null, quantos = 10) {
+  return useQuery({
+    queryKey: [...chaves.acessos, usuarioId, quantos],
+    enabled: usuarioId !== null,
+    queryFn: async (): Promise<{ id: string; criado_em: string }[]> => {
+      const { data, error } = await supabase
+        .from('acessos_sistema')
+        .select('id, criado_em')
+        .eq('usuario_id', usuarioId)
+        .order('criado_em', { ascending: false })
+        .limit(quantos)
+
+      if (error) {
+        // Antes da migração a tabela nem existe. Uma tela inteira em branco
+        // por causa de uma seção secundária seria desproporcional — a lista
+        // vazia já diz "sem acessos registrados".
+        if (error.code === '42P01') return []
+        throw new Error(error.message)
+      }
+
+      return data as { id: string; criado_em: string }[]
+    },
+  })
+}
+
+/** Dados que o próprio colaborador ou quem o administra podem corrigir. */
+export interface DadosColaborador {
+  nome: string
+  telefone: string | null
+  cpf: string | null
+  foto_url?: string | null
+}
+
+export function useEditarColaborador() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      dados,
+    }: {
+      id: string
+      dados: DadosColaborador
+    }) => {
+      const { error } = await supabase
+        .from('perfis_usuario')
+        .update({
+          nome: dados.nome.trim(),
+          telefone: dados.telefone,
+          // Só dígitos: a pontuação é da tela, e guardá-la faria o mesmo
+          // CPF ter duas formas diferentes no banco.
+          cpf: dados.cpf ? apenasDigitos(dados.cpf) : null,
+          ...(dados.foto_url === undefined ? {} : { foto_url: dados.foto_url }),
+        })
+        .eq('id', id)
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.colaboradores })
+    },
+  })
+}
+
+/**
+ * Manda ao colaborador o e-mail para ele mesmo criar uma senha nova.
+ *
+ * NÃO é o administrador definindo a senha de outra pessoa. Fazer isso
+ * exigiria a chave de administração do projeto dentro do aplicativo — a
+ * mesma que impede criar contas por aqui — e, mesmo que fosse possível,
+ * significaria alguém conhecendo a senha alheia. O administrador dispara o
+ * processo; quem escolhe a senha continua sendo o dono dela.
+ */
+export function useEnviarRedefinicaoDeSenha() {
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/definir-senha`,
+      })
+
+      if (error) throw new Error(error.message)
+    },
+  })
+}
+
+/**
+ * Anota que a pessoa entrou.
+ *
+ * Falha em silêncio de propósito: se o registro do acesso desse erro, a
+ * pessoa seria impedida de trabalhar por causa de uma estatística. O acesso
+ * em si já aconteceu — o que se perde é uma linha num histórico.
+ */
+export async function registrarAcesso(
+  usuarioId: string,
+  organizacaoId: string,
+): Promise<void> {
+  await supabase
+    .from('acessos_sistema')
+    .insert({ usuario_id: usuarioId, organizacao_id: organizacaoId })
 }

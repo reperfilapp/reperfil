@@ -11,6 +11,8 @@ interface PropsPaginaDetalhe {
   subtitulo?: string | null
   /** Selo de situação, à direita do título. */
   selo?: ReactNode
+  /** Imagem redonda à esquerda do título — hoje, o rosto do colaborador. */
+  avatar?: ReactNode
   acoes?: ReactNode
   children: ReactNode
 }
@@ -31,6 +33,7 @@ export function PaginaDetalhe({
   titulo,
   subtitulo,
   selo,
+  avatar,
   acoes,
   children,
 }: PropsPaginaDetalhe) {
@@ -39,7 +42,9 @@ export function PaginaDetalhe({
       <BotaoVoltar para={voltarPara} rotulo={rotuloVoltar} className="mb-4" />
 
       <header className="mb-5 flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        {avatar && <div className="shrink-0">{avatar}</div>}
+
+        <div className="min-w-0 flex-1">
           {codigo && (
             <p className="text-acao-600 font-mono text-lg font-bold">
               {codigo}

@@ -10,6 +10,7 @@ import Entrar from '@/paginas/Entrar'
 import RecuperarSenha from '@/paginas/RecuperarSenha'
 import DefinirSenha from '@/paginas/DefinirSenha'
 import PrimeiroAcesso from '@/paginas/PrimeiroAcesso'
+import CompletarCadastro from '@/paginas/CompletarCadastro'
 import Inicio from '@/paginas/Inicio'
 import Sobras from '@/paginas/Sobras'
 import CadastrarSobra from '@/paginas/CadastrarSobra'
@@ -30,6 +31,7 @@ import Acabamentos from '@/paginas/cadastros/Acabamentos'
 import Localizacoes from '@/paginas/cadastros/Localizacoes'
 import Clientes from '@/paginas/cadastros/Clientes'
 import Colaboradores from '@/paginas/cadastros/Colaboradores'
+import ColaboradorDetalhe from '@/paginas/detalhes/ColaboradorDetalhe'
 
 /**
  * Casca da aplicação.
@@ -57,6 +59,10 @@ export default function App() {
                   </RotaProtegida>
                 }
               >
+                <Route
+                  path="/completar-cadastro"
+                  element={<CompletarCadastro />}
+                />
                 <Route path="/" element={<Inicio />} />
                 <Route path="/sobras" element={<Sobras />} />
                 <Route path="/sobras/:id" element={<SobraDetalhe />} />
@@ -65,6 +71,10 @@ export default function App() {
                 <Route path="/reservas" element={<Reservas />} />
                 <Route path="/perfis" element={<ModelosPerfil />} />
                 <Route path="/colaboradores" element={<Colaboradores />} />
+                <Route
+                  path="/colaboradores/:id"
+                  element={<ColaboradorDetalhe />}
+                />
                 <Route path="/perfis/:id" element={<PerfilDetalhe />} />
                 <Route path="/linhas" element={<Linhas />} />
                 <Route path="/identificar" element={<IdentificarPerfil />} />

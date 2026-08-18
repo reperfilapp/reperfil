@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom'
 import { Phone, MessageCircle, Mail, Pencil } from 'lucide-react'
 import { useClientes } from '@/dados/clientes'
 import { PaginaDetalhe, FichaDados } from '@/componentes/PaginaDetalhe'
+import { formatarCpfCnpj, formatarTelefone } from '@/dominio/documentos'
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import { Botao } from '@/componentes/ui/Botao'
 
@@ -91,7 +92,13 @@ export default function ClienteDetalhe() {
         linhas={[
           { rotulo: 'Nome ou razão social', valor: cliente.nome },
           { rotulo: 'Nome fantasia', valor: cliente.nome_fantasia },
-          { rotulo: 'CPF ou CNPJ', valor: cliente.cpf_cnpj },
+          {
+            // Formatado na exibição, e não só no formulário: o cadastro
+            // antigo foi digitado sem máscara, e "11222333000181" corrido é
+            // ilegível para conferir contra um documento na mão.
+            rotulo: 'CPF ou CNPJ',
+            valor: cliente.cpf_cnpj && formatarCpfCnpj(cliente.cpf_cnpj),
+          },
           { rotulo: 'Contato principal', valor: cliente.contato_principal },
         ]}
       />
@@ -99,8 +106,14 @@ export default function ClienteDetalhe() {
       <FichaDados
         titulo="Contato"
         linhas={[
-          { rotulo: 'Telefone', valor: cliente.telefone },
-          { rotulo: 'WhatsApp', valor: cliente.whatsapp },
+          {
+            rotulo: 'Telefone',
+            valor: cliente.telefone && formatarTelefone(cliente.telefone),
+          },
+          {
+            rotulo: 'WhatsApp',
+            valor: cliente.whatsapp && formatarTelefone(cliente.whatsapp),
+          },
           { rotulo: 'E-mail', valor: cliente.email },
           {
             rotulo: 'Cidade',

@@ -21,6 +21,7 @@ import { podeGerenciarCadastros } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
+import { CampoMascarado } from '@/componentes/ui/CampoMascarado'
 import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import type { Cliente } from '@/tipos/banco'
@@ -241,12 +242,12 @@ export default function Clientes() {
             }
           />
 
-          <CampoTexto
+          <CampoMascarado
             rotulo="CPF ou CNPJ"
-            inputMode="numeric"
+            tipo="cpf_cnpj"
             value={form.cpf_cnpj ?? ''}
-            onChange={(e) =>
-              setForm({ ...form, cpf_cnpj: e.target.value || null })
+            onChange={(cpf_cnpj) =>
+              setForm({ ...form, cpf_cnpj: cpf_cnpj || null })
             }
           />
 
@@ -272,35 +273,29 @@ export default function Clientes() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <CampoTexto
+            <CampoMascarado
               rotulo="Telefone"
-              type="tel"
-              inputMode="tel"
+              tipo="telefone"
               value={form.telefone ?? ''}
-              onChange={(e) =>
-                setForm({ ...form, telefone: e.target.value || null })
+              onChange={(telefone) =>
+                setForm({ ...form, telefone: telefone || null })
               }
             />
-            <CampoTexto
+            <CampoMascarado
               rotulo="WhatsApp"
-              type="tel"
-              inputMode="tel"
+              tipo="telefone"
               value={form.whatsapp ?? ''}
-              onChange={(e) =>
-                setForm({ ...form, whatsapp: e.target.value || null })
+              onChange={(whatsapp) =>
+                setForm({ ...form, whatsapp: whatsapp || null })
               }
             />
           </div>
 
-          <CampoTexto
+          <CampoMascarado
             rotulo="E-mail"
-            type="email"
-            inputMode="email"
-            autoCapitalize="none"
+            tipo="email"
             value={form.email ?? ''}
-            onChange={(e) =>
-              setForm({ ...form, email: e.target.value || null })
-            }
+            onChange={(email) => setForm({ ...form, email: email || null })}
           />
 
           {erro && (

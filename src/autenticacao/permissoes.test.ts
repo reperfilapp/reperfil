@@ -19,6 +19,8 @@ function perfilCom(
     nome: 'Fulano',
     email: 'fulano@exemplo.invalido',
     telefone: null,
+    cpf: null,
+    foto_url: null,
     papel,
     pode_informar_sobra_resultante: false,
     ...permissoesIniciais(papel),
