@@ -7,6 +7,7 @@ import {
   candidatosPorMedida,
   formatarAreaSecao,
   formatarSecao,
+  formatarMedidasSecao,
   DENSIDADE_ALUMINIO_G_CM3,
 } from './secao'
 
@@ -248,5 +249,46 @@ describe('exibição da seção', () => {
 
   it('devolve nulo quando o perfil não tem medida', () => {
     expect(formatarSecao(null, 40)).toBeNull()
+  })
+})
+
+describe('as quatro medidas numa linha só', () => {
+  it('junta tudo que o catálogo conhece, na ordem fixa', () => {
+    expect(
+      formatarMedidasSecao({
+        largura_secao_mm: 125,
+        altura_secao_mm: 125,
+        medida_3_secao_mm: 452,
+        medida_4_secao_mm: 52,
+      }),
+    ).toBe('125 × 125 × 452 × 52 mm')
+  })
+
+  it('mostra só o que existe, sem buraco no lugar do que falta', () => {
+    // A maioria dos perfis tem apenas as duas derivadas do peso. Um traço
+    // ou um zero no lugar das outras faria parecer medida de verdade.
+    expect(
+      formatarMedidasSecao({ largura_secao_mm: 30, altura_secao_mm: 42 }),
+    ).toBe('30 × 42 mm')
+  })
+
+  it('não deixa buraco no meio quando falta a segunda', () => {
+    expect(
+      formatarMedidasSecao({ largura_secao_mm: 30, medida_3_secao_mm: 12 }),
+    ).toBe('30 × 12 mm')
+  })
+
+  it('usa vírgula nas quebradas e nada nas inteiras', () => {
+    expect(
+      formatarMedidasSecao({ largura_secao_mm: 29, altura_secao_mm: 35.7 }),
+    ).toBe('29 × 35,7 mm')
+  })
+
+  it('devolve nulo quando o perfil não tem medida nenhuma', () => {
+    // Antes da migração as colunas nem vêm do banco: o campo chega ausente.
+    expect(formatarMedidasSecao({})).toBeNull()
+    expect(
+      formatarMedidasSecao({ largura_secao_mm: null, altura_secao_mm: null }),
+    ).toBeNull()
   })
 })

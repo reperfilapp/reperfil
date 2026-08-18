@@ -96,6 +96,18 @@ aplicada, preencher a terceira ou a quarta medida devolvia
 the schema cache". Agora a tela diz qual migração falta e avisa que o
 resto do cadastro grava normalmente com esses dois campos em branco.
 
+**As quatro medidas na ficha do perfil.** A ficha mostrava só "Seção
+(aprox.)", com largura e altura — as duas derivadas do peso. As outras
+duas, medidas na peça e digitadas no cadastro, não apareciam em lugar
+nenhum: dava para informar e não dava para conferir. Agora a linha é
+"Medidas (aprox.)" com tudo junto, na ordem fixa largura × altura ×
+terceira × quarta, por exemplo `125 × 125 × 452 × 52 mm`.
+
+Numa linha só de propósito: quem confere uma ponta na mão lê a sequência
+e compara com o que a trena deu, sem ir e voltar entre quatro linhas. O
+que falta não vira zero nem traço — simplesmente não entra, então perfil
+com duas medidas mostra duas.
+
 ## 1.6.19 — 17/08/2026
 
 **Atalho de identificação nos campos de perfil, estoque por linha e ícone

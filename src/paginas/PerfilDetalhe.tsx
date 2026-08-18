@@ -8,7 +8,11 @@ import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
 import { formatarComprimento } from '@/dominio/medidas'
-import { areaSecaoMm2, formatarAreaSecao, formatarSecao } from '@/dominio/secao'
+import {
+  areaSecaoMm2,
+  formatarAreaSecao,
+  formatarMedidasSecao,
+} from '@/dominio/secao'
 
 /**
  * Ficha do perfil: o que ele é, como é a seção, e quanto existe no depósito.
@@ -234,13 +238,14 @@ export default function PerfilDetalhe() {
           <dt className="text-texto-suave">Fabricante</dt>
           <dd className="text-right">{modelo.fabricante ?? '—'}</dd>
 
-          {/* Medida derivada do peso e do desenho, não digitada. Aproximada
-              de propósito: serve para achar o perfil com uma trena. */}
-          {formatarSecao(modelo.largura_secao_mm, modelo.altura_secao_mm) && (
+          {/* As quatro medidas numa linha só. As duas primeiras são
+              derivadas do peso e do desenho, não digitadas — aproximadas de
+              propósito, porque servem para achar o perfil com uma trena. */}
+          {formatarMedidasSecao(modelo) && (
             <>
-              <dt className="text-texto-suave">Seção (aprox.)</dt>
+              <dt className="text-texto-suave">Medidas (aprox.)</dt>
               <dd className="text-right tabular-nums">
-                {formatarSecao(modelo.largura_secao_mm, modelo.altura_secao_mm)}
+                {formatarMedidasSecao(modelo)}
               </dd>
             </>
           )}

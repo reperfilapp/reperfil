@@ -233,6 +233,30 @@ export function candidatosPorMedida<T extends ComSecao>(
     .sort((a, b) => a.desvioPercentual - b.desvioPercentual)
 }
 
+/**
+ * As medidas da seção numa linha só, para a ficha do perfil.
+ *
+ * Junta tudo que o catálogo conhece — "125 × 125 × 452 × 52 mm" — em vez de
+ * uma linha por medida. Quem confere uma ponta na mão lê a sequência e
+ * compara com o que a trena deu; quatro linhas separadas obrigariam a ir e
+ * voltar na tela para o mesmo trabalho.
+ *
+ * A ORDEM IMPORTA e é sempre a mesma: largura, altura, terceira, quarta. As
+ * duas primeiras saem do peso e do desenho (aproximadas, erro de 3 a 5%); as
+ * outras foram medidas na peça. Medida ausente não vira zero nem buraco —
+ * simplesmente não entra, então um perfil com só duas medidas mostra duas.
+ */
+export function formatarMedidasSecao(perfil: ComSecao): string | null {
+  const medidas = medidasConhecidas(perfil)
+
+  if (medidas.length === 0) return null
+
+  const formatar = (v: number) =>
+    Number.isInteger(v) ? String(v) : v.toFixed(1).replace('.', ',')
+
+  return `${medidas.map(formatar).join(' × ')} mm`
+}
+
 /** "30 × 42 mm" — a seção como se fala na oficina. */
 export function formatarSecao(
   larguraMm: number | null | undefined,
