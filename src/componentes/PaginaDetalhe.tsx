@@ -67,30 +67,56 @@ export function PaginaDetalhe({
  * e vazio é informação, principalmente num cadastro que alguém precisa
  * completar.
  */
+/**
+ * Uma linha da ficha: ou um par rótulo/valor, ou um subtítulo que agrupa as
+ * linhas seguintes.
+ *
+ * O subtítulo existe porque uma ficha pode juntar dados de origens
+ * diferentes — o que é DESTA peça e o que vem do catálogo do perfil. Sem a
+ * marca, "Comprimento 6 m" e "Barra padrão 6 m" viram a mesma coisa aos
+ * olhos de quem lê, e não são.
+ */
+export type LinhaFicha =
+  { rotulo: string; valor: ReactNode } | { grupo: string }
+
 export function FichaDados({
   titulo,
   linhas,
 }: {
   titulo?: string
-  linhas: { rotulo: string; valor: ReactNode }[]
+  linhas: LinhaFicha[]
 }) {
   return (
     <section>
       {titulo && <h2 className="mb-2 font-semibold">{titulo}</h2>}
 
       <dl className="bg-superficie grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-xl p-4 text-sm">
-        {linhas.map(({ rotulo, valor }) => (
-          <div key={rotulo} className="col-span-2 grid grid-cols-subgrid">
-            <dt className="text-texto-suave">{rotulo}</dt>
-            <dd className="text-right break-words">
-              {valor === null || valor === undefined || valor === '' ? (
-                <span className="text-texto-suave">—</span>
-              ) : (
-                valor
-              )}
-            </dd>
-          </div>
-        ))}
+        {linhas.map((linha) =>
+          'grupo' in linha ? (
+            <p
+              key={linha.grupo}
+              className="border-borda text-texto-suave col-span-2 mt-2 border-t pt-3 text-xs font-semibold tracking-wide uppercase first:mt-0 first:border-0 first:pt-0"
+            >
+              {linha.grupo}
+            </p>
+          ) : (
+            <div
+              key={linha.rotulo}
+              className="col-span-2 grid grid-cols-subgrid"
+            >
+              <dt className="text-texto-suave">{linha.rotulo}</dt>
+              <dd className="text-right break-words">
+                {linha.valor === null ||
+                linha.valor === undefined ||
+                linha.valor === '' ? (
+                  <span className="text-texto-suave">—</span>
+                ) : (
+                  linha.valor
+                )}
+              </dd>
+            </div>
+          ),
+        )}
       </dl>
     </section>
   )

@@ -16,6 +16,8 @@ import {
   filtrarClientes,
   type DadosCliente,
 } from '@/dados/clientes'
+import { useAutenticacao } from '@/autenticacao/useAutenticacao'
+import { podeGerenciarCadastros } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
@@ -37,6 +39,11 @@ const VAZIO: DadosCliente = {
 }
 
 export default function Clientes() {
+  const { perfil } = useAutenticacao()
+  // Esconder o que o banco recusaria: um botão que sempre devolve
+  // erro ensina a pessoa a desconfiar da tela inteira.
+  const podeEditar = podeGerenciarCadastros(perfil)
+
   const { data: clientes, isPending } = useClientes(true)
   const criar = useCriarCliente()
   const editar = useEditarCliente()
@@ -110,10 +117,12 @@ export default function Clientes() {
                 Serão reaproveitados nos orçamentos da Fase 3.
               </p>
             </div>
-            <Botao onClick={abrirNovo}>
-              <Plus aria-hidden="true" className="size-5" />
-              Novo
-            </Botao>
+            {podeEditar && (
+              <Botao onClick={abrirNovo}>
+                <Plus aria-hidden="true" className="size-5" />
+                Novo
+              </Botao>
+            )}
           </header>
 
           <div className="relative mb-4">
@@ -175,34 +184,38 @@ export default function Clientes() {
               />
             </Link>
 
-            <Botao
-              variante="secundaria"
-              onClick={() => abrirEdicao(cliente)}
-              aria-label={`Editar ${cliente.nome}`}
-            >
-              <Pencil aria-hidden="true" className="size-4" />
-            </Botao>
+            {podeEditar && (
+              <>
+                <Botao
+                  variante="secundaria"
+                  onClick={() => abrirEdicao(cliente)}
+                  aria-label={`Editar ${cliente.nome}`}
+                >
+                  <Pencil aria-hidden="true" className="size-4" />
+                </Botao>
 
-            <Botao
-              variante="contorno"
-              onClick={() =>
-                void desativar.mutateAsync({
-                  id: cliente.id,
-                  ativo: !cliente.ativo,
-                })
-              }
-              aria-label={`${cliente.ativo ? 'Desativar' : 'Reativar'} ${cliente.nome}`}
-              title={cliente.ativo ? 'Desativar' : 'Reativar'}
-            >
-              {/* Só o ícone: com o texto, em tela estreita, o botão comia a
-                  largura do nome do registro — que é o que se procura na
-                  lista. O rótulo continua no `aria-label` e na dica. */}
-              {cliente.ativo ? (
-                <Archive aria-hidden="true" className="size-4" />
-              ) : (
-                <ArchiveRestore aria-hidden="true" className="size-4" />
-              )}
-            </Botao>
+                <Botao
+                  variante="contorno"
+                  onClick={() =>
+                    void desativar.mutateAsync({
+                      id: cliente.id,
+                      ativo: !cliente.ativo,
+                    })
+                  }
+                  aria-label={`${cliente.ativo ? 'Desativar' : 'Reativar'} ${cliente.nome}`}
+                  title={cliente.ativo ? 'Desativar' : 'Reativar'}
+                >
+                  {/* Só o ícone: com o texto, em tela estreita, o botão comia a
+                      largura do nome do registro — que é o que se procura na
+                      lista. O rótulo continua no `aria-label` e na dica. */}
+                  {cliente.ativo ? (
+                    <Archive aria-hidden="true" className="size-4" />
+                  ) : (
+                    <ArchiveRestore aria-hidden="true" className="size-4" />
+                  )}
+                </Botao>
+              </>
+            )}
           </li>
         ))}
       </ul>

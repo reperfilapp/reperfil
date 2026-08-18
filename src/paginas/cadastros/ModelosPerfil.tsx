@@ -21,6 +21,8 @@ import {
   SEM_LINHA,
   type DadosModeloPerfil,
 } from '@/dados/modelosPerfil'
+import { useAutenticacao } from '@/autenticacao/useAutenticacao'
+import { podeGerenciarCadastros } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
@@ -99,6 +101,11 @@ const SUGESTOES_INICIAIS = [
 ] as const
 
 export default function ModelosPerfil() {
+  const { perfil } = useAutenticacao()
+  // Esconder o que o banco recusaria: um botão que sempre devolve
+  // erro ensina a pessoa a desconfiar da tela inteira.
+  const podeEditar = podeGerenciarCadastros(perfil)
+
   const { data: modelos, isPending } = useModelosPerfil(true)
   const criar = useCriarModeloPerfil()
   const editar = useEditarModeloPerfil()
@@ -219,10 +226,12 @@ export default function ModelosPerfil() {
                 O catálogo que as sobras, os orçamentos e as obras usam.
               </p>
             </div>
-            <Botao onClick={abrirNovo}>
-              <Plus aria-hidden="true" className="size-5" />
-              Novo
-            </Botao>
+            {podeEditar && (
+              <Botao onClick={abrirNovo}>
+                <Plus aria-hidden="true" className="size-5" />
+                Novo
+              </Botao>
+            )}
           </header>
 
           {/* Busca e atalho lado a lado, como no estoque e na escolha de perfil
@@ -372,34 +381,38 @@ export default function ModelosPerfil() {
               </span>
             </Link>
 
-            <Botao
-              variante="secundaria"
-              onClick={() => abrirEdicao(modelo)}
-              aria-label={`Editar ${modelo.codigo}`}
-            >
-              <Pencil aria-hidden="true" className="size-4" />
-            </Botao>
+            {podeEditar && (
+              <>
+                <Botao
+                  variante="secundaria"
+                  onClick={() => abrirEdicao(modelo)}
+                  aria-label={`Editar ${modelo.codigo}`}
+                >
+                  <Pencil aria-hidden="true" className="size-4" />
+                </Botao>
 
-            <Botao
-              variante="contorno"
-              onClick={() =>
-                void desativar.mutateAsync({
-                  id: modelo.id,
-                  ativo: !modelo.ativo,
-                })
-              }
-              aria-label={`${modelo.ativo ? 'Desativar' : 'Reativar'} ${modelo.codigo}`}
-              title={modelo.ativo ? 'Desativar' : 'Reativar'}
-            >
-              {/* Só o ícone: com o texto, em tela estreita, o botão comia a
-                  largura do nome do registro — que é o que se procura na
-                  lista. O rótulo continua no `aria-label` e na dica. */}
-              {modelo.ativo ? (
-                <Archive aria-hidden="true" className="size-4" />
-              ) : (
-                <ArchiveRestore aria-hidden="true" className="size-4" />
-              )}
-            </Botao>
+                <Botao
+                  variante="contorno"
+                  onClick={() =>
+                    void desativar.mutateAsync({
+                      id: modelo.id,
+                      ativo: !modelo.ativo,
+                    })
+                  }
+                  aria-label={`${modelo.ativo ? 'Desativar' : 'Reativar'} ${modelo.codigo}`}
+                  title={modelo.ativo ? 'Desativar' : 'Reativar'}
+                >
+                  {/* Só o ícone: com o texto, em tela estreita, o botão comia a
+                      largura do nome do registro — que é o que se procura na
+                      lista. O rótulo continua no `aria-label` e na dica. */}
+                  {modelo.ativo ? (
+                    <Archive aria-hidden="true" className="size-4" />
+                  ) : (
+                    <ArchiveRestore aria-hidden="true" className="size-4" />
+                  )}
+                </Botao>
+              </>
+            )}
           </li>
         ))}
       </ul>

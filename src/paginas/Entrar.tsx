@@ -101,8 +101,14 @@ export default function Entrar() {
       </form>
 
       <p className="text-texto-suave text-center text-sm">
-        O acesso é criado pelo administrador da sua empresa. Não há cadastro
-        aberto.
+        Foi convidado e ainda não tem senha?{' '}
+        <Link
+          to="/primeiro-acesso"
+          className="text-acao-600 underline-offset-4 hover:underline"
+        >
+          Primeiro acesso
+        </Link>
+        .
       </p>
 
       <SeloVersao />

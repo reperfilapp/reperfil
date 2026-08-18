@@ -15,6 +15,8 @@ import {
   descreverLocalizacao,
   type DadosLocalizacao,
 } from '@/dados/localizacoes'
+import { useAutenticacao } from '@/autenticacao/useAutenticacao'
+import { podeGerenciarCadastros } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
@@ -34,6 +36,11 @@ const VAZIO: DadosLocalizacao = {
 }
 
 export default function Localizacoes() {
+  const { perfil } = useAutenticacao()
+  // Esconder o que o banco recusaria: um botão que sempre devolve
+  // erro ensina a pessoa a desconfiar da tela inteira.
+  const podeEditar = podeGerenciarCadastros(perfil)
+
   const { data: locais, isPending } = useLocalizacoes(true)
   const criar = useCriarLocalizacao()
   const editar = useEditarLocalizacao()
@@ -102,10 +109,12 @@ export default function Localizacoes() {
                 Onde a peça está no depósito. Todos os níveis são opcionais.
               </p>
             </div>
-            <Botao onClick={abrirNovo}>
-              <Plus aria-hidden="true" className="size-5" />
-              Nova
-            </Botao>
+            {podeEditar && (
+              <Botao onClick={abrirNovo}>
+                <Plus aria-hidden="true" className="size-5" />
+                Nova
+              </Botao>
+            )}
           </header>
 
           {isPending && <p className="text-texto-suave">Carregando…</p>}
@@ -148,34 +157,38 @@ export default function Localizacoes() {
               />
             </Link>
 
-            <Botao
-              variante="secundaria"
-              onClick={() => abrirEdicao(local)}
-              aria-label={`Editar ${local.codigo}`}
-            >
-              <Pencil aria-hidden="true" className="size-4" />
-            </Botao>
+            {podeEditar && (
+              <>
+                <Botao
+                  variante="secundaria"
+                  onClick={() => abrirEdicao(local)}
+                  aria-label={`Editar ${local.codigo}`}
+                >
+                  <Pencil aria-hidden="true" className="size-4" />
+                </Botao>
 
-            <Botao
-              variante="contorno"
-              onClick={() =>
-                void desativar.mutateAsync({
-                  id: local.id,
-                  ativo: !local.ativo,
-                })
-              }
-              aria-label={`${local.ativo ? 'Desativar' : 'Reativar'} ${local.codigo}`}
-              title={local.ativo ? 'Desativar' : 'Reativar'}
-            >
-              {/* Só o ícone: com o texto, em tela estreita, o botão comia a
-                  largura do nome do registro — que é o que se procura na
-                  lista. O rótulo continua no `aria-label` e na dica. */}
-              {local.ativo ? (
-                <Archive aria-hidden="true" className="size-4" />
-              ) : (
-                <ArchiveRestore aria-hidden="true" className="size-4" />
-              )}
-            </Botao>
+                <Botao
+                  variante="contorno"
+                  onClick={() =>
+                    void desativar.mutateAsync({
+                      id: local.id,
+                      ativo: !local.ativo,
+                    })
+                  }
+                  aria-label={`${local.ativo ? 'Desativar' : 'Reativar'} ${local.codigo}`}
+                  title={local.ativo ? 'Desativar' : 'Reativar'}
+                >
+                  {/* Só o ícone: com o texto, em tela estreita, o botão comia a
+                      largura do nome do registro — que é o que se procura na
+                      lista. O rótulo continua no `aria-label` e na dica. */}
+                  {local.ativo ? (
+                    <Archive aria-hidden="true" className="size-4" />
+                  ) : (
+                    <ArchiveRestore aria-hidden="true" className="size-4" />
+                  )}
+                </Botao>
+              </>
+            )}
           </li>
         ))}
       </ul>

@@ -7,6 +7,8 @@ import {
   agruparPorLinha,
   SEM_LINHA,
 } from '@/dados/modelosPerfil'
+import { useAutenticacao } from '@/autenticacao/useAutenticacao'
+import { podeGerenciarCadastros } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoSugestao } from '@/componentes/ui/CampoSugestao'
@@ -33,6 +35,11 @@ function textoAlcance(quantidade: number): string {
 }
 
 export default function Linhas() {
+  const { perfil } = useAutenticacao()
+  // Renomear linha reescreve o campo em TODOS os perfis que a usam.
+  // É edição de catálogo, e obedece à mesma permissão.
+  const podeEditar = podeGerenciarCadastros(perfil)
+
   const { data: modelos, isPending } = useModelosPerfil(true)
   const renomear = useRenomearLinha()
 
@@ -154,13 +161,15 @@ export default function Linhas() {
               {daLinha.length} {daLinha.length === 1 ? 'perfil' : 'perfis'}
             </span>
 
-            <Botao
-              variante="secundaria"
-              onClick={() => abrirEdicao(linha)}
-              aria-label={`Renomear ${linha}`}
-            >
-              <Pencil aria-hidden="true" className="size-4" />
-            </Botao>
+            {podeEditar && (
+              <Botao
+                variante="secundaria"
+                onClick={() => abrirEdicao(linha)}
+                aria-label={`Renomear ${linha}`}
+              >
+                <Pencil aria-hidden="true" className="size-4" />
+              </Botao>
+            )}
           </li>
         ))}
       </ul>

@@ -1,6 +1,7 @@
 import { createContext } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import type { PapelUsuario, PerfilUsuario } from '@/tipos/banco'
+import { permissoesEfetivas, type Permissoes } from '@/dominio/cargos'
+import type { PerfilUsuario } from '@/tipos/banco'
 
 /**
  * Contexto e regras de permissão da autenticação.
@@ -33,18 +34,41 @@ export const ContextoAutenticacao = createContext<EstadoAutenticacao | null>(
   null,
 )
 
-/** Papéis que podem cadastrar e movimentar estoque. */
-const PAPEIS_DE_ESTOQUE: readonly PapelUsuario[] = ['administrador', 'estoque']
-
 /**
  * Estas funções decidem o que APARECE na tela. Elas não protegem dado algum
  * — quem faz isso é o Row Level Security no banco, e cada regra daqui tem
  * uma correspondente lá.
+ *
+ * Todas perguntam pela PERMISSÃO, nunca pelo cargo. É o que permite ao
+ * administrador liberar uma tarefa para uma pessoa sem promovê-la, e é o
+ * mesmo desenho das políticas no banco.
  */
-export function podeMovimentarEstoque(perfil: PerfilUsuario | null): boolean {
-  return perfil !== null && PAPEIS_DE_ESTOQUE.includes(perfil.papel)
+function permitido(
+  perfil: PerfilUsuario | null,
+  chave: keyof Permissoes,
+): boolean {
+  return perfil === null ? false : permissoesEfetivas(perfil)[chave]
 }
 
+export function podeMovimentarEstoque(perfil: PerfilUsuario | null): boolean {
+  return permitido(perfil, 'pode_movimentar_estoque')
+}
+
+export function podeGerenciarCadastros(perfil: PerfilUsuario | null): boolean {
+  return permitido(perfil, 'pode_gerenciar_cadastros')
+}
+
+export function podeGerenciarColaboradores(
+  perfil: PerfilUsuario | null,
+): boolean {
+  return permitido(perfil, 'pode_gerenciar_colaboradores')
+}
+
+/**
+ * Continua existindo para o que é do DONO do sistema, não de uma tarefa —
+ * hoje, as configurações de cálculo. Não use para autorizar tarefa: para
+ * isso existem as permissões acima, que podem ser concedidas.
+ */
 export function eAdministrador(perfil: PerfilUsuario | null): boolean {
   return perfil?.papel === 'administrador'
 }

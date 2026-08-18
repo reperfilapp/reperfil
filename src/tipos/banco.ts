@@ -9,7 +9,21 @@
  * exista camada de tradução entre a consulta e o tipo.
  */
 
-export type PapelUsuario = 'administrador' | 'estoque' | 'serralheiro'
+/**
+ * Cargo do colaborador.
+ *
+ * `estoque` é legado do modelo antigo: continua válido no banco, some do
+ * cadastro e vale como auxiliar. Ver a migração
+ * `20260818100000_cargos_de_colaborador.sql`.
+ */
+export type PapelUsuario =
+  | 'administrador'
+  | 'gerente'
+  | 'financeiro'
+  | 'vendedor'
+  | 'serralheiro'
+  | 'auxiliar'
+  | 'estoque'
 
 export type StatusLote =
   'disponivel' | 'reservada' | 'consumida' | 'descartada' | 'em_conferencia'
@@ -59,8 +73,29 @@ export interface PerfilUsuario {
   telefone: string | null
   papel: PapelUsuario
   pode_informar_sobra_resultante: boolean
+  /**
+   * Permissões efetivas. Começam no padrão do cargo e depois vivem por
+   * conta própria — quem gerencia colaboradores pode ajustá-las pessoa a
+   * pessoa sem trocar o cargo de ninguém.
+   */
+  pode_movimentar_estoque: boolean
+  pode_gerenciar_cadastros: boolean
+  pode_gerenciar_colaboradores: boolean
   ativo: boolean
   criado_em: string
+}
+
+/** Convite aberto: quem o administrador autorizou a criar conta. */
+export interface ConviteColaborador {
+  id: string
+  organizacao_id: string
+  email: string
+  nome: string
+  papel: PapelUsuario
+  telefone: string | null
+  criado_por: string | null
+  criado_em: string
+  aceito_em: string | null
 }
 
 export interface ModeloPerfil {

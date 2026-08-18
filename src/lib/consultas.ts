@@ -37,4 +37,6 @@ export const chaves = {
   clientes: ['clientes'] as const,
   configuracoes: ['configuracoes'] as const,
   organizacao: ['organizacao'] as const,
+  colaboradores: ['colaboradores'] as const,
+  convites: ['convites'] as const,
 } as const

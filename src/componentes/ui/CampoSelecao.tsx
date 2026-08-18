@@ -5,6 +5,16 @@ import { cn } from '@/lib/utilitarios'
 interface PropsCampoSelecao extends SelectHTMLAttributes<HTMLSelectElement> {
   rotulo: string
   erro?: string | undefined
+  /** Texto de apoio, mostrado quando não há erro. */
+  ajuda?: ReactNode
+  /**
+   * Esconde o rótulo dos olhos, mantendo-o para o leitor de tela.
+   *
+   * Para o campo que aparece repetido numa lista, onde a coluna inteira já
+   * diz o que é e um rótulo por linha seria ruído. O rótulo continua
+   * existindo — sem ele, quem usa leitor de tela ouve só "combo box".
+   */
+  rotuloOculto?: boolean
   children: ReactNode
 }
 
@@ -20,6 +30,8 @@ interface PropsCampoSelecao extends SelectHTMLAttributes<HTMLSelectElement> {
 export function CampoSelecao({
   rotulo,
   erro,
+  ajuda,
+  rotuloOculto = false,
   className,
   id,
   children,
@@ -28,11 +40,15 @@ export function CampoSelecao({
   const idGerado = useId()
   const idCampo = id ?? idGerado
   const idErro = `${idCampo}-erro`
+  const idAjuda = `${idCampo}-ajuda`
   const temErro = erro !== undefined && erro !== ''
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={idCampo} className="font-medium">
+      <label
+        htmlFor={idCampo}
+        className={cn('font-medium', rotuloOculto && 'sr-only')}
+      >
         {rotulo}
       </label>
 
@@ -40,7 +56,7 @@ export function CampoSelecao({
         <select
           id={idCampo}
           aria-invalid={temErro}
-          aria-describedby={temErro ? idErro : undefined}
+          aria-describedby={cn(temErro && idErro, !temErro && ajuda && idAjuda)}
           className={cn(
             // Mesma altura dos campos de medida e quantidade (h-16): lado a
             // lado no mesmo formulário, um campo mais baixo que o outro
@@ -62,10 +78,16 @@ export function CampoSelecao({
         />
       </div>
 
-      {temErro && (
+      {temErro ? (
         <p id={idErro} role="alert" className="text-erro-600 text-sm">
           {erro}
         </p>
+      ) : (
+        ajuda && (
+          <p id={idAjuda} className="text-texto-suave text-sm">
+            {ajuda}
+          </p>
+        )
       )}
     </div>
   )

@@ -45,6 +45,117 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.27 — 18/08/2026
+
+**Permissões por pessoa: liberar uma tarefa sem promover ninguém.**
+
+⚠️ **Mais uma migração:** `20260818110000_permissao_de_cadastros.sql`,
+depois das duas da versão anterior.
+
+O caso que originou tudo: autorizar o financeiro a cadastrar colaborador
+sem torná-lo administrador do sistema. Em **Colaboradores**, o ícone de
+chave abre as três permissões da pessoa, com uma caixa cada. Marcar libera
+na hora.
+
+A lista passa a mostrar **"ajustado"** em quem foge do padrão do cargo.
+Sem isso, dois colaboradores com o mesmo cargo poderiam ter poderes
+diferentes sem nada na tela denunciar — e aí ninguém confia no que o cargo
+diz.
+
+Ninguém mexe nas próprias permissões: no seu perfil as caixas ficam
+desligadas. O banco recusaria de qualquer forma, pelo gatilho contra
+autopromoção, e uma caixa que volta sozinha ensina a desconfiar da tela.
+
+**Mexer no catálogo deixou de ser a mesma chave que movimentar estoque.**
+Eram a mesma coisa até aqui, e não são. Movimentar estoque é cadastrar a
+peça que chegou e dar baixa na que saiu: acontece o dia inteiro, e erro ali
+se conserta com um ajuste. Mexer no catálogo é dizer que o perfil FA-239
+existe e quanto ele pesa: acontece raramente, e erro ali contamina todo
+orçamento futuro.
+
+Ao separar, ninguém perdeu acesso — a migração concede a permissão nova a
+todos que já podiam fazer o trabalho.
+
+**Os botões seguem a permissão.** Nas telas de perfis, linhas, acabamentos,
+localizações e clientes, quem não pode editar não vê mais os botões de
+criar, editar e desativar. Eles já eram recusados pelo banco; o que mudou é
+que agora não aparecem — botão que sempre devolve erro ensina a pessoa a
+desconfiar da tela inteira.
+
+## 1.6.26 — 18/08/2026
+
+**Colaboradores: cadastro pelo próprio sistema, com cargo.**
+
+⚠️ **Duas migrações, nesta ordem:**
+`20260818100000_cargos_de_colaborador.sql` e depois
+`20260818100100_colaboradores_e_permissoes.sql`. E um passo no painel do
+Supabase — ver `docs/colaboradores-e-permissoes.md`.
+
+Não havia tela nenhuma para administrar quem entra no sistema. Incluir um
+colaborador exigia abrir o painel do Supabase, criar o usuário à mão e
+rodar um SQL — trabalho de quem construiu o sistema, não de quem toca a
+serralheria. O resultado previsível é todo mundo entrando com a mesma
+conta de administrador.
+
+Agora existe **Mais → Colaboradores**, com seis cargos: Serralheiro,
+Auxiliar, Vendedor, Financeiro, Gerente e Admin.
+
+**Cargo não é permissão.** A tentação era listar cargos dentro de cada
+regra de segurança. Funciona no dia em que se escreve e apodrece no
+seguinte: criar cargo novo vira migração em dezenas de políticas, e
+liberar UMA tarefa para UMA pessoa não teria como ser feito sem
+programador.
+
+Então o cargo é ponto de partida — define o que fica marcado no convite —
+e as permissões vivem por conta própria no perfil de cada um. As regras
+do banco perguntam pela permissão, nunca pelo cargo. É o que vai permitir,
+na etapa seguinte, autorizar o financeiro a cadastrar colaborador sem
+torná-lo administrador do sistema.
+
+**Como alguém entra.** O administrador registra o convite; o colaborador
+cria a própria senha em "Primeiro acesso", com o mesmo e-mail. O caminho
+se inverteu por um motivo concreto: criar conta pelo aplicativo exigiria a
+chave de administração do projeto dentro dele, e essa chave, extraída de
+um celular, abre o banco inteiro.
+
+Não é cadastro aberto — um gatilho recusa quem não tem convite, e a conta
+nem chega a existir. E o convite não manda e-mail nenhum: depois de
+convidar, a tela diz o que avisar ao colega.
+
+**Um cuidado na transição:** enquanto as migrações não são aplicadas, as
+colunas de permissão nem vêm do banco. Se ausente valesse "não pode", o
+administrador ficaria trancado para fora da própria tela de colaboradores.
+Ausente quer dizer "ninguém decidiu ainda" — e aí quem decide é o cargo.
+
+**Falta a tela de permissões por pessoa**, que é a etapa 2. A base está
+pronta: colunas, políticas e funções já perguntam pela permissão.
+
+## 1.6.25 — 18/08/2026
+
+**A ficha do perfil dentro da tela da peça.**
+
+Abrir uma sobra mostrava o comprimento, a quantidade, o acabamento e o
+local — mas nada do perfil além do código e do nome. Justamente as
+medidas, que são o que se confere com a ponta na mão, obrigavam a sair
+para a ficha do perfil e voltar. Quem faz isso perde o que estava
+comparando.
+
+Agora "Dados da peça" traz também código, linha, fabricante, medidas,
+barra padrão, peso por metro e área da seção, sob um subtítulo "Do
+perfil" que separa o que é DESTA peça do que vem do catálogo. Sem a
+marca, "Comprimento 6 m" e "Barra padrão 6 m" viram a mesma coisa aos
+olhos de quem lê — e não são.
+
+Um campo mudou de sentido no caminho: onde a ficha do perfil mostra
+"Peso da barra", aqui aparece **Peso da peça**, calculado com o
+comprimento que a sobra realmente tem. A unidade que se pega na mão
+neste depósito é a peça, não a barra nova.
+
+A lista de sobras continua trazendo só quatro campos do perfil, de
+propósito: são centenas de linhas, e cada coluna a mais é peso na rede,
+que no depósito é ruim. A ficha inteira só é buscada quando se abre uma
+peça.
+
 ## 1.6.21 — 17/08/2026
 
 **Cadastro do perfil num lugar só, com as quatro medidas da seção.**

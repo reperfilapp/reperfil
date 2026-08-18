@@ -13,9 +13,15 @@ import {
   Moon,
   SunMoon,
   Ruler,
+  UsersRound,
 } from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
-import { eAdministrador, podeMovimentarEstoque } from '@/autenticacao/contexto'
+import {
+  eAdministrador,
+  podeMovimentarEstoque,
+  podeGerenciarColaboradores,
+} from '@/autenticacao/contexto'
+import { rotuloCargo } from '@/dominio/cargos'
 import { Botao } from '@/componentes/ui/Botao'
 import { SeloVersao } from '@/componentes/SeloVersao'
 import { useTema, type Tema } from '@/tema/useTema'
@@ -97,6 +103,13 @@ export default function Mais() {
       visivel: true,
     },
     {
+      para: '/colaboradores',
+      rotulo: 'Colaboradores',
+      descricao: 'Quem entra no sistema e o que cada um pode fazer',
+      Icone: UsersRound,
+      visivel: podeGerenciarColaboradores(perfil),
+    },
+    {
       para: '/configuracoes',
       rotulo: 'Configurações do cálculo',
       descricao: 'Serra, margem e mínimo de sobra',
@@ -110,7 +123,8 @@ export default function Mais() {
       <header className="mb-6">
         <h1 className="text-2xl font-bold">Mais</h1>
         <p className="text-texto-suave mt-1">
-          {perfil?.nome} · <span className="capitalize">{perfil?.papel}</span>
+          {perfil?.nome}
+          {perfil && ` · ${rotuloCargo(perfil.papel)}`}
         </p>
       </header>
 

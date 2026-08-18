@@ -15,6 +15,33 @@ export interface SobraDetalhada extends LoteSobra {
   localizacao: { codigo: string } | null
 }
 
+/**
+ * O perfil como a tela de detalhe da peça precisa dele.
+ *
+ * A LISTA continua trazendo só quatro campos do perfil, de propósito: são
+ * centenas de linhas, e cada coluna a mais é peso na rede do depósito, que
+ * é ruim. Aqui é UMA peça — cabe trazer a ficha inteira, porque quem abriu
+ * esta tela está com a ponta na mão querendo conferir se é mesmo este
+ * perfil.
+ */
+export interface PerfilDaSobra {
+  codigo: string
+  descricao: string
+  linha: string | null
+  aplicacao: string | null
+  fabricante: string | null
+  comprimento_barra_mm: number
+  peso_por_metro_g: number | null
+  largura_secao_mm: number | null
+  altura_secao_mm: number | null
+  medida_3_secao_mm: number | null
+  medida_4_secao_mm: number | null
+}
+
+export interface SobraCompleta extends Omit<SobraDetalhada, 'modelo'> {
+  modelo: PerfilDaSobra | null
+}
+
 export interface DadosNovaSobra {
   modelo_perfil_id: string
   acabamento_id: string
@@ -172,12 +199,17 @@ export function useSobra(id: string | null) {
   return useQuery({
     queryKey: [...chaves.sobras, 'uma', id],
     enabled: id !== null,
-    queryFn: async (): Promise<SobraDetalhada | null> => {
+    queryFn: async (): Promise<SobraCompleta | null> => {
       const { data, error } = await supabase
         .from('lotes_sobras')
         .select(
           `*,
-           modelo:modelos_perfil (codigo, descricao, linha, aplicacao),
+           modelo:modelos_perfil (
+             codigo, descricao, linha, aplicacao, fabricante,
+             comprimento_barra_mm, peso_por_metro_g,
+             largura_secao_mm, altura_secao_mm,
+             medida_3_secao_mm, medida_4_secao_mm
+           ),
            acabamento:acabamentos (codigo, nome, cor_hex),
            localizacao:localizacoes (codigo)`,
         )
@@ -186,7 +218,7 @@ export function useSobra(id: string | null) {
 
       if (error) throw new Error(error.message)
 
-      return data as unknown as SobraDetalhada | null
+      return data as unknown as SobraCompleta | null
     },
   })
 }
