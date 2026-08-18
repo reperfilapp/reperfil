@@ -3,7 +3,12 @@ import { Botao } from '@/componentes/ui/Botao'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoSugestao } from '@/componentes/ui/CampoSugestao'
 import { GaleriaDesenhos } from '@/componentes/GaleriaDesenhos'
-import { useValoresUsados, type DadosModeloPerfil } from '@/dados/modelosPerfil'
+import {
+  useValoresUsados,
+  useModelosPerfil,
+  type DadosModeloPerfil,
+} from '@/dados/modelosPerfil'
+import { perfilComMesmoCodigo, codigosParecidos } from '@/dominio/codigoPerfil'
 import type { ModeloPerfil } from '@/tipos/banco'
 
 /**
@@ -98,15 +103,62 @@ export function FormularioModeloPerfil({
     ...new Set([...SUGESTOES_INICIAIS, ...(aplicacoesUsadas ?? [])]),
   ].sort((a, b) => a.localeCompare(b, 'pt-BR'))
 
+  /*
+   * O catálogo inteiro já está em memória para o agrupamento das telas de
+   * perfil, então conferir o código não custa ida ao servidor: dá para
+   * responder a cada tecla.
+   *
+   * `true` inclui os inativos: um perfil desativado continua ocupando o
+   * código, e deixar cadastrar outro igual criaria dois registros que a
+   * busca não distingue.
+   */
+  const { data: catalogo } = useModelosPerfil(true)
+
+  const duplicado = perfilComMesmoCodigo(
+    catalogo ?? [],
+    form.codigo,
+    modelo?.id,
+  )
+
+  const parecidos = codigosParecidos(catalogo ?? [], form.codigo, modelo?.id)
+
   return (
     <form onSubmit={aoSalvar} className="flex flex-col gap-4" noValidate>
-      <CampoTexto
-        rotulo="Código interno"
-        value={form.codigo}
-        onChange={(e) => aoMudar({ ...form, codigo: e.target.value })}
-        ajuda="O código que a sua empresa já usa para este perfil."
-        required
-      />
+      <div>
+        <CampoTexto
+          rotulo="Código interno"
+          value={form.codigo}
+          onChange={(e) => aoMudar({ ...form, codigo: e.target.value })}
+          erro={
+            duplicado
+              ? `Já existe: ${duplicado.codigo} — ${duplicado.descricao}`
+              : undefined
+          }
+          ajuda="O código que a sua empresa já usa para este perfil."
+          required
+        />
+
+        {/* Os códigos já usados que começam pelo que foi digitado. Aparecem
+            ENQUANTO se digita, e não depois de errar: quem cadastra o
+            terceiro perfil da série MN vê os dois existentes antes de
+            escolher o número, sem sair da tela para conferir. */}
+        {parecidos.length > 0 && (
+          <div className="mt-2">
+            <p className="text-texto-suave text-sm">Já existem nesta série:</p>
+            <ul className="mt-1 flex flex-wrap gap-1.5">
+              {parecidos.map((existente) => (
+                <li
+                  key={existente.id}
+                  title={existente.descricao}
+                  className="bg-superficie-2 text-texto-suave rounded px-2 py-1 font-mono text-xs"
+                >
+                  {existente.codigo}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
 
       <CampoTexto
         rotulo="Descrição"
@@ -281,7 +333,15 @@ export function FormularioModeloPerfil({
         >
           Cancelar
         </Botao>
-        <Botao type="submit" carregando={salvando} className="flex-1">
+        {/* Barrado aqui, e não só ao salvar: o banco recusa o código
+            repetido, mas a mensagem chega depois de a pessoa ter preenchido
+            o resto do formulário. */}
+        <Botao
+          type="submit"
+          carregando={salvando}
+          disabled={duplicado !== null}
+          className="flex-1"
+        >
           Salvar
         </Botao>
       </div>
