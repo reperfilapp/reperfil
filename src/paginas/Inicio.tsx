@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom'
-import { PackagePlus, Package, Clock, Ruler } from 'lucide-react'
+import { PackagePlus, Package, Clock, Ruler, Layers, Boxes } from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { useResumoEstoque } from '@/dados/sobras'
 import { useConfiguracoes } from '@/dados/configuracoes'
 import { MarcaRePerfil } from '@/componentes/MarcaRePerfil'
 import { SeloVersao } from '@/componentes/SeloVersao'
+import { cn } from '@/lib/utilitarios'
 
 export default function Inicio() {
   const { perfil } = useAutenticacao()
@@ -73,26 +74,86 @@ export default function Inicio() {
         />
       </section>
 
-      {podeMovimentarEstoque(perfil) && (
-        <Link
-          to="/cadastrar"
-          className="bg-acao-600 hover:bg-acao-700 flex min-h-24 items-center justify-center gap-3 rounded-2xl px-6 text-xl font-bold text-white"
-        >
-          <PackagePlus aria-hidden="true" className="size-8" />
-          Cadastrar sobra
-        </Link>
-      )}
+      {/*
+       * Os quatro caminhos principais, do mesmo tamanho.
+       *
+       * Antes eram dois, com tamanhos diferentes — o de cadastrar sobra era
+       * o dobro do outro, porque era a ação do dia a dia. Com quatro
+       * destinos, tamanhos diferentes viram hierarquia inventada: quem abre
+       * o aplicativo para consultar o catálogo não está fazendo nada menos
+       * importante do que quem vai lançar uma peça.
+       *
+       * A cor distingue o que cada um faz. Todos escuros, com matizes
+       * próximos: são atalhos da mesma família, e cores berrantes e
+       * distintas fariam a tela inicial parecer um painel de alertas.
+       */}
+      <nav aria-label="Atalhos" className="grid grid-cols-2 gap-3">
+        {podeMovimentarEstoque(perfil) && (
+          <Atalho
+            para="/cadastrar"
+            Icone={PackagePlus}
+            rotulo="Cadastrar sobra"
+            cor="bg-acao-600 hover:bg-acao-700"
+          />
+        )}
 
-      <Link
-        to="/sobras"
-        className="border-borda bg-superficie hover:bg-superficie-2 mt-3 flex min-h-16 items-center justify-center gap-2 rounded-2xl border-2 font-semibold"
-      >
-        <Package aria-hidden="true" className="size-5" />
-        Ver estoque de sobras
-      </Link>
+        <Atalho
+          para="/sobras"
+          Icone={Package}
+          rotulo="Estoque de sobras"
+          cor="bg-acao-700 hover:bg-acao-800"
+        />
+
+        <Atalho
+          para="/perfis"
+          Icone={Layers}
+          rotulo="Modelos de perfil"
+          cor="bg-grafite-700 hover:bg-grafite-800"
+        />
+
+        <Atalho
+          para="/produtos"
+          Icone={Boxes}
+          rotulo="Produtos e listas técnicas"
+          cor="bg-economia-700 hover:bg-economia-600"
+        />
+      </nav>
 
       <SeloVersao className="mt-8" />
     </div>
+  )
+}
+
+/**
+ * Um dos caminhos principais da tela inicial.
+ *
+ * Altura generosa e mesma medida para todos: são tocados com o celular na
+ * mão, às vezes de luva, e um alvo menor que os vizinhos erra mais.
+ */
+function Atalho({
+  para,
+  Icone,
+  rotulo,
+  cor,
+}: {
+  para: string
+  Icone: typeof Package
+  rotulo: string
+  /** Classes de fundo. Texto sempre branco — todos os tons são escuros. */
+  cor: string
+}) {
+  return (
+    <Link
+      to={para}
+      className={cn(
+        'flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl p-3',
+        'text-center leading-tight font-bold text-white',
+        cor,
+      )}
+    >
+      <Icone aria-hidden="true" className="size-7 shrink-0" />
+      {rotulo}
+    </Link>
   )
 }
 

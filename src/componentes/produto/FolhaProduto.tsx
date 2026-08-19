@@ -113,7 +113,7 @@ export function FolhaProduto({
                 <img
                   src="/logo-otimizada.png"
                   alt={empresa}
-                  className="h-16 w-auto object-contain"
+                  className="h-[30mm] w-auto object-contain"
                 />
 
                 <div className="min-w-0 text-right">
@@ -140,29 +140,32 @@ export function FolhaProduto({
               )}
 
               {/*
-               * Até três por fileira, centralizadas, quebrando para baixo no
-               * excesso.
+               * Cada imagem ocupa exatamente UM TERÇO da largura útil, tenha
+               * a folha uma imagem ou seis.
                *
-               * A largura é fixa em 60 mm, e não uma fração do espaço: com
-               * `flex-1`, duas imagens ficariam gigantes e três minúsculas, e
-               * o desenho mudaria de tamanho conforme o produto tivesse foto
-               * ou não. Medida fixa faz três caberem na largura útil do A4
-               * (194 mm) e mantém a escala igual em qualquer folha.
+               * Fração fixa, e não proporcional à quantidade: com `flex-1`,
+               * duas imagens ficariam gigantes e três minúsculas, e o mesmo
+               * desenho mudaria de tamanho conforme o produto tivesse foto
+               * ou não — atrapalhando justamente quem usa a folha para
+               * conferir contra a peça.
                *
-               * `justify-center` resolve sozinho os casos de uma e de duas:
-               * uma fica no meio, duas ficam centralizadas juntas.
+               * O respiro entre elas vem do `px-3` de cada figura, por
+               * dentro do terço: com `gap`, três não caberiam mais na linha.
+               *
+               * `justify-center` resolve os casos menores sozinho — uma fica
+               * no meio, duas ficam centralizadas com o espaço entre elas.
                */}
               {imagens.length > 0 && (
-                <section className="mb-4 flex flex-wrap justify-center gap-4">
+                <section className="mb-4 flex flex-wrap justify-center">
                   {imagens.map((imagem) => (
                     <figure
                       key={imagem.legenda}
-                      className="w-[60mm] break-inside-avoid"
+                      className="w-1/3 break-inside-avoid px-3"
                     >
                       <img
                         src={imagem.src}
                         alt=""
-                        className="h-[55mm] w-full object-contain"
+                        className="h-[62mm] w-full object-contain"
                       />
                       <figcaption className="mt-1 text-center text-xs">
                         {imagem.legenda}

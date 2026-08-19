@@ -45,6 +45,26 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.47 — 19/08/2026
+
+**Quatro atalhos na tela inicial, do mesmo tamanho.**
+
+"Modelos de perfil" e "Produtos e listas técnicas" entraram na tela inicial,
+ao lado de "Cadastrar sobra" e "Estoque de sobras". Antes só existiam pelo
+menu Mais — dois toques a mais para chegar ao catálogo que se consulta o dia
+inteiro.
+
+**Todos com a mesma medida.** Antes eram dois botões de tamanhos diferentes:
+o de cadastrar sobra tinha o dobro do outro, porque era a ação do dia a dia.
+Com quatro destinos, tamanho diferente vira hierarquia inventada — quem abre
+o aplicativo para consultar o catálogo não está fazendo nada menos importante
+do que quem vai lançar uma peça. E alvo menor que os vizinhos erra mais, com
+o celular na mão e às vezes de luva.
+
+**A cor distingue o que cada um faz**, em tons escuros de matizes próximos:
+são atalhos da mesma família, e cores berrantes e distintas fariam a tela
+inicial parecer um painel de alertas.
+
 ## 1.6.46 — 19/08/2026
 
 **A folha impressa: marca d'água espalhada, logo maior, cabeçalho que repete
@@ -66,12 +86,18 @@ página e deslocada — girada, uma do tamanho exato deixaria os cantos vazios.
 folha circula fora da empresa, e o símbolo sozinho não diz de onde veio. Os
 dados do produto foram para a direita, alinhados a ele.
 
-**As imagens ficaram grandes**, com até três por fileira, centralizadas,
-quebrando para baixo no excesso. A largura é fixa em 60 mm, e não uma fração
-do espaço: proporcional, duas imagens ficariam gigantes e três minúsculas, e
-o desenho mudaria de tamanho conforme o produto tivesse foto ou não. Medida
-fixa faz três caberem na largura útil do A4 e mantém a escala igual em
-qualquer folha.
+**O logo do cabeçalho tem 30 mm de altura** — o dobro do tamanho anterior.
+
+**Cada imagem ocupa um terço da largura útil**, tenha a folha uma imagem ou
+seis, com até três por fileira e o excesso quebrando para baixo. Fração fixa,
+e não proporcional à quantidade: assim duas não ficam gigantes nem três
+minúsculas, e o mesmo desenho não muda de tamanho conforme o produto tenha
+foto ou não — o que atrapalharia justamente quem usa a folha para conferir
+contra a peça.
+
+O respiro entre elas vem de um recuo por dentro do terço, e não de espaço
+entre os blocos: com espaço externo, três não caberiam mais na linha. Havendo
+só duas, elas ficam centralizadas com esse mesmo respiro no meio.
 
 ## 1.6.45 — 19/08/2026
 
