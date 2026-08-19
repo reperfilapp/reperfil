@@ -114,6 +114,13 @@
   --cor-ok-borda: var(--color-economia-100);
   --cor-falta-fundo: var(--color-erro-50);
   --cor-falta-borda: var(--color-erro-100);
+
+  /* Aviso — o quadro de "não dá com as sobras de hoje". Mesmo motivo dos
+     tokens acima: fundo claro fixo com o texto claro do tema escuro é
+     texto invisível. */
+  --cor-aviso-fundo: var(--color-atencao-50);
+  --cor-aviso-borda: var(--color-atencao-300);
+  --cor-aviso-texto: var(--color-atencao-700);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -145,6 +152,9 @@
     --cor-ok-borda: oklch(0.45 0.08 155);
     --cor-falta-fundo: oklch(0.32 0.05 27);
     --cor-falta-borda: oklch(0.45 0.08 27);
+    --cor-aviso-fundo: oklch(0.32 0.05 75);
+    --cor-aviso-borda: oklch(0.5 0.09 75);
+    --cor-aviso-texto: oklch(0.88 0.08 75);
   }
 }
 
@@ -165,6 +175,9 @@
   --cor-ok-borda: oklch(0.45 0.08 155);
   --cor-falta-fundo: oklch(0.32 0.05 27);
   --cor-falta-borda: oklch(0.45 0.08 27);
+  --cor-aviso-fundo: oklch(0.32 0.05 75);
+  --cor-aviso-borda: oklch(0.5 0.09 75);
+  --cor-aviso-texto: oklch(0.88 0.08 75);
 }
 
 @theme inline {
@@ -184,6 +197,9 @@
   --color-ok-borda: var(--cor-ok-borda);
   --color-falta: var(--cor-falta-fundo);
   --color-falta-borda: var(--cor-falta-borda);
+  --color-aviso: var(--cor-aviso-fundo);
+  --color-aviso-borda: var(--cor-aviso-borda);
+  --color-aviso-texto: var(--cor-aviso-texto);
 }
 
 @layer base {
@@ -284,6 +300,57 @@
     /* Preto no branco, sempre: a folha vai para o papel, e o tema escuro
        do aplicativo gastaria tinta imprimindo fundo preto. */
     color: black !important;
+    /* Espaço para o cabeçalho fixo não cobrir o começo do conteúdo. */
+    padding-top: 22mm;
+  }
+
+  /*
+   * Cabeçalho em todas as páginas.
+   *
+   * `position: fixed` dentro da impressão significa "repita em cada folha" —
+   * é assim que o navegador trata elemento fixo ao paginar. Uma lista longa
+   * vira duas ou três folhas, e a segunda sem identificação é uma tabela de
+   * números que ninguém sabe de que produto é.
+   */
+  #folha-impressao .repete-cabecalho {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: white !important;
+  }
+
+  /*
+   * Marca d'água, também repetida por página.
+   *
+   * Bem apagada de propósito: identifica a folha que circula solta pela
+   * oficina sem disputar com o conteúdo. Quem lê está procurando uma medida.
+   *
+   * `print-color-adjust` obriga o navegador a imprimir a imagem — por
+   * padrão ele descarta fundos para poupar tinta, e a marca sumiria.
+   */
+  #folha-impressao .marca-dagua {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.06;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  #folha-impressao .marca-dagua img {
+    width: 60%;
+    max-width: 120mm;
+  }
+
+  /* O conteúdo por cima da marca. */
+  #folha-impressao > *:not(.marca-dagua) {
+    position: relative;
+    z-index: 1;
   }
 
   @page {

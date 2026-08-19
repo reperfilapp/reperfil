@@ -92,13 +92,13 @@ export function Veredito({
   }
 
   return (
-    <section className="bg-atencao-50 flex items-start gap-3 rounded-xl p-4">
-      <XCircle
-        aria-hidden="true"
-        className="text-atencao-700 mt-0.5 size-6 shrink-0"
-      />
+    /* Tokens de aviso, e não tons fixos: o texto DENTRO deste quadro herdava
+       a cor do tema, e no escuro herdava branco — sobre o fundo creme fixo,
+       ficava invisível. Agora fundo e texto viram juntos. */
+    <section className="bg-aviso border-aviso-borda text-aviso-texto flex items-start gap-3 rounded-xl border p-4">
+      <XCircle aria-hidden="true" className="mt-0.5 size-6 shrink-0" />
       <div className="min-w-0">
-        <p className="text-atencao-700 font-semibold">
+        <p className="font-semibold">
           {desejada === 1
             ? 'Não dá com as sobras de hoje.'
             : `Não dá para as ${desejada} unidades com as sobras de hoje.`}
@@ -108,7 +108,7 @@ export function Veredito({
             é resposta melhor do que "não dá", e às vezes resolve o pedido
             pela metade enquanto o material novo não chega. */}
         {unidades > 0 && (
-          <p className="text-texto-suave mt-1 text-sm">
+          <p className="mt-1 text-sm opacity-80">
             Dá para {unidades} {unidades === 1 ? 'unidade' : 'unidades'}.
           </p>
         )}
@@ -116,19 +116,19 @@ export function Veredito({
         {soFaltaAcabamento ? (
           /* Tudo verde na lista e "não dá" aqui em cima seria
              incompreensível sem esta frase. */
-          <p className="text-texto-suave mt-1 text-sm">
+          <p className="mt-1 text-sm opacity-80">
             Há material para todos os cortes, mas em acabamentos diferentes — e
             uma peça sai toda do mesmo acabamento. Junte o que falta num
             acabamento só, ou confira se as sobras estão cadastradas com o
             acabamento certo.
           </p>
         ) : faltas.length === 0 ? (
-          <p className="text-texto-suave mt-1 text-sm">
+          <p className="mt-1 text-sm opacity-80">
             Não há sobra disponível dos perfis desta lista.
           </p>
         ) : (
           <>
-            <p className="text-texto-suave mt-1 text-sm">Falta:</p>
+            <p className="mt-1 text-sm opacity-80">Falta:</p>
             <ul className="mt-1 flex flex-col gap-1 text-sm">
               {faltas.map((falta, i) => (
                 <li key={i} className="tabular-nums">

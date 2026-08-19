@@ -51,10 +51,17 @@ export function useProduto(id: string | null) {
 async function buscarListaTecnica(
   produtoId: string | null,
 ): Promise<ItemListaTecnica[]> {
+  /*
+   * Pela ordem escolhida, e não pelo comprimento: a lista é lida na bancada
+   * de cima para baixo, na sequência da montagem. `criado_em` desempata os
+   * que ainda não têm ordem — banco sem a migração aplicada, ou linha
+   * lançada por uma versão anterior do aplicativo.
+   */
   let consulta = supabase
     .from('itens_lista_tecnica')
     .select('*')
-    .order('comprimento_mm', { ascending: false })
+    .order('ordem', { ascending: true, nullsFirst: false })
+    .order('criado_em', { ascending: true })
 
   if (produtoId !== null) consulta = consulta.eq('produto_id', produtoId)
 
@@ -254,6 +261,37 @@ export function useRemoverItemLista() {
         .eq('id', id)
 
       if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.listaTecnica })
+    },
+  })
+}
+
+/**
+ * Grava a nova sequência dos cortes.
+ *
+ * Reescreve a posição de TODOS os itens da lista, e não só dos que mudaram:
+ * arrastar um item do fim para o começo desloca todos os outros, e calcular
+ * quais no aplicativo seria refazer, com menos informação, a conta que o
+ * banco faz num comando. A lista tem dezenas de linhas, não milhares.
+ */
+export function useReordenarLista() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (idsNaOrdem: readonly string[]) => {
+      // Um `update` por item: o Postgres não tem "atualize cada linha com um
+      // valor diferente" numa chamada só pela API REST. São poucas linhas, e
+      // acontece uma vez por arrastar.
+      for (const [posicao, id] of idsNaOrdem.entries()) {
+        const { error } = await supabase
+          .from('itens_lista_tecnica')
+          .update({ ordem: posicao + 1 })
+          .eq('id', id)
+
+        if (error) throw new Error(error.message)
+      }
     },
     onSuccess: () => {
       void cliente.invalidateQueries({ queryKey: chaves.listaTecnica })

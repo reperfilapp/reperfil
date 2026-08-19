@@ -9,6 +9,8 @@ import {
   ChevronRight,
   ChevronDown,
   FileText,
+  GripVertical,
+  ArrowDownUp,
 } from 'lucide-react'
 import {
   useProduto,
@@ -16,6 +18,7 @@ import {
   useAdicionarItemLista,
   useRemoverItemLista,
   useEditarItemLista,
+  useReordenarLista,
   useEditarProduto,
   type DadosProduto,
 } from '@/dados/produtos'
@@ -34,6 +37,11 @@ import {
   chaveDoCorte,
 } from '@/dominio/producao'
 import { resumirPorPerfil, resumoDe } from '@/dominio/estoqueResumo'
+import {
+  ordenarLista,
+  CRITERIOS,
+  type CriterioOrdenacao,
+} from '@/dominio/ordenacaoListaTecnica'
 import { sobrasDisponiveis } from '@/dominio/estoqueParaProducao'
 import { formatarMedidaProduto } from '@/dominio/produto'
 import { formatarComprimento } from '@/dominio/medidas'
@@ -45,6 +53,7 @@ import { Botao } from '@/componentes/ui/Botao'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoSugestao } from '@/componentes/ui/CampoSugestao'
 import { CampoQuantidade } from '@/componentes/ui/CampoQuantidade'
+import { useArrastarParaOrdenar } from '@/componentes/ui/useArrastarParaOrdenar'
 import { cn } from '@/lib/utilitarios'
 import { Modal } from '@/componentes/ui/Modal'
 import { Veredito } from '@/componentes/Veredito'
@@ -71,6 +80,7 @@ export default function ProdutoDetalhe() {
   const adicionar = useAdicionarItemLista()
   const remover = useRemoverItemLista()
   const editarItem = useEditarItemLista()
+  const reordenar = useReordenarLista()
   const editar = useEditarProduto()
 
   const [editando, setEditando] = useState(false)
@@ -243,6 +253,17 @@ export default function ProdutoDetalhe() {
       )
     }
   }
+
+  /*
+   * A ordem é gravada só ao SOLTAR, não a cada movimento: arrastar do fim
+   * para o começo passaria por todas as posições intermediárias, e cada uma
+   * viraria uma ida ao servidor.
+   */
+  const ordenacao = useArrastarParaOrdenar({
+    itens: itens ?? [],
+    chave: (item) => item.id,
+    aoSoltar: (idsNaOrdem) => void reordenar.mutateAsync(idsNaOrdem),
+  })
 
   const nomeDoPerfil = (modeloId: string) => {
     const modelo = modelos?.find((m) => m.id === modeloId)
@@ -583,6 +604,56 @@ export default function ProdutoDetalhe() {
           descontos que a oficina aplica.
         </p>
 
+        {/* Ordenar automático não briga com arrastar: a regra organiza uma
+            lista recém-digitada de vinte cortes num toque, e o arrastar
+            ajusta o que ficou fora de lugar. Reescreve a ordem GRAVADA —
+            fosse só visual, a folha impressa sairia diferente da tela. */}
+        {podeEditar && (itens ?? []).length > 1 && (
+          <div className="mb-3 flex items-center gap-2">
+            <ArrowDownUp
+              aria-hidden="true"
+              className="text-texto-suave size-4 shrink-0"
+            />
+            <div className="relative flex-1 sm:max-w-72">
+              <select
+                value=""
+                onChange={(e) => {
+                  const criterio = e.target.value as CriterioOrdenacao
+
+                  if (!criterio) return
+
+                  const ordenados = ordenarLista(itens ?? [], criterio, {
+                    modelos: modelos ?? [],
+                    pecasPorPerfil: new Map(
+                      [...estoquePorPerfil].map(([id, r]) => [id, r.pecas]),
+                    ),
+                  })
+
+                  void reordenar.mutateAsync(ordenados.map((i) => i.id))
+                  // Volta ao rótulo neutro: o campo é um comando, não um
+                  // estado — a lista pode ser arrastada depois, e deixá-lo
+                  // marcado diria que ela ainda segue aquela regra.
+                  e.target.value = ''
+                }}
+                aria-label="Ordenar a lista automaticamente"
+                className="border-borda bg-superficie h-11 w-full appearance-none rounded-xl border-2 pr-9 pl-3 text-sm"
+              >
+                <option value="">Ordenar automaticamente por…</option>
+                {CRITERIOS.map((c) => (
+                  <option key={c.valor} value={c.valor}>
+                    {c.rotulo}
+                  </option>
+                ))}
+              </select>
+
+              <ChevronDown
+                aria-hidden="true"
+                className="text-texto-suave pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2"
+              />
+            </div>
+          </div>
+        )}
+
         {(itens ?? []).length === 0 ? (
           <p className="bg-superficie-2 text-texto-suave rounded-xl p-4 text-sm">
             Sem lista técnica ainda. Sem ela o sistema não tem como dizer se dá
@@ -590,7 +661,7 @@ export default function ProdutoDetalhe() {
           </p>
         ) : (
           <ul className="flex flex-col gap-2">
-            {itens?.map((item) => {
+            {ordenacao.itensVisiveis.map((item, indice) => {
               const desenho = capas?.get(item.modelo_perfil_id)
               const estoque = resumoDe(estoquePorPerfil, item.modelo_perfil_id)
               const falta = atendidos.get(chaveDoCorte(item)) !== true
@@ -598,8 +669,13 @@ export default function ProdutoDetalhe() {
               return (
                 <li
                   key={item.id}
+                  ref={ordenacao.registrar(item.id)}
                   className={cn(
                     'flex items-center gap-3 rounded-xl border p-2',
+                    // Em movimento: levemente transparente e por cima das
+                    // outras, para a pessoa ver o que está carregando.
+                    ordenacao.emMovimento === item.id &&
+                      'relative z-10 opacity-70 shadow-lg',
                     // Verde e vermelho claros, não fortes: a lista inteira
                     // fica colorida, e cor forte em tudo cansa a vista e
                     // deixa de significar alguma coisa.
@@ -612,6 +688,28 @@ export default function ProdutoDetalhe() {
                       : 'border-ok-borda bg-ok',
                   )}
                 >
+                  {/* A alça, e não a linha inteira: arrastar de qualquer
+                      ponto tornaria impossível tocar no desenho ou abrir a
+                      ficha sem mover a linha sem querer.
+
+                      `touch-none` desliga o gesto de rolagem do navegador
+                      sobre ela — sem isso, no celular, segurar e mover rola
+                      a página em vez de arrastar. */}
+                  {podeEditar && (
+                    <button
+                      type="button"
+                      onPointerDown={ordenacao.comecar(indice)}
+                      onPointerMove={ordenacao.mover}
+                      onPointerUp={ordenacao.soltar}
+                      onPointerCancel={ordenacao.soltar}
+                      aria-label={`Mover ${nomeDoPerfil(item.modelo_perfil_id)} na sequência`}
+                      title="Arraste para reordenar"
+                      className="text-texto-suave hover:text-texto flex size-8 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
+                    >
+                      <GripVertical aria-hidden="true" className="size-5" />
+                    </button>
+                  )}
+
                   {/* O desenho amplia; a linha abre a ficha. São dois
                       destinos diferentes no mesmo item, então o desenho
                       precisa ser um botão próprio e parar a propagação —
@@ -724,6 +822,9 @@ export default function ProdutoDetalhe() {
           fotoProduto={linkFoto}
           desenhoProduto={linkDesenho}
           empresa={APLICACAO.nome}
+          pecasPorPerfil={
+            new Map([...estoquePorPerfil].map(([id, r]) => [id, r.pecas]))
+          }
         />
       )}
 

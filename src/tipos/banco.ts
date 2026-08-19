@@ -281,6 +281,13 @@ export interface ItemListaTecnica {
   comprimento_mm: number
   /** Peças deste corte por UMA unidade do produto. */
   quantidade: number
+  /**
+   * Posição na lista, começando em 1 — a sequência de montagem.
+   *
+   * Opcional no tipo porque a migração que a criou pode não ter sido
+   * aplicada ainda; nesse caso o banco não devolve a coluna.
+   */
+  ordem?: number | null
   observacao: string | null
   criado_em: string
 }

@@ -45,6 +45,80 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.45 — 19/08/2026
+
+**Ordenar a lista técnica por um critério, e o estoque marcado na folha
+impressa.**
+
+**Quatro ordenações automáticas**, no alto da lista: por código do perfil,
+por linha e depois código, do corte mais longo ao mais curto, e o que tem
+sobra em estoque primeiro.
+
+Não briga com o arrastar — serve ao arrastar. Uma lista recém-digitada, com
+vinte cortes lançados na ordem em que vieram à cabeça, precisa primeiro de
+uma organização qualquer; arrastar vinte linhas uma a uma é trabalho que uma
+regra faz num toque. Depois se arrasta o que ficou fora de lugar.
+
+**Aplicar um critério reescreve a ordem gravada**, não é filtro de exibição.
+Fosse só visual, a folha impressa sairia diferente da tela e a lista voltaria
+ao estado antigo ao recarregar — desfazendo, sem avisar, o que a pessoa
+acabou de organizar. Por isso também o campo volta ao rótulo neutro depois de
+aplicar: é um comando, não um estado.
+
+Todo critério desempata pelo código e depois pelo comprimento. Sem isso, dois
+itens equivalentes trocariam de lugar a cada aplicação, e a lista pareceria
+embaralhar sozinha.
+
+Ordenar "por estoque" olha só se HÁ ou não sobra, não quantas peças. Cinco
+peças não são melhores que duas quando as duas bastam, e ordenar pela
+quantidade colocaria o perfil abundante antes do que está no limite — que é
+justamente o que merece atenção.
+
+**Na folha impressa**, uma coluna marca o que já existe no depósito: ● tem
+sobra, ○ não tem, com a legenda no rodapé. Ponto cheio ou vazio em vez de
+ícone porque a folha sai em impressora comum, muitas vezes preto e branco.
+
+## 1.6.44 — 19/08/2026
+
+**Arrastar para ordenar a lista técnica, e a folha do produto com
+numeração, logo e marca d'água.**
+
+⚠️ **Uma migração:** `20260819100000_ordem_da_lista_tecnica.sql`.
+
+**A sequência dos cortes passou a ser escolhida.** A lista técnica é lida na
+bancada de cima para baixo, e a sequência em que os cortes aparecem é a
+sequência em que se vai serrar — marco primeiro, depois folha, depois
+baguete. Ordenada por data de cadastro, ela refletia a ordem em que alguém
+lembrou dos perfis, que não é a ordem do trabalho.
+
+Cada linha ganhou uma alça à esquerda. Arrastar move; soltar grava.
+
+**A alça, e não a linha inteira**: arrastar de qualquer ponto tornaria
+impossível tocar no desenho ou abrir a ficha sem mover a linha sem querer.
+
+**Eventos de ponteiro, e não o arrastar nativo do HTML.** A API `draggable`
+não existe no toque: no celular, segurar e mover rolaria a página e nada
+aconteceria — justamente onde o aplicativo é mais usado. Ponteiro trata
+dedo, caneta e mouse pelo mesmo caminho.
+
+A ordem é gravada só ao soltar. Arrastar do fim para o começo passa por
+todas as posições intermediárias, e cada uma viraria uma ida ao servidor.
+
+**Na folha impressa**, três acréscimos:
+
+**Numeração dos cortes.** Serve à conversa na oficina: "o item 7 está errado"
+resolve o que "aquele marco de 1.455" não resolve quando há três cortes
+parecidos.
+
+**Cabeçalho com a logo, repetido em todas as páginas.** Uma lista longa vira
+duas ou três folhas, e a segunda sem identificação é uma tabela de números
+que ninguém sabe de que produto é.
+
+**A logo como marca d'água**, bem apagada. Identifica a folha que circula
+solta pela oficina sem disputar com o conteúdo — quem lê está procurando uma
+medida. Foi preciso obrigar o navegador a imprimi-la: por padrão ele descarta
+fundos para poupar tinta, e a marca sumiria.
+
 ## 1.6.43 — 18/08/2026
 
 **Lápis em cada corte da lista técnica.**
