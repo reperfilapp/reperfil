@@ -7,6 +7,7 @@ import {
   PackageCheck,
   Pencil,
   ChevronRight,
+  ChevronDown,
 } from 'lucide-react'
 import {
   useProduto,
@@ -377,19 +378,30 @@ export default function ProdutoDetalhe() {
               como "Amadeirado marrom". No desktop volta a caber na mesma
               linha dos outros controles, que é onde ele pertence. */}
           {mesmaCor && (
-            <select
-              value={corEscolhida ?? ''}
-              onChange={(e) => setCorEscolhida(e.target.value || null)}
-              aria-label="Cor a considerar"
-              className="border-borda bg-superficie min-h-11 w-full rounded-xl border-2 px-2 text-sm sm:w-auto"
-            >
-              <option value="">Melhor cor</option>
-              {acabamentos?.map((acabamento) => (
-                <option key={acabamento.id} value={acabamento.id}>
-                  {acabamento.nome}
-                </option>
-              ))}
-            </select>
+            /* `appearance-none` mais a seta desenhada, como no CampoSelecao:
+               no iPhone o Safari desenha o `<select>` com o controle nativo,
+               ignora a altura pedida e mostra as duas setinhas opostas dele.
+               O campo saía menor que os vizinhos e com aparência estranha. */
+            <div className="relative w-full sm:w-auto">
+              <select
+                value={corEscolhida ?? ''}
+                onChange={(e) => setCorEscolhida(e.target.value || null)}
+                aria-label="Cor a considerar"
+                className="border-borda bg-superficie h-11 w-full appearance-none rounded-xl border-2 pr-9 pl-3 text-sm"
+              >
+                <option value="">Melhor cor</option>
+                {acabamentos?.map((acabamento) => (
+                  <option key={acabamento.id} value={acabamento.id}>
+                    {acabamento.nome}
+                  </option>
+                ))}
+              </select>
+
+              <ChevronDown
+                aria-hidden="true"
+                className="text-texto-suave pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2"
+              />
+            </div>
           )}
         </div>
       }

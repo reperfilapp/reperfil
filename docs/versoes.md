@@ -45,6 +45,47 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.40 — 18/08/2026
+
+**Medida que não apagava, olho na senha, zoom nas imagens do produto e cor no
+cadastro de sobras.**
+
+**Apagar uma medida do perfil não funcionava.** O campo era limpo, o
+formulário salvava, e o valor antigo reaparecia. A causa: uma função tirava
+`medida_3_secao_mm` e `medida_4_secao_mm` do envio quando vinham vazias — ela
+existia porque, antes da migração que criou essas colunas, mandá-las fazia o
+banco recusar a gravação inteira.
+
+O efeito colateral era silencioso e grave: quem corrigiu uma medida errada
+acreditava ter corrigido. A migração está aplicada; nulo agora significa
+nulo.
+
+**Olho para ver a senha**, em todas as telas onde se digita uma: entrada,
+primeiro acesso e definição de senha. Sem ver o que se digitou, o único
+retorno possível é "e-mail ou senha incorretos" — que não diz se o erro foi
+na senha, no e-mail ou num toque que virou dois caracteres. Não volta a
+esconder sozinho: quem mostrou quer conferir com calma.
+
+**Foto e desenho do produto abrem em tela cheia**, com o mesmo zoom de pinça
+dos desenhos de perfil. Antes o toque não fazia nada. As legendas passaram a
+dizer "toque para ampliar" — não havia nada indicando que eram clicáveis.
+
+**A bolinha da cor ao lado do acabamento**, no cadastro de sobras e no resumo
+de conferência. "Bronze", "Amadeirado marrom" e "Preto fosco" se confundem na
+pressa, e quem lança a sobra tem a peça na mão: a amostra de cor decide mais
+rápido que a leitura. O nome continua ao lado — cor não distingue para quem
+não enxerga diferença entre tons.
+
+Ela fica FORA do seletor porque `<option>` não aceita fundo colorido de forma
+confiável, e no iPhone o menu é desenhado pelo sistema, que ignora estilo.
+
+**Dois acertos de tela.** O cartão verde e vermelho da lista técnica ficava
+ilegível no escuro: fundo claro fixo com o texto claro do tema. Agora são
+tokens que invertem — verde e vermelho escuros, texto claro por cima. E o
+seletor de cor no iPhone aparecia menor que os vizinhos, com as duas setinhas
+do controle nativo; ganhou `appearance-none` e seta desenhada, como os demais
+campos de seleção do app.
+
 ## 1.6.39 — 18/08/2026
 
 **Perfil digitável ao acrescentar corte, e o campo de cor inteiro no
