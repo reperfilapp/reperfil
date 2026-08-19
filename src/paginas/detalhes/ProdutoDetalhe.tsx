@@ -154,8 +154,49 @@ export default function ProdutoDetalhe() {
   useEffect(() => {
     if (!imprimindo) return
 
-    window.print()
-    setImprimindo(false)
+    let cancelado = false
+
+    /*
+     * Espera as imagens ANTES de imprimir.
+     *
+     * O diálogo fotografa a página no instante em que abre. Chamado com as
+     * imagens ainda chegando — e elas vêm de links temporários do
+     * armazenamento, sempre por rede —, ele imprime os buracos onde elas
+     * estariam. Era o "sai em branco".
+     */
+    const folha = document.getElementById('folha-impressao')
+    const imagens = folha ? [...folha.querySelectorAll('img')] : []
+
+    const prontas = imagens.map((img) =>
+      img.complete
+        ? Promise.resolve()
+        : new Promise<void>((resolve) => {
+            // `onerror` também resolve: imagem que não carrega não pode
+            // travar a folha inteira — o resto do conteúdo continua útil.
+            img.onload = () => resolve()
+            img.onerror = () => resolve()
+          }),
+    )
+
+    void Promise.all(prontas).then(() => {
+      if (!cancelado) window.print()
+    })
+
+    /*
+     * A folha só é desmontada DEPOIS que o diálogo fecha.
+     *
+     * `window.print()` não bloqueia em todo navegador: no Chrome recente ele
+     * retorna na hora, e desmontar em seguida tirava a folha da página antes
+     * de o diálogo lê-la. Daí a página em branco também no computador.
+     */
+    const aoTerminar = () => setImprimindo(false)
+
+    window.addEventListener('afterprint', aoTerminar)
+
+    return () => {
+      cancelado = true
+      window.removeEventListener('afterprint', aoTerminar)
+    }
   }, [imprimindo])
 
   useEffect(() => {
@@ -438,7 +479,18 @@ export default function ProdutoDetalhe() {
               tela estreita. */}
           <Botao
             variante="secundaria"
-            onClick={() => setImprimindo(true)}
+            onClick={() => {
+              // Reimprimir com a folha já montada não dispara o efeito de
+              // novo — a dependência não mudaria. Chamar direto cobre o caso
+              // de um navegador que não emita `afterprint` e deixe o estado
+              // preso em "imprimindo".
+              if (imprimindo) {
+                window.print()
+                return
+              }
+
+              setImprimindo(true)
+            }}
             aria-label="Gerar PDF do produto"
             title="Gerar PDF"
           >

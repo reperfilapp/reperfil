@@ -45,7 +45,22 @@ export function FolhaProduto({
   const perfilDe = (id: string) => modelos.find((m) => m.id === id)
 
   return (
-    <div id="folha-impressao" className="hidden print:block">
+    /*
+     * Fora da tela, e NÃO escondida com `display: none`.
+     *
+     * Elemento sem exibição não recebe layout, e o navegador adia o
+     * carregamento das imagens dentro dele — na hora de imprimir não havia o
+     * que fotografar. Posicionada longe, ela existe de verdade: tem largura,
+     * altura e imagens já baixadas. Na impressão volta ao fluxo normal.
+     *
+     * A largura fixa de 210 mm é a do A4: sem ela, a folha herdaria a
+     * largura da tela do celular e a tabela sairia espremida no papel.
+     */
+    <div
+      id="folha-impressao"
+      aria-hidden="true"
+      className="fixed top-0 -left-[9999px] w-[210mm] bg-white text-black print:static print:left-0 print:w-full"
+    >
       <header className="mb-4 border-b-2 border-black pb-3">
         <p className="text-sm">{empresa}</p>
         <h1 className="text-2xl font-bold">{produto.nome}</h1>
