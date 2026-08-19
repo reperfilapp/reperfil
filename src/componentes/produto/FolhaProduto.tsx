@@ -47,6 +47,21 @@ export function FolhaProduto({
 }) {
   const perfilDe = (id: string) => modelos.find((m) => m.id === id)
 
+  /*
+   * As imagens numa lista só, em vez de tratadas uma a uma no JSX.
+   *
+   * Hoje são duas — a foto do produto pronto e o desenho técnico —, mas o
+   * arranjo (três por fileira, centralizado, quebrando no excesso) é o mesmo
+   * para qualquer quantidade. Com elas em lista, acrescentar uma terceira
+   * imagem no futuro não mexe no leiaute.
+   */
+  const imagens = [
+    fotoProduto && { src: fotoProduto, legenda: 'Produto pronto' },
+    desenhoProduto && { src: desenhoProduto, legenda: 'Desenho técnico' },
+  ].filter((imagem): imagem is { src: string; legenda: string } =>
+    Boolean(imagem),
+  )
+
   return (
     /*
      * Fora da tela, e NÃO escondida com `display: none`.
@@ -64,152 +79,199 @@ export function FolhaProduto({
       aria-hidden="true"
       className="fixed top-0 -left-[9999px] w-[210mm] bg-white text-black print:static print:left-0 print:w-full"
     >
-      {/* A marca por trás de tudo, bem apagada. Identifica a folha que
-          circula solta pela oficina sem disputar com o conteúdo — quem lê
-          está procurando uma medida, não a logomarca. */}
+      {/* Marca d'água em GRADE, não uma só no centro: espalhada e pequena,
+          ela marca a folha inteira sem criar uma mancha atrás de um trecho
+          específico do conteúdo. Inclinada, porque marca d'água alinhada com
+          o texto se confunde com ele. */}
       <div className="marca-dagua" aria-hidden="true">
-        <img src="/marca-rp.png" alt="" />
+        <div className="marca-dagua-grade">
+          {Array.from({ length: 96 }, (_, i) => (
+            <img key={i} src="/marca-rp.png" alt="" />
+          ))}
+        </div>
       </div>
 
-      {/* Repete em TODAS as páginas: uma lista longa vira duas ou três
-          folhas, e a segunda sem identificação é uma tabela de números que
-          ninguém sabe de que produto é. */}
-      <header className="repete-cabecalho flex items-center gap-3 border-b-2 border-black pb-2">
-        <img src="/marca-rp.png" alt="" className="h-10 w-10 object-contain" />
-        <div className="min-w-0 flex-1">
-          <p className="text-xs">{empresa}</p>
-          <h1 className="text-lg leading-tight font-bold">{produto.nome}</h1>
-          <p className="text-xs">
-            <span className="font-mono">{produto.codigo}</span>
-            {formatarMedidaProduto(produto) &&
-              ` · ${formatarMedidaProduto(produto)}`}
-          </p>
-        </div>
-      </header>
+      {/*
+       * TABELA envolvendo tudo, e o cabeçalho num `<thead>`.
+       *
+       * É a única forma que repete de verdade em todas as páginas: o
+       * navegador redesenha o `thead` a cada quebra. `position: fixed`
+       * deveria fazer o mesmo, e não faz — no Chrome ele sai só na primeira
+       * folha, que foi o que aconteceu aqui.
+       *
+       * A tabela da lista técnica, mais abaixo, tem o próprio `thead` e
+       * repete os títulos das colunas pelo mesmo mecanismo.
+       */}
+      <table className="w-full">
+        <thead>
+          <tr>
+            <th className="p-0">
+              <header className="mb-3 flex items-end justify-between gap-4 border-b-2 border-black pb-2 text-left">
+                {/* Logo completo, com o nome e a assinatura: a folha circula
+                    fora da empresa, e o símbolo sozinho não diz de onde
+                    veio. */}
+                <img
+                  src="/logo-otimizada.png"
+                  alt={empresa}
+                  className="h-16 w-auto object-contain"
+                />
 
-      {produto.descricao && <p className="mb-4 text-sm">{produto.descricao}</p>}
+                <div className="min-w-0 text-right">
+                  <h1 className="text-lg leading-tight font-bold">
+                    {produto.nome}
+                  </h1>
+                  <p className="text-xs">
+                    <span className="font-mono">{produto.codigo}</span>
+                  </p>
+                  {formatarMedidaProduto(produto) && (
+                    <p className="text-xs">{formatarMedidaProduto(produto)}</p>
+                  )}
+                </div>
+              </header>
+            </th>
+          </tr>
+        </thead>
 
-      {(fotoProduto || desenhoProduto) && (
-        <section className="mb-4 flex gap-4">
-          {fotoProduto && (
-            <figure className="flex-1">
-              <img
-                src={fotoProduto}
-                alt=""
-                className="h-40 w-full object-contain"
-              />
-              <figcaption className="mt-1 text-center text-xs">
-                Produto pronto
-              </figcaption>
-            </figure>
-          )}
-          {desenhoProduto && (
-            <figure className="flex-1">
-              <img
-                src={desenhoProduto}
-                alt=""
-                className="h-40 w-full object-contain"
-              />
-              <figcaption className="mt-1 text-center text-xs">
-                Desenho técnico
-              </figcaption>
-            </figure>
-          )}
-        </section>
-      )}
+        <tbody>
+          <tr>
+            <td className="p-0 align-top">
+              {produto.descricao && (
+                <p className="mb-4 text-sm">{produto.descricao}</p>
+              )}
 
-      <h2 className="mb-2 text-lg font-bold">Lista técnica</h2>
-      <p className="mb-2 text-xs">
-        Quantidades por UMA unidade. Comprimentos de corte, já com os descontos
-        da oficina.
-      </p>
+              {/*
+               * Até três por fileira, centralizadas, quebrando para baixo no
+               * excesso.
+               *
+               * A largura é fixa em 60 mm, e não uma fração do espaço: com
+               * `flex-1`, duas imagens ficariam gigantes e três minúsculas, e
+               * o desenho mudaria de tamanho conforme o produto tivesse foto
+               * ou não. Medida fixa faz três caberem na largura útil do A4
+               * (194 mm) e mantém a escala igual em qualquer folha.
+               *
+               * `justify-center` resolve sozinho os casos de uma e de duas:
+               * uma fica no meio, duas ficam centralizadas juntas.
+               */}
+              {imagens.length > 0 && (
+                <section className="mb-4 flex flex-wrap justify-center gap-4">
+                  {imagens.map((imagem) => (
+                    <figure
+                      key={imagem.legenda}
+                      className="w-[60mm] break-inside-avoid"
+                    >
+                      <img
+                        src={imagem.src}
+                        alt=""
+                        className="h-[55mm] w-full object-contain"
+                      />
+                      <figcaption className="mt-1 text-center text-xs">
+                        {imagem.legenda}
+                      </figcaption>
+                    </figure>
+                  ))}
+                </section>
+              )}
 
-      {itens.length === 0 ? (
-        <p className="text-sm">Sem lista técnica cadastrada.</p>
-      ) : (
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="border-b-2 border-black text-left">
-              {/* A numeração serve à conversa na oficina: "o item 7 está
+              <h2 className="mb-2 text-lg font-bold">Lista técnica</h2>
+              <p className="mb-2 text-xs">
+                Quantidades por UMA unidade. Comprimentos de corte, já com os
+                descontos da oficina.
+              </p>
+
+              {itens.length === 0 ? (
+                <p className="text-sm">Sem lista técnica cadastrada.</p>
+              ) : (
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b-2 border-black text-left">
+                      {/* A numeração serve à conversa na oficina: "o item 7 está
                   errado" resolve o que "aquele marco de 1.455" não resolve
                   quando há três cortes parecidos. */}
-              <th className="w-8 py-1">#</th>
-              {/* Ponto cheio ou vazio, e não um ícone: a folha é impressa em
+                      <th className="w-8 py-1">#</th>
+                      {/* Ponto cheio ou vazio, e não um ícone: a folha é impressa em
                   impressora comum, muitas vezes preto e branco, e um texto
                   simples sai legível em qualquer uma. */}
-              <th className="w-8 py-1 text-center" title="Tem sobra em estoque">
-                Est.
-              </th>
-              <th className="w-28 py-1">Desenho</th>
-              <th className="py-1">Perfil</th>
-              <th className="w-20 py-1 text-right">Qtd.</th>
-              <th className="w-28 py-1 text-right">Comprimento</th>
-            </tr>
-          </thead>
-          <tbody>
-            {itens.map((item, indice) => {
-              const perfil = perfilDe(item.modelo_perfil_id)
-              const desenho = desenhosPerfil?.get(item.modelo_perfil_id)
+                      <th
+                        className="w-8 py-1 text-center"
+                        title="Tem sobra em estoque"
+                      >
+                        Est.
+                      </th>
+                      <th className="w-28 py-1">Desenho</th>
+                      <th className="py-1">Perfil</th>
+                      <th className="w-20 py-1 text-right">Qtd.</th>
+                      <th className="w-28 py-1 text-right">Comprimento</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {itens.map((item, indice) => {
+                      const perfil = perfilDe(item.modelo_perfil_id)
+                      const desenho = desenhosPerfil?.get(item.modelo_perfil_id)
 
-              return (
-                // `break-inside-avoid`: uma linha partida entre duas páginas
-                // deixaria o desenho numa e a medida na outra.
-                <tr
-                  key={item.id}
-                  className="break-inside-avoid border-b border-gray-400"
-                >
-                  <td className="py-2 align-middle font-bold tabular-nums">
-                    {indice + 1}
-                  </td>
-                  <td className="py-2 text-center align-middle">
-                    {(pecasPorPerfil.get(item.modelo_perfil_id) ?? 0) > 0
-                      ? '●'
-                      : '○'}
-                  </td>
-                  <td className="py-2">
-                    {desenho && (
-                      /* Grande de propósito: é por ele que se confere o
+                      return (
+                        // `break-inside-avoid`: uma linha partida entre duas páginas
+                        // deixaria o desenho numa e a medida na outra.
+                        <tr
+                          key={item.id}
+                          className="break-inside-avoid border-b border-gray-400"
+                        >
+                          <td className="py-2 align-middle font-bold tabular-nums">
+                            {indice + 1}
+                          </td>
+                          <td className="py-2 text-center align-middle">
+                            {(pecasPorPerfil.get(item.modelo_perfil_id) ?? 0) >
+                            0
+                              ? '●'
+                              : '○'}
+                          </td>
+                          <td className="py-2">
+                            {desenho && (
+                              /* Grande de propósito: é por ele que se confere o
                          corte na bancada. */
-                      <img
-                        src={desenho}
-                        alt=""
-                        className="h-24 w-24 object-contain"
-                      />
-                    )}
-                  </td>
-                  <td className="py-2 align-middle">
-                    <span className="font-mono font-bold">
-                      {perfil?.codigo ?? '—'}
-                    </span>
-                    <br />
-                    {perfil?.descricao}
-                    {perfil?.linha && (
-                      <>
-                        <br />
-                        <span className="text-xs">{perfil.linha}</span>
-                      </>
-                    )}
-                  </td>
-                  <td className="py-2 text-right align-middle font-bold tabular-nums">
-                    {item.quantidade}
-                  </td>
-                  <td className="py-2 text-right align-middle tabular-nums">
-                    {formatarComprimento(item.comprimento_mm)}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      )}
+                              <img
+                                src={desenho}
+                                alt=""
+                                className="h-24 w-24 object-contain"
+                              />
+                            )}
+                          </td>
+                          <td className="py-2 align-middle">
+                            <span className="font-mono font-bold">
+                              {perfil?.codigo ?? '—'}
+                            </span>
+                            <br />
+                            {perfil?.descricao}
+                            {perfil?.linha && (
+                              <>
+                                <br />
+                                <span className="text-xs">{perfil.linha}</span>
+                              </>
+                            )}
+                          </td>
+                          <td className="py-2 text-right align-middle font-bold tabular-nums">
+                            {item.quantidade}
+                          </td>
+                          <td className="py-2 text-right align-middle tabular-nums">
+                            {formatarComprimento(item.comprimento_mm)}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              )}
 
-      <footer className="mt-6 border-t border-gray-400 pt-2 text-xs">
-        <p className="mb-1">
-          ● há sobra deste perfil em estoque · ○ não há — confira antes de
-          comprar barra nova.
-        </p>
-        Gerado pelo RePerfil em {new Date().toLocaleString('pt-BR')}.
-      </footer>
+              <footer className="mt-6 border-t border-gray-400 pt-2 text-xs">
+                <p className="mb-1">
+                  ● há sobra deste perfil em estoque · ○ não há — confira antes
+                  de comprar barra nova.
+                </p>
+                Gerado pelo RePerfil em {new Date().toLocaleString('pt-BR')}.
+              </footer>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   )
 }

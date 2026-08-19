@@ -300,51 +300,68 @@
     /* Preto no branco, sempre: a folha vai para o papel, e o tema escuro
        do aplicativo gastaria tinta imprimindo fundo preto. */
     color: black !important;
-    /* Espaço para o cabeçalho fixo não cobrir o começo do conteúdo. */
-    padding-top: 22mm;
   }
 
   /*
-   * Cabeçalho em todas as páginas.
+   * O cabeçalho que repete NÃO usa `position: fixed`.
    *
-   * `position: fixed` dentro da impressão significa "repita em cada folha" —
-   * é assim que o navegador trata elemento fixo ao paginar. Uma lista longa
-   * vira duas ou três folhas, e a segunda sem identificação é uma tabela de
-   * números que ninguém sabe de que produto é.
+   * Ele vive num `<thead>` da tabela que envolve a folha (ver
+   * FolhaProduto.tsx). O navegador redesenha o `thead` a cada quebra de
+   * página, que é o comportamento que se quer. Com `fixed`, o cabeçalho
+   * saía só na primeira folha no Chrome.
+   *
+   * `table-header-group` é o que instrui o navegador a tratá-lo assim
+   * mesmo quando o CSS do Tailwind mexe na exibição.
    */
-  #folha-impressao .repete-cabecalho {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: white !important;
+  #folha-impressao thead {
+    display: table-header-group;
+  }
+
+  #folha-impressao tfoot {
+    display: table-footer-group;
   }
 
   /*
-   * Marca d'água, também repetida por página.
+   * Marca d'água: uma GRADE inclinada, repetida por página.
    *
-   * Bem apagada de propósito: identifica a folha que circula solta pela
-   * oficina sem disputar com o conteúdo. Quem lê está procurando uma medida.
+   * Espalhada e pequena em vez de uma só no centro — assim ela marca a folha
+   * inteira sem criar uma mancha atrás de um trecho específico do conteúdo. A
+   * inclinação separa a marca do texto, que é horizontal.
    *
-   * `print-color-adjust` obriga o navegador a imprimir a imagem — por
-   * padrão ele descarta fundos para poupar tinta, e a marca sumiria.
+   * `print-color-adjust` obriga o navegador a imprimi-la: por padrão ele
+   * descarta fundos para poupar tinta, e a marca sumiria.
    */
   #folha-impressao .marca-dagua {
     position: fixed;
     inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    overflow: hidden;
     z-index: 0;
     pointer-events: none;
-    opacity: 0.06;
+    opacity: 0.05;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  #folha-impressao .marca-dagua img {
-    width: 60%;
-    max-width: 120mm;
+  /*
+   * Maior que a página e deslocada: girada, uma grade do tamanho exato
+   * deixaria os cantos vazios.
+   */
+  #folha-impressao .marca-dagua-grade {
+    position: absolute;
+    top: -30%;
+    left: -30%;
+    width: 160%;
+    height: 160%;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    align-content: start;
+    gap: 12mm 8mm;
+    transform: rotate(-30deg);
+  }
+
+  #folha-impressao .marca-dagua-grade img {
+    width: 100%;
+    height: auto;
   }
 
   /* O conteúdo por cima da marca. */

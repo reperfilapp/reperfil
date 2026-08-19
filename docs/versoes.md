@@ -45,6 +45,34 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.46 — 19/08/2026
+
+**A folha impressa: marca d'água espalhada, logo maior, cabeçalho que repete
+de verdade e imagens grandes.**
+
+**O cabeçalho só saía na primeira página.** A técnica estava errada:
+`position: fixed` deveria repetir a cada folha e no Chrome não repete. Agora
+ele vive num `<thead>` da tabela que envolve a folha inteira — o navegador
+redesenha o `thead` a cada quebra de página, que é o mesmo mecanismo pelo
+qual os títulos da tabela da lista técnica já se repetiam.
+
+**A marca d'água virou uma grade inclinada** de logos pequenas, cobrindo a
+folha toda, em vez de uma só grande no centro. Espalhada, ela marca o papel
+sem criar uma mancha atrás de um trecho específico do conteúdo; inclinada a
+30°, não se confunde com o texto, que é horizontal. A grade é maior que a
+página e deslocada — girada, uma do tamanho exato deixaria os cantos vazios.
+
+**O logo do cabeçalho ficou maior e completo**, com nome e assinatura: a
+folha circula fora da empresa, e o símbolo sozinho não diz de onde veio. Os
+dados do produto foram para a direita, alinhados a ele.
+
+**As imagens ficaram grandes**, com até três por fileira, centralizadas,
+quebrando para baixo no excesso. A largura é fixa em 60 mm, e não uma fração
+do espaço: proporcional, duas imagens ficariam gigantes e três minúsculas, e
+o desenho mudaria de tamanho conforme o produto tivesse foto ou não. Medida
+fixa faz três caberem na largura útil do A4 e mantém a escala igual em
+qualquer folha.
+
 ## 1.6.45 — 19/08/2026
 
 **Ordenar a lista técnica por um critério, e o estoque marcado na folha
