@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, traduzirErro } from '@/lib/supabase'
 import { Botao } from '@/componentes/ui/Botao'
-import { CampoTexto } from '@/componentes/ui/CampoTexto'
+import { CampoSenha } from '@/componentes/ui/CampoSenha'
 
 /** Mínimo exigido pelo Supabase; abaixo disso ele recusa. */
 const TAMANHO_MINIMO_SENHA = 8
@@ -59,9 +59,8 @@ export default function DefinirSenha() {
       </header>
 
       <form onSubmit={aoEnviar} className="flex flex-col gap-5" noValidate>
-        <CampoTexto
+        <CampoSenha
           rotulo="Nova senha"
-          type="password"
           autoComplete="new-password"
           value={senha}
           onChange={(e) => setSenha(e.target.value)}
@@ -69,9 +68,8 @@ export default function DefinirSenha() {
           required
         />
 
-        <CampoTexto
+        <CampoSenha
           rotulo="Repita a nova senha"
-          type="password"
           autoComplete="new-password"
           value={confirmacao}
           onChange={(e) => setConfirmacao(e.target.value)}

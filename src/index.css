@@ -105,6 +105,15 @@
   --cor-destaque-borda: var(--color-acao-300);
   --cor-destaque-texto: var(--color-acao-700);
   --cor-destaque-hover: var(--color-acao-100);
+
+  /* Linha de lista que fecha ou não fecha — verde e vermelho de fundo.
+     Tokens, e não tons fixos da paleta: no escuro eles precisam INVERTER.
+     Um fundo claro com o texto claro do tema escuro fica ilegível, que foi
+     exatamente o que aconteceu na lista técnica. */
+  --cor-ok-fundo: var(--color-economia-50);
+  --cor-ok-borda: var(--color-economia-100);
+  --cor-falta-fundo: var(--color-erro-50);
+  --cor-falta-borda: var(--color-erro-100);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -128,6 +137,14 @@
     --cor-destaque-borda: var(--color-acao-300);
     --cor-destaque-texto: var(--color-acao-100);
     --cor-destaque-hover: var(--color-acao-700);
+
+    /* Verde e vermelho ESCUROS, para o texto claro do tema continuar
+       legível por cima. Saturação baixa: a lista inteira fica colorida, e
+       cor forte em tudo cansa a vista. */
+    --cor-ok-fundo: oklch(0.32 0.05 155);
+    --cor-ok-borda: oklch(0.45 0.08 155);
+    --cor-falta-fundo: oklch(0.32 0.05 27);
+    --cor-falta-borda: oklch(0.45 0.08 27);
   }
 }
 
@@ -144,6 +161,10 @@
   --cor-destaque-borda: var(--color-acao-300);
   --cor-destaque-texto: var(--color-acao-100);
   --cor-destaque-hover: var(--color-acao-700);
+  --cor-ok-fundo: oklch(0.32 0.05 155);
+  --cor-ok-borda: oklch(0.45 0.08 155);
+  --cor-falta-fundo: oklch(0.32 0.05 27);
+  --cor-falta-borda: oklch(0.45 0.08 27);
 }
 
 @theme inline {
@@ -159,6 +180,10 @@
   --color-destaque-borda: var(--cor-destaque-borda);
   --color-destaque-texto: var(--cor-destaque-texto);
   --color-destaque-hover: var(--cor-destaque-hover);
+  --color-ok: var(--cor-ok-fundo);
+  --color-ok-borda: var(--cor-ok-borda);
+  --color-falta: var(--cor-falta-fundo);
+  --color-falta-borda: var(--cor-falta-borda);
 }
 
 @layer base {

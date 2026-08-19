@@ -4,6 +4,7 @@ import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { traduzirErro } from '@/lib/supabase'
 import { Botao } from '@/componentes/ui/Botao'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
+import { CampoSenha } from '@/componentes/ui/CampoSenha'
 import { APLICACAO } from '@/config/aplicacao'
 import { MarcaRePerfil } from '@/componentes/MarcaRePerfil'
 import { SeloVersao } from '@/componentes/SeloVersao'
@@ -69,9 +70,8 @@ export default function Entrar() {
           required
         />
 
-        <CampoTexto
+        <CampoSenha
           rotulo="Senha"
-          type="password"
           autoComplete="current-password"
           value={senha}
           onChange={(e) => setSenha(e.target.value)}

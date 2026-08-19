@@ -4,6 +4,7 @@ import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { supabase, traduzirErro } from '@/lib/supabase'
 import { Botao } from '@/componentes/ui/Botao'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
+import { CampoSenha } from '@/componentes/ui/CampoSenha'
 import { MarcaRePerfil } from '@/componentes/MarcaRePerfil'
 import { SeloVersao } from '@/componentes/SeloVersao'
 
@@ -126,9 +127,8 @@ export default function PrimeiroAcesso() {
             required
           />
 
-          <CampoTexto
+          <CampoSenha
             rotulo="Crie uma senha"
-            type="password"
             autoComplete="new-password"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
@@ -137,9 +137,8 @@ export default function PrimeiroAcesso() {
             required
           />
 
-          <CampoTexto
+          <CampoSenha
             rotulo="Repita a senha"
-            type="password"
             autoComplete="new-password"
             value={confirmacao}
             onChange={(e) => setConfirmacao(e.target.value)}

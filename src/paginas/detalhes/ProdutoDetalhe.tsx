@@ -438,12 +438,13 @@ export default function ProdutoDetalhe() {
                     // Verde e vermelho claros, não fortes: a lista inteira
                     // fica colorida, e cor forte em tudo cansa a vista e
                     // deixa de significar alguma coisa.
-                    // `economia` é o verde do tema — "economia,
-                    // aproveitamento, disponível" —, que é exatamente o que
-                    // uma linha atendida significa aqui.
+                    // Tokens do tema, e não tons fixos: no escuro eles
+                    // viram verde e vermelho ESCUROS, e o texto claro do
+                    // tema continua legível por cima. Com os tons fixos, o
+                    // card ficava claro e o texto sumia.
                     falta
-                      ? 'border-erro-100 bg-erro-50'
-                      : 'border-economia-100 bg-economia-50',
+                      ? 'border-falta-borda bg-falta'
+                      : 'border-ok-borda bg-ok',
                   )}
                 >
                   {/* O desenho amplia; a linha abre a ficha. São dois
@@ -533,6 +534,7 @@ export default function ProdutoDetalhe() {
         foto={produto.foto_url}
         desenho={produto.desenho_url}
         nome={produto.nome}
+        aoAmpliar={setAmpliado}
       />
 
       <FichaDados
@@ -634,7 +636,10 @@ export default function ProdutoDetalhe() {
       {ampliado && (
         <VisualizadorImagem
           src={ampliado}
-          alt="Desenho técnico do perfil"
+          // O mesmo visualizador atende três origens agora: o desenho de um
+          // perfil da lista, a foto do produto e o desenho do produto. O
+          // texto fica genérico porque a imagem é que diz qual é.
+          alt="Imagem ampliada"
           aoFechar={() => setAmpliado(null)}
         />
       )}
@@ -652,10 +657,12 @@ function Imagens({
   foto,
   desenho,
   nome,
+  aoAmpliar,
 }: {
   foto: string | null
   desenho: string | null
   nome: string
+  aoAmpliar: (link: string) => void
 }) {
   const [links, setLinks] = useState<{
     foto: string | null
@@ -677,26 +684,43 @@ function Imagens({
     <section className="grid gap-3 sm:grid-cols-2">
       {links.foto && (
         <figure>
-          <img
-            src={links.foto}
-            alt={`Foto de ${nome}`}
-            className="bg-superficie-2 max-h-56 w-full rounded-xl object-contain"
-          />
+          {/* Botão, e não imagem solta: quem toca espera ampliar, e um
+              elemento clicável que não é botão fica fora do alcance de quem
+              navega por teclado. */}
+          <button
+            type="button"
+            onClick={() => links.foto && aoAmpliar(links.foto)}
+            aria-label={`Ampliar a foto de ${nome}`}
+            className="block w-full"
+          >
+            <img
+              src={links.foto}
+              alt={`Foto de ${nome}`}
+              className="bg-superficie-2 max-h-56 w-full rounded-xl object-contain"
+            />
+          </button>
           <figcaption className="text-texto-suave mt-1 text-sm">
-            Produto pronto
+            Produto pronto · toque para ampliar
           </figcaption>
         </figure>
       )}
 
       {links.desenho && (
         <figure>
-          <img
-            src={links.desenho}
-            alt={`Desenho técnico de ${nome}`}
-            className="bg-superficie-2 max-h-56 w-full rounded-xl object-contain"
-          />
+          <button
+            type="button"
+            onClick={() => links.desenho && aoAmpliar(links.desenho)}
+            aria-label={`Ampliar o desenho técnico de ${nome}`}
+            className="block w-full"
+          >
+            <img
+              src={links.desenho}
+              alt={`Desenho técnico de ${nome}`}
+              className="bg-superficie-2 max-h-56 w-full rounded-xl object-contain"
+            />
+          </button>
           <figcaption className="text-texto-suave mt-1 text-sm">
-            Desenho técnico
+            Desenho técnico · toque para ampliar
           </figcaption>
         </figure>
       )}

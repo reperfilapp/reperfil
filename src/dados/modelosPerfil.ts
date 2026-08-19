@@ -182,29 +182,23 @@ export function useRenomearLinha() {
   })
 }
 
-/**
- * Tira do envio as medidas extras quando estão vazias.
+/*
+ * NÃO omita campos nulos do envio.
  *
- * As colunas `medida_3_secao_mm` e `medida_4_secao_mm` chegaram numa
- * migração posterior à primeira versão desta tela. Enquanto ela não for
- * aplicada, mandar essas chaves faz o banco recusar a gravação INTEIRA — e
- * quem só queria corrigir uma descrição levava um erro incompreensível
- * sobre coluna inexistente.
+ * Houve aqui uma função que tirava `medida_3_secao_mm` e
+ * `medida_4_secao_mm` do envio quando vinham vazias. Ela existia por um
+ * motivo real e temporário: antes da migração que criou essas colunas,
+ * mandá-las fazia o banco recusar a gravação INTEIRA, e quem só queria
+ * corrigir uma descrição levava um erro sobre coluna inexistente.
  *
- * Omitindo o que está vazio, o cadastro comum continua funcionando antes e
- * depois da migração. Preencher uma medida extra sem a migração aplicada
- * ainda falha, mas aí a mensagem é sobre exatamente o que se tentou fazer.
+ * O efeito colateral, porém, era grave e silencioso: APAGAR uma medida
+ * virava impossível. O campo era limpo na tela, o envio não levava a
+ * coluna, o banco mantinha o valor antigo — e ele reaparecia depois de
+ * salvar, como se a edição tivesse sido ignorada. Quem corrigiu uma medida
+ * errada acreditava ter corrigido.
+ *
+ * A migração está aplicada desde 18/08/2026. Nulo agora significa nulo.
  */
-function semMedidasExtrasVazias<T extends Partial<DadosModeloPerfil>>(
-  dados: T,
-): T {
-  const copia = { ...dados }
-
-  if (copia.medida_3_secao_mm == null) delete copia.medida_3_secao_mm
-  if (copia.medida_4_secao_mm == null) delete copia.medida_4_secao_mm
-
-  return copia
-}
 
 /**
  * Traduz o erro de coluna inexistente para o que a pessoa pode fazer.
@@ -236,7 +230,7 @@ export function useCriarModeloPerfil() {
     mutationFn: async (dados: DadosModeloPerfil): Promise<ModeloPerfil> => {
       const { data, error } = await supabase
         .from('modelos_perfil')
-        .insert(semMedidasExtrasVazias(dados))
+        .insert(dados)
         .select()
         .single()
 
@@ -270,7 +264,7 @@ export function useEditarModeloPerfil() {
     }): Promise<ModeloPerfil> => {
       const { data, error } = await supabase
         .from('modelos_perfil')
-        .update(semMedidasExtrasVazias(dados))
+        .update(dados)
         .eq('id', id)
         .select()
         .single()

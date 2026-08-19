@@ -8,6 +8,7 @@ import {
 } from '@/dados/sobras'
 import { loteEquivalente } from '@/dominio/duplicidade'
 import { useAcabamentos } from '@/dados/acabamentos'
+import { PontoCor } from '@/componentes/ui/PontoCor'
 import { useLocalizacoes, descreverLocalizacao } from '@/dados/localizacoes'
 import { SeletorPerfil } from '@/componentes/SeletorPerfil'
 import { usePerfilIndicado } from '@/componentes/usePerfilIndicado'
@@ -291,6 +292,19 @@ export default function CadastrarSobra() {
                   </option>
                 ))}
               </CampoSelecao>
+
+              {/* A cor do que foi escolhido. Fica FORA do seletor porque
+                  `<option>` não aceita fundo colorido de forma confiável
+                  entre navegadores — e no iPhone o menu é desenhado pelo
+                  próprio sistema, que ignora qualquer estilo. */}
+              {acabamentoEscolhido && (
+                <p className="text-texto-suave mt-2 flex items-center gap-2 text-sm">
+                  <PontoCor cor={acabamentoEscolhido.cor_hex} />
+                  {acabamentoEscolhido.nome}
+                  {acabamentoEscolhido.codigo_ral &&
+                    ` · ${acabamentoEscolhido.codigo_ral}`}
+                </p>
+              )}
             </section>
 
             {/* 3 — Medida */}
@@ -394,7 +408,10 @@ export default function CadastrarSobra() {
                   </dd>
 
                   <dt className="text-grafite-600">Acabamento</dt>
-                  <dd className="font-medium">{acabamentoEscolhido?.nome}</dd>
+                  <dd className="flex items-center justify-end gap-2 font-medium">
+                    <PontoCor cor={acabamentoEscolhido?.cor_hex} />
+                    {acabamentoEscolhido?.nome}
+                  </dd>
 
                   <dt className="text-grafite-600">Comprimento</dt>
                   <dd className="text-base font-bold">
