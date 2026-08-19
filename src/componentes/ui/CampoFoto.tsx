@@ -107,11 +107,15 @@ export function CampoFoto({
 
       {caminho && previa ? (
         <figure className="border-borda relative overflow-hidden rounded-xl border-2">
-          <img
-            src={previa}
-            alt="Imagem enviada"
-            className="bg-superficie-2 max-h-64 w-full object-contain"
-          />
+          {/* Altura na caixa, não na imagem: o Safari do iPhone corta a
+              imagem quando decide a altura antes de saber a proporção. */}
+          <div className="bg-superficie-2 h-64 w-full overflow-hidden">
+            <img
+              src={previa}
+              alt="Imagem enviada"
+              className="h-full w-full object-contain"
+            />
+          </div>
           <button
             type="button"
             onClick={() => {

@@ -45,6 +45,80 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.43 — 18/08/2026
+
+**Lápis em cada corte da lista técnica.**
+
+Não havia como corrigir um corte: errar a quantidade ou o comprimento
+obrigava a remover a linha e lançá-la de novo — e quem fizesse isso no meio
+de uma lista longa perdia a posição. Agora cada linha tem lápis ao lado da
+lixeira, e ele abre o mesmo formulário do "Acrescentar corte", já preenchido.
+
+O mesmo formulário para as duas coisas porque são os mesmos três campos:
+perfil, comprimento e quantidade. Um segundo modal só para editar divergiria
+do primeiro na primeira mudança.
+
+O que muda entre um caso e outro é o que acontece ao salvar. **Corrigir é uma
+tarefa que termina**, então o modal fecha. **Acrescentar é uma tarefa que se
+repete** — quem monta uma receita lança um corte atrás do outro —, então ele
+fica aberto, com o perfil ainda escolhido e só a medida e a quantidade
+limpas.
+
+Pelo mesmo motivo o botão de sair muda de nome: "Cancelar" ao corrigir, onde
+há uma alteração pendente a descartar; "Fechar" ao acrescentar, onde o que já
+foi lançado está gravado e não há o que cancelar.
+
+## 1.6.42 — 18/08/2026
+
+**Folha do produto em PDF, para levar à bancada.**
+
+Na tela do produto, ao lado do lápis, um botão gera a folha com tudo que quem
+monta precisa: nome, código, medida, foto do produto pronto, desenho técnico
+e a lista técnica completa.
+
+**O desenho de cada perfil sai grande na tabela** — bem maior que a miniatura
+da tela. É por ele que se confere o corte contra a barra na bancada, e uma
+imagem de 40 px não serve para isso. Foi o motivo de a folha existir separada
+da tela em vez de mandar a tela para a impressora.
+
+**Impressão do navegador, e não uma biblioteca de PDF.** "Salvar como PDF" já
+existe no diálogo de impressão do Android, do iPhone e do computador — é o
+mesmo caminho da etiqueta da sobra, que a oficina já usa. Uma biblioteca como
+jsPDF somaria centenas de kilobytes ao pacote para refazer, pior, o que o
+sistema faz de graça: fontes, quebra de página, margens.
+
+Em troca, quem quer o arquivo escolhe "Salvar como PDF" no diálogo em vez de
+receber o download direto.
+
+Detalhes que o papel exige: as linhas da tabela não se partem entre páginas —
+o desenho ficaria numa e a medida na outra —, e a folha sai preto no branco
+mesmo com o aplicativo no tema escuro, para não gastar tinta imprimindo fundo
+preto.
+
+A folha só é montada quando se pede. Deixá-la sempre pronta faria toda visita
+ao produto baixar as imagens em tamanho de impressão.
+
+## 1.6.41 — 18/08/2026
+
+**Imagens cortadas no iPhone.**
+
+No aplicativo instalado, a foto do produto e o desenho técnico apareciam
+cortados — nem sempre, o que é a assinatura do problema.
+
+A altura estava na IMAGEM (`max-height`), não na caixa. Assim o Safari
+precisa da proporção do arquivo para decidir quanto espaço reservar, e ele
+decide antes de o arquivo chegar. Quando chega, nem sempre refaz a conta — e
+o que ficou reservado corta o que veio. Como as imagens vêm de link temporário
+do armazenamento, a demora varia, e por isso o corte era intermitente.
+
+Agora a caixa tem altura fixa e a imagem preenche o que houver com
+`object-contain`. Não há mais conta a refazer: cabe inteira, sempre.
+
+Valia para os três lugares com o mesmo padrão — foto e desenho do produto,
+foto da peça na tela da sobra, e a prévia do que acaba de ser enviado em
+qualquer campo de foto. Os visualizadores em tela cheia não sofriam disso: a
+altura deles vem do próprio container que ocupa a tela.
+
 ## 1.6.40 — 18/08/2026
 
 **Medida que não apagava, olho na senha, zoom nas imagens do produto e cor no

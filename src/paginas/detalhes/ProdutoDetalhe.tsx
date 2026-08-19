@@ -8,12 +8,14 @@ import {
   Pencil,
   ChevronRight,
   ChevronDown,
+  FileText,
 } from 'lucide-react'
 import {
   useProduto,
   useListaTecnica,
   useAdicionarItemLista,
   useRemoverItemLista,
+  useEditarItemLista,
   useEditarProduto,
   type DadosProduto,
 } from '@/dados/produtos'
@@ -47,6 +49,9 @@ import { cn } from '@/lib/utilitarios'
 import { Modal } from '@/componentes/ui/Modal'
 import { Veredito } from '@/componentes/Veredito'
 import { FormularioProduto } from '@/componentes/produto/FormularioProduto'
+import { FolhaProduto } from '@/componentes/produto/FolhaProduto'
+import type { ItemListaTecnica } from '@/tipos/banco'
+import { APLICACAO } from '@/config/aplicacao'
 
 export default function ProdutoDetalhe() {
   const { id = null } = useParams()
@@ -65,6 +70,7 @@ export default function ProdutoDetalhe() {
 
   const adicionar = useAdicionarItemLista()
   const remover = useRemoverItemLista()
+  const editarItem = useEditarItemLista()
   const editar = useEditarProduto()
 
   const [editando, setEditando] = useState(false)
@@ -72,6 +78,14 @@ export default function ProdutoDetalhe() {
   const [erroProduto, setErroProduto] = useState<string | null>(null)
 
   const [aberto, setAberto] = useState(false)
+  /*
+   * O corte em correção, ou nulo para um corte novo. O mesmo formulário
+   * serve aos dois: são os mesmos três campos, e um segundo modal só para
+   * editar divergiria do primeiro na primeira mudança.
+   */
+  const [itemEditando, setItemEditando] = useState<ItemListaTecnica | null>(
+    null,
+  )
   const [form, setForm] = useState({
     modelo_perfil_id: '',
     comprimento_mm: '',
@@ -79,6 +93,15 @@ export default function ProdutoDetalhe() {
   })
   const [erro, setErro] = useState<string | null>(null)
   const [ampliado, setAmpliado] = useState<string | null>(null)
+  /*
+   * Os links das imagens ficam AQUI, e não dentro do componente que as
+   * exibe: a folha de impressão precisa dos mesmos endereços, e pedir duas
+   * vezes ao armazenamento geraria dois links temporários para o mesmo
+   * arquivo — o dobro de espera antes de imprimir.
+   */
+  const [linkFoto, setLinkFoto] = useState<string | null>(null)
+  const [linkDesenho, setLinkDesenho] = useState<string | null>(null)
+  const [imprimindo, setImprimindo] = useState(false)
   /*
    * O texto digitado é guardado à parte do id escolhido: enquanto a pessoa
    * digita "MN-0", nenhum perfil está selecionado ainda, e forçar o id a
@@ -107,6 +130,33 @@ export default function ProdutoDetalhe() {
   // recarregar a página — ou voltar a ela pelo histórico — reabriria o
   // formulário sem ninguém ter pedido.
   const [parametros, definirParametros] = useSearchParams()
+
+  useEffect(() => {
+    const foto = produto?.foto_url ?? null
+    const desenho = produto?.desenho_url ?? null
+
+    void Promise.all([
+      foto ? obterLinkTemporario(BALDE_IMAGENS_PRODUTO, foto) : null,
+      desenho ? obterLinkTemporario(BALDE_IMAGENS_PRODUTO, desenho) : null,
+    ]).then(([umaFoto, umDesenho]) => {
+      setLinkFoto(umaFoto)
+      setLinkDesenho(umDesenho)
+    })
+  }, [produto?.foto_url, produto?.desenho_url])
+
+  /*
+   * Imprimir só DEPOIS que a folha existe na tela.
+   *
+   * `window.print()` congela a página no estado em que ela está: chamado no
+   * mesmo clique que monta a folha, imprimiria a página sem ela. O efeito
+   * roda depois da renderização, que é o momento certo.
+   */
+  useEffect(() => {
+    if (!imprimindo) return
+
+    window.print()
+    setImprimindo(false)
+  }, [imprimindo])
 
   useEffect(() => {
     if (parametros.get('montar') !== '1') return
@@ -205,6 +255,23 @@ export default function ProdutoDetalhe() {
     if (id === null) return
 
     try {
+      if (itemEditando) {
+        await editarItem.mutateAsync({
+          id: itemEditando.id,
+          dados: {
+            modelo_perfil_id: form.modelo_perfil_id,
+            comprimento_mm: Math.round(comprimento),
+            quantidade,
+            observacao: itemEditando.observacao,
+          },
+        })
+
+        // Corrigir é uma tarefa que termina: o modal fecha. Acrescentar é
+        // uma tarefa que se repete, e por isso ele fica aberto.
+        fecharCorte()
+        return
+      }
+
       await adicionar.mutateAsync({
         produto_id: id,
         modelo_perfil_id: form.modelo_perfil_id,
@@ -218,8 +285,30 @@ export default function ProdutoDetalhe() {
       // cada linha seria trabalho repetido.
       setForm({ ...form, comprimento_mm: '', quantidade: '1' })
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível adicionar.')
+      setErro(e instanceof Error ? e.message : 'Não foi possível salvar.')
     }
+  }
+
+  function abrirCorte(item: ItemListaTecnica) {
+    const perfil = modelos?.find((m) => m.id === item.modelo_perfil_id)
+
+    setItemEditando(item)
+    setTextoPerfil(perfil ? rotuloDoPerfil(perfil) : '')
+    setForm({
+      modelo_perfil_id: item.modelo_perfil_id,
+      comprimento_mm: String(item.comprimento_mm),
+      quantidade: String(item.quantidade),
+    })
+    setErro(null)
+    setAberto(true)
+  }
+
+  function fecharCorte() {
+    setAberto(false)
+    setItemEditando(null)
+    setTextoPerfil('')
+    setForm({ modelo_perfil_id: '', comprimento_mm: '', quantidade: '1' })
+    setErro(null)
   }
 
   if (consulta.isPending || consulta.error || produto === null) {
@@ -343,6 +432,18 @@ export default function ProdutoDetalhe() {
               <Pencil aria-hidden="true" className="size-4" />
             </Botao>
           )}
+
+          {/* Só o ícone, como o lápis: a faixa já está cheia, e "PDF"
+              escrito ao lado empurraria o resto para a segunda linha em
+              tela estreita. */}
+          <Botao
+            variante="secundaria"
+            onClick={() => setImprimindo(true)}
+            aria-label="Gerar PDF do produto"
+            title="Gerar PDF"
+          >
+            <FileText aria-hidden="true" className="size-4" />
+          </Botao>
 
           <label className="flex items-center gap-2">
             <span className="text-texto-suave text-sm">Produzir</span>
@@ -512,14 +613,25 @@ export default function ProdutoDetalhe() {
                   </Link>
 
                   {podeEditar && (
-                    <Botao
-                      variante="contorno"
-                      onClick={() => void remover.mutateAsync(item.id)}
-                      aria-label={`Remover ${nomeDoPerfil(item.modelo_perfil_id)} da lista técnica`}
-                      title="Remover"
-                    >
-                      <Trash2 aria-hidden="true" className="size-4" />
-                    </Botao>
+                    <>
+                      <Botao
+                        variante="secundaria"
+                        onClick={() => abrirCorte(item)}
+                        aria-label={`Alterar ${nomeDoPerfil(item.modelo_perfil_id)} na lista técnica`}
+                        title="Alterar quantidade ou medida"
+                      >
+                        <Pencil aria-hidden="true" className="size-4" />
+                      </Botao>
+
+                      <Botao
+                        variante="contorno"
+                        onClick={() => void remover.mutateAsync(item.id)}
+                        aria-label={`Remover ${nomeDoPerfil(item.modelo_perfil_id)} da lista técnica`}
+                        title="Remover"
+                      >
+                        <Trash2 aria-hidden="true" className="size-4" />
+                      </Botao>
+                    </>
                   )}
                 </li>
               )
@@ -543,11 +655,25 @@ export default function ProdutoDetalhe() {
       </section>
 
       <Imagens
-        foto={produto.foto_url}
-        desenho={produto.desenho_url}
+        foto={linkFoto}
+        desenho={linkDesenho}
         nome={produto.nome}
         aoAmpliar={setAmpliado}
       />
+
+      {/* Fica fora da tela e só aparece na impressão. Montada apenas quando
+          se pede, para não baixar imagem à toa em quem só veio consultar. */}
+      {imprimindo && (
+        <FolhaProduto
+          produto={produto}
+          itens={itens ?? []}
+          modelos={modelos ?? []}
+          desenhosPerfil={capas}
+          fotoProduto={linkFoto}
+          desenhoProduto={linkDesenho}
+          empresa={APLICACAO.nome}
+        />
+      )}
 
       <FichaDados
         titulo="Cadastro"
@@ -578,8 +704,8 @@ export default function ProdutoDetalhe() {
 
       <Modal
         aberto={aberto}
-        aoFechar={() => setAberto(false)}
-        titulo="Acrescentar corte"
+        aoFechar={fecharCorte}
+        titulo={itemEditando ? 'Alterar corte' : 'Acrescentar corte'}
       >
         <form onSubmit={aoEnviar} className="flex flex-col gap-4" noValidate>
           {/* Campo de texto com sugestões, e não uma lista fechada: o
@@ -628,18 +754,20 @@ export default function ProdutoDetalhe() {
             <Botao
               type="button"
               variante="contorno"
-              onClick={() => setAberto(false)}
+              onClick={fecharCorte}
               className="flex-1"
             >
-              Fechar
+              {/* "Fechar", e não "Cancelar": acrescentando, o que já foi
+                  lançado está gravado — não há o que cancelar. */}
+              {itemEditando ? 'Cancelar' : 'Fechar'}
             </Botao>
             <Botao
               type="submit"
-              carregando={adicionar.isPending}
+              carregando={adicionar.isPending || editarItem.isPending}
               className="flex-1"
             >
               <PackageCheck aria-hidden="true" className="size-5" />
-              Acrescentar
+              {itemEditando ? 'Salvar' : 'Acrescentar'}
             </Botao>
           </div>
         </form>
@@ -671,44 +799,38 @@ function Imagens({
   nome,
   aoAmpliar,
 }: {
+  /** Links já resolvidos pela tela — ver o comentário lá sobre o porquê. */
   foto: string | null
   desenho: string | null
   nome: string
   aoAmpliar: (link: string) => void
 }) {
-  const [links, setLinks] = useState<{
-    foto: string | null
-    desenho: string | null
-  }>({ foto: null, desenho: null })
-
-  useEffect(() => {
-    void Promise.all([
-      foto ? obterLinkTemporario(BALDE_IMAGENS_PRODUTO, foto) : null,
-      desenho ? obterLinkTemporario(BALDE_IMAGENS_PRODUTO, desenho) : null,
-    ]).then(([umaFoto, umDesenho]) =>
-      setLinks({ foto: umaFoto, desenho: umDesenho }),
-    )
-  }, [foto, desenho])
-
   if (foto === null && desenho === null) return null
 
   return (
     <section className="grid gap-3 sm:grid-cols-2">
-      {links.foto && (
+      {foto && (
         <figure>
           {/* Botão, e não imagem solta: quem toca espera ampliar, e um
               elemento clicável que não é botão fica fora do alcance de quem
               navega por teclado. */}
+          {/* A ALTURA É DA CAIXA, não da imagem.
+              Com `max-h` na própria imagem, o Safari do iPhone decide a
+              altura antes de conhecer a proporção do arquivo e às vezes não
+              refaz a conta quando ele chega — o resultado é a imagem cortada,
+              de forma intermitente, no aplicativo instalado. Fixando a caixa
+              e deixando a imagem preenchê-la com `object-contain`, não há
+              cálculo a refazer: a foto sempre cabe inteira. */}
           <button
             type="button"
-            onClick={() => links.foto && aoAmpliar(links.foto)}
+            onClick={() => foto && aoAmpliar(foto)}
             aria-label={`Ampliar a foto de ${nome}`}
-            className="block w-full"
+            className="bg-superficie-2 block h-56 w-full overflow-hidden rounded-xl"
           >
             <img
-              src={links.foto}
+              src={foto}
               alt={`Foto de ${nome}`}
-              className="bg-superficie-2 max-h-56 w-full rounded-xl object-contain"
+              className="h-full w-full object-contain"
             />
           </button>
           <figcaption className="text-texto-suave mt-1 text-sm">
@@ -717,18 +839,18 @@ function Imagens({
         </figure>
       )}
 
-      {links.desenho && (
+      {desenho && (
         <figure>
           <button
             type="button"
-            onClick={() => links.desenho && aoAmpliar(links.desenho)}
+            onClick={() => desenho && aoAmpliar(desenho)}
             aria-label={`Ampliar o desenho técnico de ${nome}`}
-            className="block w-full"
+            className="bg-superficie-2 block h-56 w-full overflow-hidden rounded-xl"
           >
             <img
-              src={links.desenho}
+              src={desenho}
               alt={`Desenho técnico de ${nome}`}
-              className="bg-superficie-2 max-h-56 w-full rounded-xl object-contain"
+              className="h-full w-full object-contain"
             />
           </button>
           <figcaption className="text-texto-suave mt-1 text-sm">

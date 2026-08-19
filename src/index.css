@@ -243,11 +243,15 @@
 }
 
 /*
- * Impressão de etiqueta.
+ * Impressão.
  *
- * Ao imprimir, só a etiqueta aparece: sem menu, sem botões, sem barra de
- * navegação. Sem isto, a impressora cospe uma página inteira do aplicativo
- * com a etiqueta perdida no meio.
+ * Ao imprimir, só a peça que interessa aparece: sem menu, sem botões, sem
+ * barra de navegação. Sem isto, a impressora cospe uma página inteira do
+ * aplicativo com a etiqueta perdida no meio.
+ *
+ * São dois alvos hoje — a etiqueta da sobra (90 mm, para a prateleira) e a
+ * folha do produto (largura toda, para a bancada). A regra é a mesma:
+ * esconde tudo, mostra o alvo.
  */
 @media print {
   body * {
@@ -255,7 +259,9 @@
   }
 
   #etiqueta-impressao,
-  #etiqueta-impressao * {
+  #etiqueta-impressao *,
+  #folha-impressao,
+  #folha-impressao * {
     visibility: visible;
   }
 
@@ -266,6 +272,17 @@
     width: 90mm;
     border: 1px solid #000 !important;
     background: white !important;
+    color: black !important;
+  }
+
+  #folha-impressao {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: white !important;
+    /* Preto no branco, sempre: a folha vai para o papel, e o tema escuro
+       do aplicativo gastaria tinta imprimindo fundo preto. */
     color: black !important;
   }
 

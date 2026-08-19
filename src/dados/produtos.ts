@@ -205,6 +205,38 @@ export function useAdicionarItemLista() {
 }
 
 /**
+ * Corrige um corte já lançado.
+ *
+ * Errar a quantidade ou o comprimento ao montar a receita é comum — são
+ * números digitados um atrás do outro. Sem isto, corrigir significava
+ * remover a linha e lançá-la de novo, e quem fizesse isso no meio de uma
+ * lista longa perdia a posição.
+ */
+export function useEditarItemLista() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      dados,
+    }: {
+      id: string
+      dados: Omit<DadosItemLista, 'produto_id'>
+    }) => {
+      const { error } = await supabase
+        .from('itens_lista_tecnica')
+        .update(dados)
+        .eq('id', id)
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.listaTecnica })
+    },
+  })
+}
+
+/**
  * Remove de verdade, sem desativar.
  *
  * Linha de receita não é histórico de nada: é a receita de hoje. Corrigir

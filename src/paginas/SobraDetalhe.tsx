@@ -152,11 +152,15 @@ export default function SobraDetalhe() {
       {fotoPeca && (
         <section>
           <h2 className="mb-2 font-semibold">Foto desta peça</h2>
-          <img
-            src={fotoPeca}
-            alt={`Foto da sobra ${sobra.codigo}`}
-            className="bg-superficie-2 max-h-72 w-full rounded-xl object-contain"
-          />
+          {/* Altura na caixa, não na imagem: ver o comentário em
+              ProdutoDetalhe sobre o corte intermitente no Safari. */}
+          <div className="bg-superficie-2 h-72 w-full overflow-hidden rounded-xl">
+            <img
+              src={fotoPeca}
+              alt={`Foto da sobra ${sobra.codigo}`}
+              className="h-full w-full object-contain"
+            />
+          </div>
         </section>
       )}
 
