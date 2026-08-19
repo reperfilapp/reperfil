@@ -86,7 +86,10 @@ página e deslocada — girada, uma do tamanho exato deixaria os cantos vazios.
 folha circula fora da empresa, e o símbolo sozinho não diz de onde veio. Os
 dados do produto foram para a direita, alinhados a ele.
 
-**O logo do cabeçalho tem 30 mm de altura** — o dobro do tamanho anterior.
+**O logo do cabeçalho tem 30 mm de altura** — o dobro do tamanho anterior — e
+os dados do produto cresceram junto. O nome do produto é o que identifica a
+folha na bancada; em corpo miúdo ao lado de uma marca grande, ele virava
+legenda da marca. Nome, código e medida guardam a hierarquia entre si.
 
 **Cada imagem ocupa um terço da largura útil**, tenha a folha uma imagem ou
 seis, com até três por fileira e o excesso quebrando para baixo. Fração fixa,

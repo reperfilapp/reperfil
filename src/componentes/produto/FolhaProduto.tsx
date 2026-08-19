@@ -116,15 +116,22 @@ export function FolhaProduto({
                   className="h-[30mm] w-auto object-contain"
                 />
 
+                {/* Proporcional ao logo, que tem 30 mm: o nome do produto é a
+                    informação que identifica a folha na bancada, e em corpo
+                    miúdo ao lado de uma marca grande ele virava legenda da
+                    marca. Os três tamanhos guardam a hierarquia entre si —
+                    nome, código, medida. */}
                 <div className="min-w-0 text-right">
-                  <h1 className="text-lg leading-tight font-bold">
+                  <h1 className="text-3xl leading-tight font-bold">
                     {produto.nome}
                   </h1>
-                  <p className="text-xs">
+                  <p className="mt-1 text-lg">
                     <span className="font-mono">{produto.codigo}</span>
                   </p>
                   {formatarMedidaProduto(produto) && (
-                    <p className="text-xs">{formatarMedidaProduto(produto)}</p>
+                    <p className="text-base font-semibold">
+                      {formatarMedidaProduto(produto)}
+                    </p>
                   )}
                 </div>
               </header>
