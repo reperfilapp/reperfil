@@ -43,10 +43,11 @@ import {
   type CriterioOrdenacao,
 } from '@/dominio/ordenacaoListaTecnica'
 import { sobrasDisponiveis } from '@/dominio/estoqueParaProducao'
-import { formatarMedidaProduto } from '@/dominio/produto'
+import { formatarMedidaProduto, nomeDoArquivo } from '@/dominio/produto'
 import { formatarComprimento } from '@/dominio/medidas'
 import { CONFIGURACAO_CORTE_PADRAO } from '@/dominio/corte'
 import { obterLinkTemporario, BALDE_IMAGENS_PRODUTO } from '@/lib/armazenamento'
+import { imprimirFolha, imprimeNoNativo } from '@/lib/impressao'
 import { PaginaDetalhe, FichaDados } from '@/componentes/PaginaDetalhe'
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import { Botao } from '@/componentes/ui/Botao'
@@ -188,8 +189,39 @@ export default function ProdutoDetalhe() {
           }),
     )
 
+    /*
+     * O nome do arquivo sai do TÍTULO DA PÁGINA.
+     *
+     * Não existe API para nomear o PDF: o navegador usa o `document.title`
+     * como nome sugerido no "Salvar como PDF". Sem isto, todo arquivo saía
+     * chamado "RePerfil" e a pasta de downloads virava uma pilha de
+     * "RePerfil (1)", "RePerfil (2)" — inúteis para achar a folha de uma
+     * janela específica meses depois.
+     */
+    const tituloOriginal = document.title
+    const nome = produto ? nomeDoArquivo(produto) : tituloOriginal
+
+    document.title = nome
+
     void Promise.all(prontas).then(() => {
-      if (!cancelado) window.print()
+      if (cancelado || !folha) return
+
+      void imprimirFolha(folha, nome)
+        .catch((e) => {
+          setErro(
+            e instanceof Error
+              ? `Não foi possível imprimir: ${e.message}`
+              : 'Não foi possível imprimir.',
+          )
+        })
+        .finally(() => {
+          /*
+           * No aplicativo nativo não existe `afterprint`: quem devolve o
+           * controle é a promessa do plugin. Sem isto, a folha ficaria
+           * montada para sempre e o botão pararia de responder.
+           */
+          if (imprimeNoNativo()) setImprimindo(false)
+        })
     })
 
     /*
@@ -205,6 +237,7 @@ export default function ProdutoDetalhe() {
 
     return () => {
       cancelado = true
+      document.title = tituloOriginal
       window.removeEventListener('afterprint', aoTerminar)
     }
   }, [imprimindo])
@@ -506,7 +539,12 @@ export default function ProdutoDetalhe() {
               // de um navegador que não emita `afterprint` e deixe o estado
               // preso em "imprimindo".
               if (imprimindo) {
-                window.print()
+                const folha = document.getElementById('folha-impressao')
+
+                if (folha && produto) {
+                  void imprimirFolha(folha, nomeDoArquivo(produto))
+                }
+
                 return
               }
 
