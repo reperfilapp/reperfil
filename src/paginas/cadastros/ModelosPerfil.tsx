@@ -33,6 +33,7 @@ import { Modal } from '@/componentes/ui/Modal'
 import { FormularioModeloPerfil } from '@/componentes/perfil/FormularioModeloPerfil'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
+import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
 import { useSobras } from '@/dados/sobras'
 import { useListaTecnicaCompleta } from '@/dados/produtos'
@@ -105,6 +106,7 @@ export default function ModelosPerfil() {
   const [erro, setErro] = useState<string | null>(null)
   const [apagando, setApagando] = useState<ModeloPerfil | null>(null)
   const [erroApagar, setErroApagar] = useState<string | null>(null)
+  const [ampliado, setAmpliado] = useState<ModeloPerfil | null>(null)
 
   const encontrados = filtrarModelos(modelos ?? [], busca)
   const buscando = busca.trim() !== ''
@@ -381,33 +383,40 @@ export default function ModelosPerfil() {
         {visiveisOrdenados.map((modelo) => (
           <li
             key={modelo.id}
-            className="bg-superficie flex items-center gap-3 rounded-xl p-4 shadow-sm"
+            className="bg-superficie flex items-center gap-3 rounded-xl p-3 shadow-sm"
           >
-            <Link
-              to={`/perfis/${modelo.id}`}
-              className="flex min-w-0 flex-1 items-center gap-3"
-              aria-label={`Ver ficha do perfil ${modelo.codigo}`}
-            >
+            {capas?.get(modelo.id) ? (
+              <button
+                type="button"
+                onClick={() => setAmpliado(modelo)}
+                aria-label={`Ampliar desenho técnico de ${modelo.descricao}`}
+                className="shrink-0"
+              >
+                <MiniaturaPerfil
+                  link={capas.get(modelo.id)}
+                  codigo={modelo.codigo}
+                />
+              </button>
+            ) : (
               <MiniaturaPerfil
-                link={capas?.get(modelo.id)}
+                link={null}
                 codigo={modelo.codigo}
+                className="shrink-0"
               />
+            )}
 
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1 truncate font-medium">
-                  <span className="text-acao-600 font-mono">
-                    {modelo.codigo}
-                  </span>{' '}
-                  {modelo.descricao}
+            <div className="flex min-w-0 flex-1 flex-col justify-center">
+              <Link
+                to={`/perfis/${modelo.id}`}
+                className="flex min-w-0 flex-col"
+              >
+                <span className="flex items-center gap-1 font-medium text-base leading-tight">
+                  <span className="truncate">{modelo.descricao}</span>
                   {!modelo.ativo && (
-                    <span className="bg-superficie-2 text-texto-suave ml-2 rounded px-2 py-0.5 text-xs">
+                    <span className="bg-superficie-2 text-texto-suave shrink-0 rounded px-2 py-0.5 text-xs">
                       inativo
                     </span>
                   )}
-                  <ChevronRight
-                    aria-hidden="true"
-                    className="text-texto-suave size-4 shrink-0"
-                  />
                 </span>
                 <span className="text-texto-suave block truncate text-sm">
                   {modelo.linha && `${modelo.linha} · `}
@@ -418,58 +427,65 @@ export default function ModelosPerfil() {
                   </span>
                   {modelo.aplicacao && ` · ${modelo.aplicacao}`}
                 </span>
-              </span>
-            </Link>
+              </Link>
 
-            {podeEditar && (
-              <>
-                <Botao
-                  variante="secundaria"
-                  onClick={() => abrirEdicao(modelo)}
-                  aria-label={`Editar ${modelo.codigo}`}
+              <div className="flex items-center justify-between gap-2 mt-1">
+                <Link
+                  to={`/perfis/${modelo.id}`}
+                  className="text-acao-600 font-mono font-medium whitespace-nowrap shrink-0 text-[15px]"
                 >
-                  <Pencil aria-hidden="true" className="size-4" />
-                </Botao>
+                  {modelo.codigo}
+                </Link>
 
-                <Botao
-                  variante="contorno"
-                  onClick={() =>
-                    void desativar.mutateAsync({
-                      id: modelo.id,
-                      ativo: !modelo.ativo,
-                    })
-                  }
-                  aria-label={`${modelo.ativo ? 'Desativar' : 'Reativar'} ${modelo.codigo}`}
-                  title={modelo.ativo ? 'Desativar' : 'Reativar'}
-                >
-                  {/* Só o ícone: com o texto, em tela estreita, o botão comia a
-                      largura do nome do registro — que é o que se procura na
-                      lista. O rótulo continua no `aria-label` e na dica. */}
-                  {modelo.ativo ? (
-                    <Archive aria-hidden="true" className="size-4" />
-                  ) : (
-                    <ArchiveRestore aria-hidden="true" className="size-4" />
-                  )}
-                </Botao>
+                {podeEditar && (
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <Botao
+                      tamanho="icone_pequeno"
+                      variante="secundaria"
+                      onClick={() => abrirEdicao(modelo)}
+                      aria-label={`Editar ${modelo.codigo}`}
+                    >
+                      <Pencil aria-hidden="true" className="size-4" />
+                    </Botao>
 
-                {/* Só aparece quando dá para apagar de verdade — na maioria
-                    das linhas, com sobra ou lista técnica, o botão nem
-                    existe, em vez de existir desabilitado explicando por quê. */}
-                {podeApagar(modelo) && (
-                  <Botao
-                    variante="contorno"
-                    onClick={() => {
-                      setApagando(modelo)
-                      setErroApagar(null)
-                    }}
-                    aria-label={`Apagar ${modelo.codigo}`}
-                    title="Apagar"
-                  >
-                    <Trash2 aria-hidden="true" className="size-4" />
-                  </Botao>
+                    <Botao
+                      tamanho="icone_pequeno"
+                      variante="contorno"
+                      onClick={() =>
+                        void desativar.mutateAsync({
+                          id: modelo.id,
+                          ativo: !modelo.ativo,
+                        })
+                      }
+                      aria-label={`${modelo.ativo ? 'Desativar' : 'Reativar'} ${modelo.codigo}`}
+                      title={modelo.ativo ? 'Desativar' : 'Reativar'}
+                    >
+                      {modelo.ativo ? (
+                        <Archive aria-hidden="true" className="size-4" />
+                      ) : (
+                        <ArchiveRestore aria-hidden="true" className="size-4" />
+                      )}
+                    </Botao>
+
+                    {podeApagar(modelo) && (
+                      <Botao
+                        tamanho="icone_pequeno"
+                        variante="contorno"
+                        onClick={() => {
+                          setApagando(modelo)
+                          setErroApagar(null)
+                        }}
+                        aria-label={`Apagar ${modelo.codigo}`}
+                        title="Apagar"
+                        className="border-erro-200 text-erro-600 hover:bg-erro-50 hover:border-erro-300 hover:text-erro-700"
+                      >
+                        <Trash2 aria-hidden="true" className="size-4" />
+                      </Botao>
+                    )}
+                  </div>
                 )}
-              </>
-            )}
+              </div>
+            </div>
           </li>
         ))}
       </ul>
@@ -537,6 +553,14 @@ export default function ModelosPerfil() {
           </div>
         </div>
       </Modal>
+      {ampliado && capas?.get(ampliado.id) && (
+        <VisualizadorImagem
+          src={capas.get(ampliado.id)!}
+          alt={`Desenho técnico do perfil ${ampliado.codigo}`}
+          titulo={`${ampliado.descricao} · ${ampliado.codigo}`}
+          aoFechar={() => setAmpliado(null)}
+        />
+      )}
     </PaginaLista>
   )
 }

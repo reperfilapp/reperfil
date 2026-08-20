@@ -29,6 +29,8 @@ const estilos = cva(
         texto: 'bg-transparent text-acao-600 hover:underline',
       },
       tamanho: {
+        pequeno: 'min-h-10 px-3 text-sm',
+        icone_pequeno: 'size-9 p-0',
         medio: 'min-h-12 px-4 text-base',
         grande: 'min-h-16 px-6 text-lg',
         largura_total: 'min-h-16 w-full px-6 text-lg',

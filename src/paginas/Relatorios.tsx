@@ -11,6 +11,7 @@ import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
+import { AmostraCor } from '@/componentes/ui/AmostraCor'
 import { gerarCsv, baixarCsv, nomeArquivoComData } from '@/lib/csv'
 import { formatarComprimento } from '@/dominio/medidas'
 
@@ -51,7 +52,15 @@ export default function Relatorios() {
     (l) => l.acabamentoNome,
     (l) => l.quantidade,
     (l) => l.quantidade * l.comprimentoMm,
-  )
+  ).map((g) => {
+    const exemplo = emEstoque.find((l) => l.acabamentoNome === g.grupo)
+    return {
+      ...g,
+      grupo: (
+        <AmostraCor corHex={exemplo?.acabamentoCor ?? null} nome={g.grupo} />
+      ),
+    }
+  })
 
   const porLocal = agrupar(
     emEstoque,
@@ -191,8 +200,12 @@ export default function Relatorios() {
                       key={`${p.modeloCodigo}-${i}`}
                       className="bg-superficie flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm"
                     >
-                      <span className="min-w-0 truncate">
-                        {p.modeloCodigo} · {p.acabamentoNome}
+                      <span className="min-w-0 truncate flex items-center gap-1">
+                        {p.modeloCodigo} ·{' '}
+                        <AmostraCor
+                          corHex={p.acabamentoCor}
+                          nome={p.acabamentoNome}
+                        />
                       </span>
                       <span className="text-texto-suave shrink-0 tabular-nums">
                         {p.diasParado} dias
@@ -277,7 +290,7 @@ function Resumo({
   rotuloExportacao,
 }: {
   titulo: string
-  grupos: { grupo: string; pecas: number; milimetros: number }[]
+  grupos: { grupo: string | React.ReactNode; pecas: number; milimetros: number }[]
   aoExportar?: () => void
   rotuloExportacao?: string
 }) {

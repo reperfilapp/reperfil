@@ -278,7 +278,13 @@ export default function Sobras() {
           <EstadoConsulta
             carregando={isPending}
             erro={error}
-            vazio={!mostrandoLinhas && visiveis.length === 0}
+            vazio={
+              buscando
+                ? visiveis.length === 0
+                : mostrandoPerfis
+                  ? perfis.length === 0
+                  : !mostrandoLinhas && visiveis.length === 0
+            }
             mensagemVazio={
               busca
                 ? 'Nenhuma sobra encontrada com esse termo.'

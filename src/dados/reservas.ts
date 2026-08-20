@@ -20,7 +20,7 @@ export interface ReservaDetalhada extends Reserva {
     codigo: string
     comprimento_mm: number
     modelo: { codigo: string; descricao: string } | null
-    acabamento: { nome: string } | null
+    acabamento: { nome: string; cor_hex: string | null } | null
     localizacao: { codigo: string } | null
   } | null
 }
@@ -42,7 +42,7 @@ export function useReservas(apenasEmAberto = true) {
            lote:lotes_sobras!reservas_lote_id_fkey (
              codigo, comprimento_mm,
              modelo:modelos_perfil (codigo, descricao),
-             acabamento:acabamentos (nome),
+             acabamento:acabamentos (nome, cor_hex),
              localizacao:localizacoes (codigo)
            )`,
         )

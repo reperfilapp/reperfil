@@ -149,13 +149,8 @@ export default function Produtos() {
         {produtos?.map((produto) => (
           <li
             key={produto.id}
-            className="bg-superficie flex items-center gap-3 rounded-xl p-4 shadow-sm"
+            className="bg-superficie flex items-center gap-3 rounded-xl p-3 shadow-sm"
           >
-            {/* FORA do link do produto, de propósito: aqui o desenho não é
-                enfeite da linha, é o que se quer olhar de perto — tocar nele
-                abre a imagem em tela cheia em vez de abrir a ficha. Sem
-                desenho, fica o quadro vazio, que é o que mantém todas as
-                linhas do mesmo tamanho. */}
             {capas?.get(produto.id) ? (
               <button
                 type="button"
@@ -174,64 +169,70 @@ export default function Produtos() {
                 link={null}
                 codigo={produto.codigo}
                 alt={`${produto.nome} não tem desenho técnico`}
+                className="shrink-0"
               />
             )}
 
-            <Link
-              to={`/produtos/${produto.id}`}
-              className="flex min-w-0 flex-1 items-center gap-2"
-              aria-label={`Ver ${produto.nome}`}
-            >
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium">
-                  {produto.nome}
+            <div className="flex min-w-0 flex-1 flex-col justify-center">
+              <Link
+                to={`/produtos/${produto.id}`}
+                className="flex min-w-0 flex-col"
+                aria-label={`Ver ${produto.nome}`}
+              >
+                <span className="flex items-center gap-1 font-medium text-base leading-tight">
+                  <span className="truncate">{produto.nome}</span>
                   {!produto.ativo && (
-                    <span className="bg-superficie-2 text-texto-suave ml-2 rounded px-2 py-0.5 text-xs">
+                    <span className="bg-superficie-2 text-texto-suave shrink-0 rounded px-2 py-0.5 text-xs">
                       inativo
                     </span>
                   )}
                 </span>
                 <span className="text-texto-suave block truncate text-sm">
-                  <span className="font-mono">{produto.codigo}</span>
-                  {formatarMedidaProduto(produto) &&
-                    ` · ${formatarMedidaProduto(produto)}`}
+                  {formatarMedidaProduto(produto) || 'sem medidas'}
                 </span>
-              </span>
-              <ChevronRight
-                aria-hidden="true"
-                className="text-texto-suave size-4 shrink-0"
-              />
-            </Link>
+              </Link>
 
-            {podeEditar && (
-              <>
-                <Botao
-                  variante="secundaria"
-                  onClick={() => abrirEdicao(produto)}
-                  aria-label={`Editar ${produto.nome}`}
+              <div className="flex items-center justify-between gap-2 mt-1">
+                <Link
+                  to={`/produtos/${produto.id}`}
+                  className="text-acao-600 font-mono font-medium whitespace-nowrap shrink-0 text-[15px]"
                 >
-                  <Pencil aria-hidden="true" className="size-4" />
-                </Botao>
+                  {produto.codigo}
+                </Link>
 
-                <Botao
-                  variante="contorno"
-                  onClick={() =>
-                    void desativar.mutateAsync({
-                      id: produto.id,
-                      ativo: !produto.ativo,
-                    })
-                  }
-                  aria-label={`${produto.ativo ? 'Desativar' : 'Reativar'} ${produto.nome}`}
-                  title={produto.ativo ? 'Desativar' : 'Reativar'}
-                >
-                  {produto.ativo ? (
-                    <Archive aria-hidden="true" className="size-4" />
-                  ) : (
-                    <ArchiveRestore aria-hidden="true" className="size-4" />
-                  )}
-                </Botao>
-              </>
-            )}
+                {podeEditar && (
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <Botao
+                      tamanho="icone_pequeno"
+                      variante="secundaria"
+                      onClick={() => abrirEdicao(produto)}
+                      aria-label={`Editar ${produto.nome}`}
+                    >
+                      <Pencil aria-hidden="true" className="size-4" />
+                    </Botao>
+
+                    <Botao
+                      tamanho="icone_pequeno"
+                      variante="contorno"
+                      onClick={() =>
+                        void desativar.mutateAsync({
+                          id: produto.id,
+                          ativo: !produto.ativo,
+                        })
+                      }
+                      aria-label={`${produto.ativo ? 'Desativar' : 'Reativar'} ${produto.nome}`}
+                      title={produto.ativo ? 'Desativar' : 'Reativar'}
+                    >
+                      {produto.ativo ? (
+                        <Archive aria-hidden="true" className="size-4" />
+                      ) : (
+                        <ArchiveRestore aria-hidden="true" className="size-4" />
+                      )}
+                    </Botao>
+                  </div>
+                )}
+              </div>
+            </div>
           </li>
         ))}
       </ul>

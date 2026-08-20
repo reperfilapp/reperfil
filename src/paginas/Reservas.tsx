@@ -17,8 +17,10 @@ import {
 } from '@/dados/reservas'
 import { useConfiguracoes, paraConfiguracaoCorte } from '@/dados/configuracoes'
 import { Botao } from '@/componentes/ui/Botao'
+import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
+import { AmostraCor } from '@/componentes/ui/AmostraCor'
 import { CampoMedida } from '@/componentes/ui/CampoMedida'
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import {
@@ -173,11 +175,14 @@ export default function Reservas() {
               >
                 <span className="min-w-0">
                   <span className="block font-mono font-bold">
-                    {reserva.lote?.codigo}
+                    Lote {reserva.lote?.codigo}
                   </span>
-                  <span className="block truncate text-sm">
+                  <span className="block truncate text-sm flex items-center gap-1">
                     {reserva.lote?.modelo?.codigo} ·{' '}
-                    {reserva.lote?.acabamento?.nome}
+                    <AmostraCor
+                      corHex={reserva.lote?.acabamento?.cor_hex ?? null}
+                      nome={reserva.lote?.acabamento?.nome ?? ''}
+                    />
                   </span>
                   {reserva.lote?.localizacao && (
                     <span className="text-texto-suave flex items-center gap-1 text-sm">
@@ -263,8 +268,8 @@ export default function Reservas() {
         {cortando?.lote && (
           <div className="flex flex-col gap-4">
             <p className="text-sm">
-              Peça <strong className="font-mono">{cortando.lote.codigo}</strong>{' '}
-              de {formatarComprimento(cortando.lote.comprimento_mm)}.
+              Lote <strong className="font-mono">{cortando.lote.codigo}</strong>{' '}
+              (Perfil {cortando.lote.modelo?.codigo}) de {formatarComprimento(cortando.lote.comprimento_mm)}.
             </p>
 
             <CampoMedida
@@ -340,7 +345,7 @@ export default function Reservas() {
       >
         <div className="flex flex-col gap-4">
           <p className="text-sm">
-            A peça{' '}
+            O lote{' '}
             <strong className="font-mono">{cancelando?.lote?.codigo}</strong>{' '}
             volta para o estoque e fica disponível para outra pessoa.
           </p>

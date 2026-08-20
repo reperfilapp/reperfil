@@ -31,7 +31,11 @@ export type StatusLote =
 export type StatusReserva =
   'ativa' | 'retirada' | 'consumida' | 'cancelada' | 'expirada'
 
-export type EstadoConservacao = 'bom' | 'regular' | 'ruim'
+export type EstadoConservacao =
+  | 'excelente'
+  | 'bom'
+  | 'pequenos_arranhoes'
+  | 'muito_avariado'
 
 export type TipoAcabamento = 'natural' | 'anodizado' | 'pintura' | 'outro'
 

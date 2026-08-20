@@ -18,6 +18,7 @@ import { CampoMedida } from '@/componentes/ui/CampoMedida'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
+import { AmostraCor } from '@/componentes/ui/AmostraCor'
 import {
   pesquisarSobras,
   classificarAproveitamento,
@@ -48,6 +49,7 @@ interface CandidataComDados extends CandidataSobra {
   modeloCodigo: string
   modeloDescricao: string
   acabamentoNome: string
+  acabamentoCor: string | null
   quantidadeTotal: number
 }
 
@@ -95,6 +97,7 @@ export default function PesquisarSobras() {
       modeloCodigo: s.modelo?.codigo ?? '',
       modeloDescricao: s.modelo?.descricao ?? '',
       acabamentoNome: s.acabamento?.nome ?? '',
+      acabamentoCor: s.acabamento?.cor_hex ?? null,
     }))
 
   const achados = podePesquisar
@@ -273,8 +276,12 @@ export default function PesquisarSobras() {
                         <span className="block font-mono font-bold">
                           {s.codigo}
                         </span>
-                        <span className="block truncate text-sm">
-                          {s.modeloCodigo} · {s.acabamentoNome}
+                        <span className="block truncate text-sm flex items-center gap-1">
+                          {s.modeloCodigo} ·{' '}
+                          <AmostraCor
+                            corHex={s.acabamentoCor}
+                            nome={s.acabamentoNome}
+                          />
                         </span>
                         {s.localizacaoCodigo && (
                           <span className="text-texto-suave flex items-center gap-1 text-sm">

@@ -13,7 +13,6 @@ import {
 import {
   useSobra,
   useHistoricoDoLote,
-  useAjustarQuantidadeLote,
 } from '@/dados/sobras'
 import { useReservarSobra } from '@/dados/reservas'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
@@ -28,6 +27,8 @@ import { EtiquetaSobra } from '@/componentes/EtiquetaSobra'
 import { Botao } from '@/componentes/ui/Botao'
 import { Modal } from '@/componentes/ui/Modal'
 import { CampoQuantidade } from '@/componentes/ui/CampoQuantidade'
+import { ModalEditarSobra } from '@/componentes/ModalEditarSobra'
+import { AmostraCor } from '@/componentes/ui/AmostraCor'
 import { formatarComprimento } from '@/dominio/medidas'
 import {
   areaSecaoMm2,
@@ -53,9 +54,10 @@ const COR_STATUS: Record<StatusLote, string> = {
 }
 
 const ROTULO_ESTADO: Record<EstadoConservacao, string> = {
-  bom: 'bom',
-  regular: 'regular',
-  ruim: 'ruim',
+  excelente: 'Excelente',
+  bom: 'Bom',
+  pequenos_arranhoes: 'Pequenos arranhões',
+  muito_avariado: 'Muito avariado',
 }
 
 /** Nomes legíveis dos tipos de movimentação, para o histórico. */
@@ -82,16 +84,12 @@ export default function SobraDetalhe() {
   const { data: historico } = useHistoricoDoLote(id ?? null)
   const { data: capas } = useCapasDesenhos('imagem')
   const reservar = useReservarSobra()
-  const ajustar = useAjustarQuantidadeLote()
   const [etiqueta, setEtiqueta] = useState(false)
   const [fotoPeca, setFotoPeca] = useState<string | null>(null)
   const [usando, setUsando] = useState(false)
   const [quantidadeUsar, setQuantidadeUsar] = useState(1)
   const [erroUsar, setErroUsar] = useState<string | null>(null)
-  const [corrigindo, setCorrigindo] = useState(false)
-  const [novaQuantidade, setNovaQuantidade] = useState(0)
-  const [justificativa, setJustificativa] = useState('')
-  const [erroCorrigir, setErroCorrigir] = useState<string | null>(null)
+  const [editando, setEditando] = useState(false)
 
   // A foto da peça fica em balde privado: precisa de link temporário.
   useEffect(() => {
@@ -150,30 +148,6 @@ export default function SobraDetalhe() {
     }
   }
 
-  function abrirCorrecao() {
-    setNovaQuantidade(sobra!.quantidade)
-    setJustificativa('')
-    setErroCorrigir(null)
-    setCorrigindo(true)
-  }
-
-  async function confirmarCorrecao() {
-    setErroCorrigir(null)
-
-    try {
-      await ajustar.mutateAsync({
-        loteId: sobra!.id,
-        novaQuantidade,
-        justificativa,
-      })
-      setCorrigindo(false)
-    } catch (e) {
-      setErroCorrigir(
-        e instanceof Error ? e.message : 'Não foi possível corrigir a quantidade.',
-      )
-    }
-  }
-
   return (
     <PaginaDetalhe
       voltarPara="/sobras"
@@ -190,13 +164,23 @@ export default function SobraDetalhe() {
       }
       acoes={
         <>
+          {podeMovimentar && sobra.status !== 'consumida' && (
+            <Botao variante="contorno" onClick={() => setEditando(true)} className="flex-1 sm:flex-none">
+              <Pencil aria-hidden="true" className="size-4" />
+              Editar
+            </Botao>
+          )}
           {podeMovimentar && livres > 0 && (
-            <Botao onClick={abrirUsar}>
+            <Botao onClick={abrirUsar} className="flex-1 sm:flex-none">
               <PackageMinus aria-hidden="true" className="size-4" />
               Usar peça
             </Botao>
           )}
-          <Botao variante="contorno" onClick={() => setEtiqueta(true)}>
+          <Botao
+            variante="contorno"
+            onClick={() => setEtiqueta(true)}
+            className="flex-1 sm:flex-none"
+          >
             <Tag aria-hidden="true" className="size-4" />
             Ver etiqueta
           </Botao>
@@ -237,8 +221,6 @@ export default function SobraDetalhe() {
       {fotoPeca && (
         <section>
           <h2 className="mb-2 font-semibold">Foto desta peça</h2>
-          {/* Altura na caixa, não na imagem: ver o comentário em
-              ProdutoDetalhe sobre o corte intermitente no Safari. */}
           <div className="bg-superficie-2 h-72 w-full overflow-hidden rounded-xl">
             <img
               src={fotoPeca}
@@ -249,44 +231,45 @@ export default function SobraDetalhe() {
         </section>
       )}
 
-      {/* Comprimento e quantidade fora da lista e em corpo grande: são as
-          duas perguntas que trazem alguém a esta tela — "cabe o meu corte?"
-          e "tem peça suficiente?". No meio de onze linhas iguais, elas
-          exigiam procurar; aqui se leem de relance, de longe, no depósito. */}
-      {/* `destaque` em vez de um tom fixo da paleta: os tokens do tema
-          invertem os papéis no escuro — fundo azul profundo, texto claro. Com
-          `acao-50` e `acao-900` fixos, o cartão ficava com texto escuro sobre
-          fundo escuro e sumia justamente no tema que se usa no depósito. */}
-      <section className="bg-destaque border-destaque-borda grid grid-cols-2 gap-3 rounded-xl border p-4">
+      <section className="bg-destaque border-destaque-borda grid grid-cols-3 gap-3 rounded-xl border p-4">
         <div>
           <p className="text-destaque-texto text-sm font-medium opacity-80">
             Comprimento
           </p>
-          <p className="text-destaque-texto text-3xl font-bold tabular-nums">
+          <p className="text-destaque-texto text-2xl sm:text-3xl font-bold tabular-nums">
             {formatarComprimento(sobra.comprimento_mm)}
           </p>
         </div>
         <div>
-          <p className="text-destaque-texto flex items-center gap-1.5 text-sm font-medium opacity-80">
+          <p className="text-destaque-texto text-sm font-medium opacity-80">
             Quantidade
-            {podeMovimentar && sobra.status !== 'consumida' && (
-              <button
-                type="button"
-                onClick={abrirCorrecao}
-                aria-label="Corrigir quantidade cadastrada"
-                title="Corrigir quantidade"
-                className="opacity-70 hover:opacity-100"
-              >
-                <Pencil aria-hidden="true" className="size-3.5" />
-              </button>
-            )}
           </p>
-          <p className="text-destaque-texto text-3xl font-bold tabular-nums">
+          <p className="text-destaque-texto text-2xl sm:text-3xl font-bold tabular-nums">
             {sobra.quantidade}
-            <span className="ml-1 text-base font-medium">
+            <span className="ml-1 text-sm sm:text-base font-medium">
               {sobra.quantidade === 1 ? 'peça' : 'peças'}
             </span>
           </p>
+        </div>
+        <div>
+          <p className="text-destaque-texto text-sm font-medium opacity-80 mb-1">
+            Acabamento
+          </p>
+          <div className="flex items-center gap-1.5 min-w-0">
+            {sobra.acabamento ? (
+              <>
+                <AmostraCor
+                  corHex={sobra.acabamento.cor_hex}
+                  tamanho="pequeno"
+                />
+                <span className="text-destaque-texto text-lg font-bold truncate">
+                  {sobra.acabamento.nome}
+                </span>
+              </>
+            ) : (
+              <span className="text-destaque-texto text-lg font-bold opacity-70">Nenhum</span>
+            )}
+          </div>
         </div>
       </section>
 
@@ -295,16 +278,7 @@ export default function SobraDetalhe() {
         linhas={[
           { rotulo: 'Reservadas', valor: sobra.quantidade_reservada },
           { rotulo: 'Livres', valor: livres },
-          {
-            rotulo: 'Acabamento',
-            valor: sobra.acabamento?.nome ?? null,
-          },
-          // Vem do perfil, não da peça, mas é aqui que se procura: com a
-          // ponta na mão, a pergunta é "onde isto entra na esquadria?".
-          {
-            rotulo: 'Aplicação',
-            valor: sobra.modelo?.aplicacao ?? null,
-          },
+          { rotulo: 'Aplicação', valor: sobra.modelo?.aplicacao ?? null },
           {
             rotulo: 'Localização',
             valor: sobra.localizacao ? (
@@ -332,7 +306,7 @@ export default function SobraDetalhe() {
           a dúvida é "este é mesmo o perfil?". Fica aqui, e não só atrás do
           link para o catálogo, porque sair da tela perde o que se estava
           comparando. */}
-      <Secao titulo="Lista técnica" icone={Layers}>
+      <Secao titulo="Dados técnicos" icone={Layers}>
         <FichaDados
           linhas={[
             { rotulo: 'Código', valor: sobra.modelo?.codigo },
@@ -383,12 +357,7 @@ export default function SobraDetalhe() {
       </Secao>
 
       {/* Histórico: o que aconteceu com esta peça, sem nada apagado. */}
-      <section>
-        <h2 className="mb-2 flex items-center gap-2 font-semibold">
-          <History aria-hidden="true" className="size-4" />
-          Histórico
-        </h2>
-
+      <Secao titulo="Histórico" icone={History}>
         {!historico || historico.length === 0 ? (
           <p className="bg-superficie-2 text-texto-suave rounded-xl p-4 text-sm">
             Sem movimentações registradas.
@@ -423,7 +392,7 @@ export default function SobraDetalhe() {
             ))}
           </ol>
         )}
-      </section>
+      </Secao>
 
       {etiqueta && (
         <EtiquetaSobra sobra={sobra} aoFechar={() => setEtiqueta(false)} />
@@ -470,86 +439,13 @@ export default function SobraDetalhe() {
         </div>
       </Modal>
 
-      {/* Corrigir a quantidade cadastrada — para erro de digitação, e não
-          para consumo. Zero é um valor válido aqui: uma peça lançada por
-          engano precisa poder ser zerada, o que a esvazia e a marca como
-          descartada, em vez de deixar "disponível" com zero unidades — o que
-          não diz nada a quem olhar a lista depois. */}
-      <Modal
-        aberto={corrigindo}
-        aoFechar={() => setCorrigindo(false)}
-        titulo="Corrigir quantidade"
-      >
-        <div className="flex flex-col gap-4">
-          <p className="text-sm">
-            Quantidade cadastrada hoje de{' '}
-            <strong className="font-mono">{sobra.codigo}</strong>:{' '}
-            <strong>{sobra.quantidade}</strong>. Use isto para corrigir um erro
-            de cadastro — não para dar baixa por um corte (isso fica em "Usar
-            peça").
-          </p>
-
-          <CampoQuantidade
-            rotulo="Quantidade correta"
-            valor={novaQuantidade}
-            aoMudar={setNovaQuantidade}
-            minimo={0}
-          />
-
-          {novaQuantidade === 0 && (
-            <p className="bg-atencao-50 text-atencao-700 rounded-xl px-4 py-3 text-sm">
-              Zerar esvazia o lote e marca esta peça como <strong>descartada</strong>.
-            </p>
-          )}
-
-          {sobra.quantidade_reservada > 0 && (
-            <p className="text-texto-suave text-sm">
-              {sobra.quantidade_reservada} já{' '}
-              {sobra.quantidade_reservada === 1 ? 'está reservada' : 'estão reservadas'}{' '}
-              — não é possível corrigir para menos que isso sem antes cancelar
-              a reserva.
-            </p>
-          )}
-
-          <label className="flex flex-col gap-1.5">
-            <span className="font-medium">Motivo do ajuste</span>
-            <input
-              type="text"
-              value={justificativa}
-              onChange={(e) => setJustificativa(e.target.value)}
-              placeholder="Ex.: digitei a quantidade errada ao cadastrar"
-              className="border-borda bg-superficie min-h-12 rounded-xl border-2 px-4"
-            />
-            <span className="text-texto-suave text-sm">
-              Fica registrado no histórico, sem apagar o valor anterior.
-            </span>
-          </label>
-
-          {erroCorrigir && (
-            <p role="alert" className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm">
-              {erroCorrigir}
-            </p>
-          )}
-
-          <div className="flex gap-3">
-            <Botao variante="contorno" onClick={() => setCorrigindo(false)} className="flex-1">
-              Cancelar
-            </Botao>
-            <Botao
-              variante={novaQuantidade === 0 ? 'destrutiva' : 'primaria'}
-              onClick={() => void confirmarCorrecao()}
-              disabled={
-                novaQuantidade === sobra.quantidade ||
-                justificativa.trim().length < 5
-              }
-              carregando={ajustar.isPending}
-              className="flex-1"
-            >
-              Confirmar
-            </Botao>
-          </div>
-        </div>
-      </Modal>
+      {editando && (
+        <ModalEditarSobra
+          sobra={sobra}
+          aberto={editando}
+          aoFechar={() => setEditando(false)}
+        />
+      )}
     </PaginaDetalhe>
   )
 }

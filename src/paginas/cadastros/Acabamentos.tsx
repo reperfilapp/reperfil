@@ -22,6 +22,7 @@ import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
+import { AmostraCor } from '@/componentes/ui/AmostraCor'
 import type { Acabamento, TipoAcabamento } from '@/tipos/banco'
 
 const VAZIO: DadosAcabamento = {
@@ -132,12 +133,7 @@ export default function Acabamentos() {
             key={acabamento.id}
             className="bg-superficie flex items-center gap-3 rounded-xl p-4 shadow-sm"
           >
-            <span
-              aria-hidden="true"
-              className="border-borda size-8 shrink-0 rounded-full border"
-              style={{ backgroundColor: acabamento.cor_hex ?? 'transparent' }}
-            />
-
+            <AmostraCor corHex={acabamento.cor_hex} tamanho="grande" />
             <Link
               to={`/acabamentos/${acabamento.id}`}
               className="flex min-w-0 flex-1 items-center gap-2"

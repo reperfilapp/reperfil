@@ -272,24 +272,55 @@ export function useSomarAoLote() {
  * Zero é um valor válido aqui, diferente do cadastro de uma sobra nova: uma
  * peça já cadastrada por engano precisa poder ser zerada.
  */
-export function useAjustarQuantidadeLote() {
+/**
+ * Corrige os dados de um lote cadastrado.
+ * Se a quantidade for alterada, chama a RPC para registrar a movimentação no histórico.
+ */
+export function useEditarSobraLote() {
   const cliente = useQueryClient()
 
   return useMutation({
     mutationFn: async ({
       loteId,
+      quantidadeAtual,
       novaQuantidade,
+      acabamentoId,
+      comprimentoMm,
+      estado,
+      origem,
       justificativa,
     }: {
       loteId: string
+      quantidadeAtual: number
       novaQuantidade: number
+      acabamentoId: string
+      comprimentoMm: number
+      estado: EstadoConservacao
+      origem: string
       justificativa: string
-    }): Promise<LoteSobra> => {
-      const { data, error } = await supabase.rpc('ajustar_quantidade_lote', {
-        p_lote_id: loteId,
-        p_nova_quantidade: novaQuantidade,
-        p_justificativa: justificativa,
-      })
+    }) => {
+      // 1. Se a quantidade mudou, chama a RPC para manter histórico correto.
+      if (novaQuantidade !== quantidadeAtual) {
+        const { error: errQtd } = await supabase.rpc('ajustar_quantidade_lote', {
+          p_lote_id: loteId,
+          p_nova_quantidade: novaQuantidade,
+          p_justificativa: justificativa,
+        })
+        if (errQtd) throw new Error(errQtd.message)
+      }
+
+      // 2. Atualiza os demais campos diretamente
+      const { data, error } = await supabase
+        .from('lotes_sobras')
+        .update({
+          acabamento_id: acabamentoId,
+          comprimento_mm: comprimentoMm,
+          estado: estado,
+          origem: origem,
+        })
+        .eq('id', loteId)
+        .select()
+        .single()
 
       if (error) throw new Error(error.message)
 

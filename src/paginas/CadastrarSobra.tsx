@@ -356,9 +356,24 @@ export default function CadastrarSobra() {
               </div>
             </section>
 
-            {/* 5 — Localização */}
+            {/* 5 — Estado de conservação */}
             <section>
-              <h2 className="mb-2 font-semibold">5. Onde vai guardar?</h2>
+              <h2 className="mb-2 font-semibold">5. Estado da peça</h2>
+              <CampoSelecao
+                rotulo="Condição visual"
+                value={estado}
+                onChange={(e) => setEstado(e.target.value as EstadoConservacao)}
+              >
+                <option value="excelente">Excelente</option>
+                <option value="bom">Bom</option>
+                <option value="pequenos_arranhoes">Pequenos arranhões</option>
+                <option value="muito_avariado">Muito avariado</option>
+              </CampoSelecao>
+            </section>
+
+            {/* 6 — Localização */}
+            <section>
+              <h2 className="mb-2 font-semibold">6. Onde vai guardar?</h2>
               <CampoSelecao
                 rotulo="Localização"
                 value={localizacaoId}
@@ -373,10 +388,10 @@ export default function CadastrarSobra() {
               </CampoSelecao>
             </section>
 
-            {/* 6 — Foto, opcional */}
+            {/* 7 — Foto, opcional */}
             <section>
               <h2 className="mb-2 font-semibold">
-                6. Foto da peça{' '}
+                7. Foto da peça{' '}
                 <span className="text-texto-suave font-normal">(opcional)</span>
               </h2>
               <CampoFoto

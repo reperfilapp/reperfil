@@ -19,6 +19,7 @@ export interface LinhaEstoque {
   modeloCodigo: string
   modeloDescricao: string
   acabamentoNome: string
+  acabamentoCor: string | null
   localizacaoCodigo: string
   comprimentoMm: number
   quantidade: number
@@ -37,7 +38,7 @@ export function useRelatorioEstoque() {
         .select(
           `comprimento_mm, quantidade, quantidade_reservada, status, criado_em,
            modelo:modelos_perfil (codigo, descricao),
-           acabamento:acabamentos (nome),
+           acabamento:acabamentos (nome, cor_hex),
            localizacao:localizacoes (codigo)`,
         )
         .order('criado_em', { ascending: false })
@@ -50,6 +51,7 @@ export function useRelatorioEstoque() {
         modeloCodigo: linha.modelo?.codigo ?? '',
         modeloDescricao: linha.modelo?.descricao ?? '',
         acabamentoNome: linha.acabamento?.nome ?? '',
+        acabamentoCor: linha.acabamento?.cor_hex ?? null,
         localizacaoCodigo: linha.localizacao?.codigo ?? 'sem local',
         comprimentoMm: linha.comprimento_mm,
         quantidade: linha.quantidade,
@@ -71,7 +73,7 @@ interface RegistroEstoque {
   status: string
   criado_em: string
   modelo: { codigo: string; descricao: string } | null
-  acabamento: { nome: string } | null
+  acabamento: { nome: string; cor_hex: string | null } | null
   localizacao: { codigo: string } | null
 }
 

@@ -5,6 +5,7 @@ import {
   interpretarMedidaDigitada,
   validarComprimento,
   formatarComprimento,
+  converterDeMilimetros,
 } from '@/dominio/medidas'
 import { UNIDADES_MEDIDA, type UnidadeMedida } from '@/config/aplicacao'
 
@@ -167,7 +168,18 @@ export function CampoMedida({
           <button
             key={opcao}
             type="button"
-            onClick={() => aoMudarUnidade(opcao)}
+            onClick={() => {
+              if (opcao !== unidade) {
+                if (valorMm !== null) {
+                  const convertido = converterDeMilimetros(valorMm, opcao)
+                  const textoConvertido = String(
+                    Number(convertido.toFixed(CASAS[opcao])),
+                  ).replace('.', ',')
+                  aoMudarTexto(textoConvertido)
+                }
+                aoMudarUnidade(opcao)
+              }
+            }}
             aria-pressed={unidade === opcao}
             className={cn(
               'min-h-12 rounded-xl border-2 font-semibold',
