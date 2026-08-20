@@ -299,9 +299,9 @@ function Resumo({
       <h2 className="mb-2 font-semibold">{titulo}</h2>
 
       <ul className="mb-3 flex flex-col gap-1.5">
-        {grupos.map((g) => (
+        {grupos.map((g, index) => (
           <li
-            key={g.grupo}
+            key={index}
             className="bg-superficie flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm"
           >
             <span className="min-w-0 truncate">{g.grupo}</span>

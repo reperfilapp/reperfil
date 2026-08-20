@@ -47,6 +47,7 @@ const EtiquetaSobra = lazy(() =>
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
+import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
 import type { StatusLote } from '@/tipos/banco'
 
 /** Valor de `linhaAberta` que significa "ignorar o agrupamento". */
@@ -99,6 +100,7 @@ export default function Sobras() {
   const [busca, setBusca] = useState('')
   const [lendoQr, setLendoQr] = useState(false)
   const [etiqueta, setEtiqueta] = useState<SobraDetalhada | null>(null)
+  const [ampliado, setAmpliado] = useState<{ id: string; codigo: string; descricao: string } | null>(null)
   /*
    * Mesma porta de entrada das outras telas de perfil: primeiro a linha,
    * depois as peças dela. O estoque cresce rápido, e rolar tudo para achar
@@ -376,17 +378,36 @@ export default function Sobras() {
       {!isPending && mostrandoPerfis && perfis.length > 0 && (
         <ul className="flex flex-col gap-2">
           {perfis.map(({ id, modelo, resumo }) => (
-            <li key={id}>
+            <li
+              key={id}
+              className="bg-superficie flex min-h-16 w-full items-center rounded-xl shadow-sm overflow-hidden"
+            >
+              {capas?.get(id) ? (
+                <button
+                  type="button"
+                  onClick={() => modelo && setAmpliado({ id, codigo: modelo.codigo, descricao: modelo.descricao })}
+                  aria-label={`Ampliar desenho técnico de ${modelo?.descricao}`}
+                  className="pl-4 py-4 shrink-0 hover:opacity-80 transition-opacity"
+                >
+                  <MiniaturaPerfil
+                    link={capas.get(id)}
+                    codigo={modelo?.codigo ?? ''}
+                  />
+                </button>
+              ) : (
+                <div className="pl-4 py-4 shrink-0">
+                  <MiniaturaPerfil
+                    link={null}
+                    codigo={modelo?.codigo ?? ''}
+                  />
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={() => abrir({ perfil: id })}
-                className="bg-superficie hover:bg-superficie-2 flex min-h-16 w-full items-center gap-3 rounded-xl p-4 text-left shadow-sm"
+                className="flex min-w-0 flex-1 items-center justify-between gap-3 text-left pl-3 pr-4 py-4 hover:bg-superficie-2 transition-colors self-stretch"
               >
-                <MiniaturaPerfil
-                  link={capas?.get(id)}
-                  codigo={modelo?.codigo ?? ''}
-                />
-
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">
                     <span className="text-acao-600 font-mono">
@@ -426,16 +447,32 @@ export default function Sobras() {
             >
               <div className="mb-2 flex items-start justify-between gap-3">
                 {/* O desenho identifica a peça mais rápido que o código. */}
+                {capas?.get(sobra.modelo_perfil_id) ? (
+                  <button
+                    type="button"
+                    onClick={() => sobra.modelo && setAmpliado({ id: sobra.modelo_perfil_id, codigo: sobra.modelo.codigo, descricao: sobra.modelo.descricao })}
+                    aria-label={`Ampliar desenho técnico de ${sobra.modelo?.descricao}`}
+                    className="shrink-0 hover:opacity-80 transition-opacity"
+                  >
+                    <MiniaturaPerfil
+                      link={capas.get(sobra.modelo_perfil_id)}
+                      codigo={sobra.modelo?.codigo ?? ''}
+                    />
+                  </button>
+                ) : (
+                  <div className="shrink-0">
+                    <MiniaturaPerfil
+                      link={null}
+                      codigo={sobra.modelo?.codigo ?? ''}
+                    />
+                  </div>
+                )}
+
                 <Link
                   to={`/sobras/${sobra.id}`}
-                  className="flex min-w-0 flex-1 items-start gap-3"
+                  className="flex min-w-0 flex-1 flex-col"
                   aria-label={`Ver detalhes da sobra ${sobra.codigo}`}
                 >
-                  <MiniaturaPerfil
-                    link={capas?.get(sobra.modelo_perfil_id)}
-                    codigo={sobra.modelo?.codigo ?? ''}
-                  />
-
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-1 truncate font-semibold">
                       <span className="text-acao-600 font-mono">
@@ -503,6 +540,15 @@ export default function Sobras() {
           <EtiquetaSobra sobra={etiqueta} aoFechar={() => setEtiqueta(null)} />
         )}
       </Suspense>
+
+      {ampliado && capas?.get(ampliado.id) && (
+        <VisualizadorImagem
+          src={capas.get(ampliado.id)!}
+          alt={`Desenho técnico do perfil ${ampliado.codigo}`}
+          titulo={ampliado.descricao}
+          aoFechar={() => setAmpliado(null)}
+        />
+      )}
     </PaginaLista>
   )
 }

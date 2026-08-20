@@ -17,7 +17,6 @@ import {
 } from '@/dados/reservas'
 import { useConfiguracoes, paraConfiguracaoCorte } from '@/dados/configuracoes'
 import { Botao } from '@/componentes/ui/Botao'
-import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import { AmostraCor } from '@/componentes/ui/AmostraCor'

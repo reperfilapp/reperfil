@@ -6,8 +6,10 @@ import { Botao } from '@/componentes/ui/Botao'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoMedida } from '@/componentes/ui/CampoMedida'
+import type { EstadoConservacao } from '@/tipos/banco'
+import type { SobraCompleta } from '@/dados/sobras'
+import type { UnidadeMedida } from '@/config/aplicacao'
 import { interpretarMedidaDigitada } from '@/dominio/medidas'
-import type { SobraCompleta, EstadoConservacao, UnidadeMedida } from '@/tipos/banco'
 
 interface ModalEditarSobraProps {
   sobra: SobraCompleta
@@ -80,7 +82,7 @@ export function ModalEditarSobra({ sobra, aberto, aoFechar }: ModalEditarSobraPr
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setQuantidade((q) => Math.max(sobra.quantidade_reservada, q - 1))}
+              onClick={() => setQuantidade((q: number) => Math.max(sobra.quantidade_reservada, q - 1))}
               className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-12 w-12 shrink-0 rounded-xl border-2 text-xl font-bold"
             >
               −
@@ -96,7 +98,7 @@ export function ModalEditarSobra({ sobra, aberto, aoFechar }: ModalEditarSobraPr
             />
             <button
               type="button"
-              onClick={() => setQuantidade((q) => Math.min(9999, q + 1))}
+              onClick={() => setQuantidade((q: number) => Math.min(9999, q + 1))}
               className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-12 w-12 shrink-0 rounded-xl border-2 text-xl font-bold"
             >
               +

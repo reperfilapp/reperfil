@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   Plus,
   Pencil,
-  ChevronRight,
   Archive,
   ArchiveRestore,
 } from 'lucide-react'
