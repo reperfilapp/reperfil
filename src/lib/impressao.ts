@@ -40,18 +40,64 @@ function cssDaPagina(): string {
 }
 
 /**
+ * Converte uma imagem do próprio aplicativo em `data:` embutido.
+ *
+ * A logo e a marca d'água são endereços locais — "/logo-otimizada.png". O
+ * plugin renderiza o HTML numa página NOVA, sem base de endereço, e ali esse
+ * caminho não aponta para lugar nenhum: saía o ícone de imagem quebrada com
+ * o texto alternativo ao lado.
+ *
+ * Embutida no próprio HTML, a imagem não depende de resolver endereço nem de
+ * uma segunda ida à rede.
+ */
+async function embutir(url: string): Promise<string> {
+  const resposta = await fetch(url)
+  const arquivo = await resposta.blob()
+
+  return new Promise((resolve, reject) => {
+    const leitor = new FileReader()
+
+    leitor.onload = () => resolve(String(leitor.result))
+    leitor.onerror = () => reject(new Error(`Falha ao ler ${url}`))
+    leitor.readAsDataURL(arquivo)
+  })
+}
+
+/**
  * O HTML da folha, pronto para o plugin.
  *
  * As classes que a escondem da tela saem: no navegador a folha vive fora do
  * campo de visão e só aparece na impressão, mas o que vai para o plugin é
  * uma página nova, onde ela é o conteúdo inteiro e precisa estar visível.
  */
-function htmlDaFolha(elemento: HTMLElement): string {
+async function htmlDaFolha(elemento: HTMLElement): Promise<string> {
   const copia = elemento.cloneNode(true) as HTMLElement
 
   copia.classList.remove('fixed', '-left-[9999px]', 'top-0')
   copia.style.position = 'static'
   copia.style.left = '0'
+
+  /*
+   * Só as imagens do aplicativo são embutidas. As do produto e dos perfis
+   * vêm do armazenamento por endereço completo, que o WebView baixa
+   * sozinho — e embuti-las significaria carregar dezenas de fotos dentro do
+   * texto do HTML.
+   */
+  await Promise.all(
+    [...copia.querySelectorAll('img')].map(async (img) => {
+      const src = img.getAttribute('src') ?? ''
+
+      if (!src.startsWith('/')) return
+
+      try {
+        img.setAttribute('src', await embutir(src))
+      } catch {
+        // Imagem que não carrega não impede a folha de sair: o resto do
+        // conteúdo é o que importa na bancada.
+        img.remove()
+      }
+    }),
+  )
 
   return `<!doctype html>
 <html lang="pt-BR">
@@ -87,7 +133,7 @@ export async function imprimirFolha(
     return
   }
 
-  await Printer.print({ content: htmlDaFolha(elemento), name: nome })
+  await Printer.print({ content: await htmlDaFolha(elemento), name: nome })
 }
 
 /** Se a impressão depende do plugin — usado para saber o que esperar. */
