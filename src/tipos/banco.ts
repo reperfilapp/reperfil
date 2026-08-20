@@ -58,15 +58,30 @@ export type PrioridadeSobra =
 export interface Organizacao {
   id: string
   codigo: string
+
   nome_fantasia: string
   razao_social: string | null
   cnpj: string | null
+  inscricao_estadual: string | null
+
   telefone: string | null
+  whatsapp: string | null
   email: string | null
+  site: string | null
+
+  logradouro: string | null
+  numero: string | null
+  complemento: string | null
+  bairro: string | null
   cidade: string | null
   estado: string | null
+  cep: string | null
+
+  logo_caminho: string | null
+
   ativo: boolean
   criado_em: string
+  atualizado_em: string
 }
 
 export interface PerfilUsuario {

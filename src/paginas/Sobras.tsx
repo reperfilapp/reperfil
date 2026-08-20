@@ -297,17 +297,14 @@ export default function Sobras() {
         </>
       }
       rodape={
-        // Só na lista de linhas: dentro de uma delas, o atalho de voltar já
-        // está no cabeçalho, e um botão a mais aqui embaixo só ocuparia
-        // altura que a lista quer.
         !isPending && mostrandoLinhas && grupos.length > 0 ? (
-          <Botao
-            variante="contorno"
-            tamanho="largura_total"
+          <button
+            type="button"
             onClick={() => abrir({ linha: TODAS, perfil: null })}
+            className="text-acao-600 shrink-0 text-sm font-medium hover:underline mx-auto block pb-2"
           >
             Ver todas as sobras
-          </Botao>
+          </button>
         ) : undefined
       }
     >

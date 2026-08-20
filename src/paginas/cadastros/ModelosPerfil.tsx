@@ -315,17 +315,14 @@ export default function ModelosPerfil() {
         </>
       }
       rodape={
-        // Só na lista de linhas: dentro de uma delas o atalho de voltar já
-        // está no cabeçalho, e um botão a mais aqui embaixo tomaria altura
-        // que a lista quer.
         !isPending && mostrandoLinhas && grupos.length > 0 ? (
-          <Botao
-            variante="contorno"
-            tamanho="largura_total"
+          <button
+            type="button"
             onClick={() => abrir({ linha: TODAS })}
+            className="text-acao-600 shrink-0 text-sm font-medium hover:underline mx-auto block pb-2"
           >
             Ver todos os perfis
-          </Botao>
+          </button>
         ) : undefined
       }
     >

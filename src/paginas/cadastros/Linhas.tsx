@@ -193,21 +193,17 @@ export default function Linhas() {
               className="text-acao-600 size-5 shrink-0"
             />
 
-            <Link
-              to="/perfis"
-              className="min-w-0 flex-1 truncate font-medium hover:underline"
-            >
-              {linha}
-            </Link>
-
-            <span className="text-texto-suave shrink-0 text-right text-sm">
-              <span className="block tabular-nums">
-                {formatarResumo(resumo)}
-              </span>
-              <span className="block text-xs">
-                {daLinha.length} {daLinha.length === 1 ? 'perfil' : 'perfis'}
-              </span>
-            </span>
+            <div className="min-w-0 flex-1">
+              <Link
+                to={`/perfis?linha=${encodeURIComponent(linha)}`}
+                className="block truncate font-medium hover:underline text-lg"
+              >
+                {linha}
+              </Link>
+              <p className="text-texto-suave truncate text-sm tabular-nums mt-0.5">
+                {formatarResumo(resumo)} · {daLinha.length} {daLinha.length === 1 ? 'perfil' : 'perfis'}
+              </p>
+            </div>
 
             {podeEditar && (
               <Botao
@@ -226,7 +222,7 @@ export default function Linhas() {
           não fechar com o total do catálogo. */}
       {grupos.some((g) => g.linha === SEM_LINHA) && (
         <Link
-          to="/perfis"
+          to={`/perfis?linha=${SEM_LINHA}`}
           className="bg-superficie-2 text-texto-suave mt-3 flex items-center gap-3 rounded-xl p-4 text-sm"
         >
           <span className="flex-1">

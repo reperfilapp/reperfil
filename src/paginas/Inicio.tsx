@@ -4,14 +4,18 @@ import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { useResumoEstoque } from '@/dados/sobras'
 import { useConfiguracoes } from '@/dados/configuracoes'
+import { useOrganizacao, useLogoOrganizacao } from '@/dados/organizacao'
 import { MarcaRePerfil } from '@/componentes/MarcaRePerfil'
 import { SeloVersao } from '@/componentes/SeloVersao'
+import { LogoEmpresa } from '@/componentes/LogoEmpresa'
 import { cn } from '@/lib/utilitarios'
 
 export default function Inicio() {
   const { perfil } = useAutenticacao()
   const { data: resumo, isPending } = useResumoEstoque()
   const { data: config } = useConfiguracoes()
+  const { data: org } = useOrganizacao()
+  const { data: logoUrl } = useLogoOrganizacao(org?.logo_caminho)
 
   const metros =
     resumo === undefined
@@ -22,17 +26,36 @@ export default function Inicio() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
-      {/* A logo grande é a primeira coisa que a pessoa vê ao entrar — a
-          tela de entrada some assim que a sessão abre, e sem isso a marca
-          nunca aparece de novo até sair e voltar a entrar. */}
-      <div className="mb-6 flex justify-center">
-        <MarcaRePerfil
-          variante="completa"
-          className="max-w-48 rounded-xl bg-white p-3"
-        />
+      {/* O logo da empresa assume a posição principal se existir,
+          mas mantemos a marca do aplicativo visível para reforço. */}
+      <div className="mb-6 flex justify-center gap-4 items-center">
+        {org ? (
+          <>
+            <LogoEmpresa
+              logoUrl={logoUrl}
+              nomeFantasia={org.nome_fantasia}
+              tamanho="gigante"
+            />
+            <div className="h-10 w-px bg-borda/50" aria-hidden="true" />
+            <MarcaRePerfil
+              variante="simbolo"
+              className="w-28 h-28 rounded-xl bg-white p-4 shrink-0"
+            />
+          </>
+        ) : (
+          <MarcaRePerfil
+            variante="completa"
+            className="max-w-48 rounded-xl bg-white p-3"
+          />
+        )}
       </div>
 
       <header className="mb-6 text-center">
+        {org && (
+          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-acao-600">
+            {org.nome_fantasia}
+          </h2>
+        )}
         <p className="truncate text-lg leading-tight font-bold">
           Olá, {perfil?.nome.split(' ')[0]}
         </p>

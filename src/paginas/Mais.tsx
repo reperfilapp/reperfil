@@ -12,6 +12,7 @@ import {
   Sun,
   Moon,
   SunMoon,
+  Building2,
   Ruler,
   UsersRound,
   PackageSearch,
@@ -124,6 +125,13 @@ export default function Mais() {
 
   /** O que é escritório: pessoas, clientes e papel. */
   const administracao = [
+    {
+      para: '/empresa',
+      rotulo: 'Dados da empresa',
+      descricao: 'Nome, endereço e logo para orçamentos e relatórios',
+      Icone: Building2,
+      visivel: eAdministrador(perfil),
+    },
     {
       para: '/colaboradores',
       rotulo: 'Colaboradores',

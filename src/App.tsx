@@ -36,6 +36,7 @@ import Produtos from '@/paginas/cadastros/Produtos'
 import ProdutoDetalhe from '@/paginas/detalhes/ProdutoDetalhe'
 import OQueProduzir from '@/paginas/OQueProduzir'
 import LotesRepetidos from '@/paginas/LotesRepetidos'
+import DadosEmpresa from '@/paginas/DadosEmpresa'
 
 /**
  * Casca da aplicação.
@@ -101,6 +102,7 @@ export default function App() {
                 <Route path="/mais" element={<Mais />} />
                 <Route path="/relatorios" element={<Relatorios />} />
                 <Route path="/configuracoes" element={<Configuracoes />} />
+                <Route path="/empresa" element={<DadosEmpresa />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

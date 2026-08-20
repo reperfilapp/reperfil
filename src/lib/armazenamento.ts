@@ -26,6 +26,8 @@ export const BALDE_FOTOS_PERFIL = 'fotos-perfis'
 export const BALDE_FOTOS_COLABORADOR = 'fotos-colaboradores'
 /** Foto e desenho do produto acabado — a janela pronta, não o perfil. */
 export const BALDE_IMAGENS_PRODUTO = 'imagens-produtos'
+/** Logo da organização. Um por empresa, substituído no lugar. */
+export const BALDE_LOGOS = 'logos-organizacoes'
 
 /** Quanto tempo o link temporário vale. Uma hora cobre qualquer sessão. */
 const VALIDADE_LINK_SEGUNDOS = 3600
@@ -127,6 +129,34 @@ export function enviarFotoColaborador(arquivo: File): Promise<ResultadoEnvio> {
 
 export function enviarFotoProduto(arquivo: File): Promise<ResultadoEnvio> {
   return enviar(BALDE_IMAGENS_PRODUTO, arquivo, COMPRESSAO_FOTO)
+}
+
+/**
+ * Logo da organização.
+ *
+ * Vai sempre para o mesmo caminho — {org_id}/logo.jpg — para que
+ * substituir seja um upsert simples e não deixe arquivos velhos no balde.
+ */
+export async function enviarLogoOrganizacao(
+  arquivo: File,
+): Promise<ResultadoEnvio> {
+  const organizacaoId = await organizacaoAtual()
+  const comprimido = await comprimirImagem(arquivo, COMPRESSAO_FOTO)
+  const caminho = `${organizacaoId}/logo.jpg`
+
+  const { error } = await supabase.storage
+    .from(BALDE_LOGOS)
+    .upload(caminho, comprimido, {
+      contentType: 'image/jpeg',
+      // upsert: true substitui o logo antigo sem precisar apagar antes.
+      upsert: true,
+    })
+
+  if (error) {
+    throw new Error(`Falha ao enviar o logo: ${error.message}`)
+  }
+
+  return { caminho, tamanhoBytes: comprimido.size }
 }
 
 /**

@@ -65,6 +65,7 @@ export function SeletorPerfil({
   const { data: sobras } = useSobras()
   const [busca, setBusca] = useState('')
   const [ampliado, setAmpliado] = useState<string | null>(null)
+  const [tituloAmpliado, setTituloAmpliado] = useState<string | null>(null)
   /*
    * Mesma ideia da tela "Modelos de perfil": o catálogo tem dezenas de
    * perfis, e quem vai lançar uma sobra já sabe de que linha ela é. Abrir
@@ -186,9 +187,6 @@ export function SeletorPerfil({
                   alt={`Desenho técnico do perfil ${selecionado.codigo}`}
                   className="size-24 object-contain p-1"
                 />
-                <span className="bg-grafite-900/70 absolute right-1 bottom-1 rounded-full p-1 text-white">
-                  <ZoomIn aria-hidden="true" className="size-3" />
-                </span>
               </button>
             ) : (
               <MiniaturaPerfil
@@ -213,9 +211,6 @@ export function SeletorPerfil({
                   alt={`Foto do perfil ${selecionado.codigo}`}
                   className="size-24 object-cover"
                 />
-                <span className="bg-grafite-900/70 absolute right-1 bottom-1 rounded-full p-1 text-white">
-                  <ZoomIn aria-hidden="true" className="size-3" />
-                </span>
               </button>
             )}
           </div>
@@ -259,6 +254,7 @@ export function SeletorPerfil({
           <VisualizadorImagem
             src={ampliado}
             alt={`Desenho do perfil ${selecionado.codigo}, ampliado`}
+            titulo={`${selecionado.codigo} — ${selecionado.descricao}`}
             aoFechar={() => setAmpliado(null)}
           />
         )}
@@ -267,7 +263,8 @@ export function SeletorPerfil({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
+    <>
+      <div className="flex min-h-0 flex-1 flex-col gap-3">
       {/* Busca à esquerda, atalho ao lado: o mesmo arranjo do leitor de QR
           na tela de estoque. Botão vizinho, não dentro do campo — assim os
           dois lugares do app onde se procura uma peça funcionam igual, e o
@@ -395,44 +392,74 @@ export function SeletorPerfil({
       {visiveisOrdenados.length > 0 && (
         <ul className="border-borda flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-xl border-2 p-2">
           {visiveisOrdenados.map((modelo) => (
-            <li key={modelo.id}>
-              <button
-                type="button"
-                onClick={() => aoSelecionar(modelo)}
-                className={cn(
-                  'border-borda flex min-h-16 w-full items-center gap-3 rounded-xl border-2',
-                  'bg-superficie hover:border-acao-500 hover:bg-superficie-2 p-2 text-left',
+            <li key={modelo.id} className="border-borda flex min-h-16 w-full items-center rounded-xl border-2 bg-superficie focus-within:border-acao-500 focus-within:ring-1 focus-within:ring-acao-500 overflow-hidden">
+                {capas?.get(modelo.id) ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setAmpliado(capas.get(modelo.id)!)
+                      setTituloAmpliado(`${modelo.codigo} — ${modelo.descricao}`)
+                    }}
+                    className="relative block shrink-0 pl-2 py-2 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acao-500 rounded-l-lg"
+                    aria-label={`Ver desenho técnico do perfil ${modelo.codigo} em tela cheia`}
+                  >
+                    <MiniaturaPerfil
+                      link={capas.get(modelo.id)}
+                      codigo={modelo.codigo}
+                    />
+                  </button>
+                ) : (
+                  <div className="shrink-0 pl-2 py-2">
+                    <MiniaturaPerfil
+                      link={null}
+                      codigo={modelo.codigo}
+                    />
+                  </div>
                 )}
-              >
-                <MiniaturaPerfil
-                  link={capas?.get(modelo.id)}
-                  codigo={modelo.codigo}
-                />
 
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-semibold">
-                    <span className="text-acao-600 font-mono">
-                      {modelo.codigo}
-                    </span>{' '}
-                    {modelo.descricao}
-                  </span>
-                  <span className="text-texto-suave block truncate text-sm">
-                    {modelo.linha && `${modelo.linha} · `}
-                    {/* Sem estoque não é zero: é informação de que essa peça
-                        não está no depósito hoje, e quem lança uma sobra
-                        precisa saber que vai ser a primeira. */}
-                    <span className="tabular-nums">
-                      {resumoDe(porPerfil, modelo.id).pecas > 0
-                        ? formatarResumo(resumoDe(porPerfil, modelo.id))
-                        : 'sem estoque'}
+                <button
+                  type="button"
+                  onClick={() => aoSelecionar(modelo)}
+                  className="flex min-w-0 flex-1 self-stretch items-center gap-3 pl-3 pr-2 py-2 text-left hover:bg-superficie-2 transition-colors focus-visible:outline-none"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-semibold">
+                      <span className="text-acao-600 font-mono">
+                        {modelo.codigo}
+                      </span>{' '}
+                      {modelo.descricao}
+                    </span>
+                    <span className="text-texto-suave block truncate text-sm">
+                      {modelo.linha && `${modelo.linha} · `}
+                      {/* Sem estoque não é zero: é informação de que essa peça
+                          não está no depósito hoje, e quem lança uma sobra
+                          precisa saber que vai ser a primeira. */}
+                      <span className="tabular-nums">
+                        {resumoDe(porPerfil, modelo.id).pecas > 0
+                          ? formatarResumo(resumoDe(porPerfil, modelo.id))
+                          : 'sem estoque'}
+                      </span>
                     </span>
                   </span>
-                </span>
-              </button>
+                </button>
             </li>
           ))}
         </ul>
       )}
     </div>
+
+      {ampliado && (
+        <VisualizadorImagem
+          src={ampliado}
+          alt="Desenho ampliado"
+          titulo={tituloAmpliado ?? ''}
+          aoFechar={() => {
+            setAmpliado(null)
+            setTituloAmpliado(null)
+          }}
+        />
+      )}
+    </>
   )
 }
