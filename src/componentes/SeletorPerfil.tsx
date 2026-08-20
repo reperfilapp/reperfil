@@ -27,6 +27,7 @@ import { MiniaturaPerfil } from './MiniaturaPerfil'
 import { VisualizadorImagem } from './ui/VisualizadorImagem'
 import { BotaoVoltar } from './ui/BotaoVoltar'
 import { AlternadorOrdenacao } from './ui/AlternadorOrdenacao'
+import { useNiveisNaUrl } from './useNiveisNaUrl'
 import { ORDENACAO_PADRAO } from '@/dominio/ordenacaoListas'
 import { cn } from '@/lib/utilitarios'
 import type { ModeloPerfil } from '@/tipos/banco'
@@ -71,8 +72,13 @@ export function SeletorPerfil({
    *
    * A BUSCA continua ignorando o agrupamento: quem digita um código quer
    * achá-lo esteja em que linha estiver.
+   *
+   * Na URL, e não em estado: abrir uma linha vira navegação de verdade, e é
+   * o que faz o botão físico de voltar do Android subir um nível em vez de
+   * abandonar o cadastro pela metade. Ver `useNiveisNaUrl`.
    */
-  const [linhaAberta, setLinhaAberta] = useState<string | null>(null)
+  const { nivel, abrir, voltarNivel } = useNiveisNaUrl(['linha'])
+  const linhaAberta = nivel('linha')
   // Alterna a lista de perfis (não a de linhas) entre estoque e nome, e a
   // direção de cada um. Começa no padrão do app: mais estoque primeiro.
   const [ordenacao, setOrdenacao] = useState(ORDENACAO_PADRAO)
@@ -323,7 +329,7 @@ export function SeletorPerfil({
             <li key={linha}>
               <button
                 type="button"
-                onClick={() => setLinhaAberta(linha)}
+                onClick={() => abrir({ linha })}
                 className="border-borda bg-superficie hover:border-acao-500 hover:bg-superficie-2 flex min-h-16 w-full items-center gap-3 rounded-xl border-2 p-3 text-left"
               >
                 <Layers
@@ -355,7 +361,7 @@ export function SeletorPerfil({
       {!isPending && mostrandoLinhas && grupos.length > 0 && (
         <button
           type="button"
-          onClick={() => setLinhaAberta(TODAS)}
+          onClick={() => abrir({ linha: TODAS })}
           className="text-acao-600 shrink-0 text-sm font-medium hover:underline"
         >
           Ver todos os perfis
@@ -373,7 +379,7 @@ export function SeletorPerfil({
           </p>
           <AlternadorOrdenacao estado={ordenacao} aoMudar={setOrdenacao} />
           <BotaoVoltar
-            onClick={() => setLinhaAberta(null)}
+            onClick={voltarNivel}
             rotulo="Linhas"
             className="shrink-0"
           />

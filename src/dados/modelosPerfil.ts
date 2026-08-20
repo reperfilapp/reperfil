@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { chaves } from '@/lib/consultas'
+import { filtrarPerfis } from '@/dominio/buscaPerfil'
 import type { ModeloPerfil } from '@/tipos/banco'
 
 export interface DadosModeloPerfil {
@@ -114,12 +115,17 @@ export function agruparPorLinha(
 }
 
 /**
- * Filtra modelos por código ou descrição, sem ir ao servidor.
+ * Filtra modelos pelo que foi digitado, sem ir ao servidor.
  *
- * O catálogo de perfis de uma serralheria tem dezenas a poucas centenas de
- * itens, então cabe inteiro na memória. Filtrar localmente responde
+ * O catálogo de uma serralheria tem dezenas a poucas centenas de itens,
+ * então cabe inteiro na memória. Filtrar localmente responde
  * instantaneamente enquanto a pessoa digita — importante no depósito, onde a
  * rede móvel costuma ser ruim.
+ *
+ * A REGRA de o que casa com o quê mora em `dominio/buscaPerfil`: código sem
+ * hífen, código sem os zeros à esquerda e medidas em qualquer ordem. Fica
+ * separada daqui porque é regra de negócio testável, e este arquivo é o que
+ * fala com o banco.
  *
  * Se um dia um catálogo passar de alguns milhares, isto vira busca no banco
  * usando o índice `idx_modelos_perfil_busca`, que já existe.
@@ -128,17 +134,7 @@ export function filtrarModelos(
   modelos: readonly ModeloPerfil[],
   termo: string,
 ): ModeloPerfil[] {
-  const busca = termo.trim().toLowerCase()
-
-  if (busca === '') return [...modelos]
-
-  return modelos.filter(
-    (modelo) =>
-      modelo.codigo.toLowerCase().includes(busca) ||
-      modelo.descricao.toLowerCase().includes(busca) ||
-      (modelo.linha?.toLowerCase().includes(busca) ?? false) ||
-      (modelo.aplicacao?.toLowerCase().includes(busca) ?? false),
-  )
+  return filtrarPerfis(modelos, termo)
 }
 
 /**

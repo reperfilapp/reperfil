@@ -43,7 +43,87 @@ npm run versao:fase       # 0.6.0 → 1.0.0
 
 Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
+## Uma entrada por PUBLICAÇÃO, não por mudança
+
+`publicarrp` roda `npm run versao:correcao` — sobe exatamente **+1 a cada
+publicação** — e não mexe neste arquivo. Então o número da próxima entrada
+aqui é sempre **o do `package.json` mais um**, e várias mudanças feitas antes
+da mesma publicação entram na MESMA entrada, não numa cada.
+
+Foi assim que os dois números se separaram entre 1.6.22 e 1.6.52: cada
+mudança ganhava entrada nova aqui, enquanto a versão real subia uma vez por
+lote publicado — chegando a seis de diferença. Quem lia "1.6.46" no aplicativo
+e vinha procurar aqui encontrava a descrição de outra coisa.
+
+Os dois foram realinhados em 20/08/2026 subindo o `package.json` até
+encontrar este arquivo. As entradas antigas ficaram como estão: reescrevê-las
+exigiria fundir umas nas outras e apagaria o registro do que foi feito, e o
+que serve de verdade para rastrear um erro é o número de build e o hash do
+commit, não este número. Por isso 1.6.47 a 1.6.51 nunca existiram como versão
+publicada — são um vão deixado de propósito.
+
 ---
+
+## 1.6.53 — 20/08/2026
+
+**Busca do jeito que se digita: código sem hífen e medidas em qualquer ordem.**
+
+No catálogo o código é "SU-001", mas ninguém digita o hífen com a mão suja e
+o celular numa mão só. Digitava-se "su001" e não vinha nada — a busca
+comparava o texto cru, e "su001" não está contido em "SU-001". Quem não
+achava concluía que o perfil não estava cadastrado. Agora "su001", "SU 001",
+"su-001" e até "su1" chegam todos ao SU-001, e continuar digitando não faz a
+lista piscar vazia no meio do caminho.
+
+**"su1" acha o SU-001 sem arrastar meia dúzia de vizinhos junto**: a forma
+sem zeros à esquerda é comparada por igualdade, não por trecho — senão
+SU-011 e SU-013 entrariam na lista e o perfil procurado se perderia neles.
+
+**Medidas em qualquer ordem.** Com a ponta na mão, o serralheiro mede o que
+dá para medir e digita: "35 25 20", "25 35", "20 25" — todas encontram o
+SU-079, que é 35 × 25 × 20. A ordem é a que ele mediu, não a que o cadastro
+guardou; cobrar uma ordem seria cobrar que ele adivinhasse qual medida o
+catálogo chama de largura. Vale também "35x25", como se escreve em desenho.
+
+A tolerância aqui é mais apertada (6%) que a da tela de identificar (12%):
+lá a pessoa está com trena numa ponta cortada, aqui ela digita números que
+leu ou decorou — e 12% devolvia vinte perfis para "20 25", uma lista que não
+estreita nada. Com dois números "20 25" traz 8 dos 370 perfis do catálogo.
+
+Um número só não dispara busca por medida: "25" é medida, mas também é a
+linha 25 e pedaço de vários códigos — a busca por texto já dá conta.
+
+**O desenho do produto na linha da lista, como já era na de perfis.**
+
+A lista de produtos mostrava só nome e código — e o código, longo, saía
+cortado ("JAN-INT-1500-1200-2F-PF-P…"), deixando a linha sem nada que se
+reconhecesse de relance. Agora cada produto leva o desenho técnico ao lado,
+no mesmo quadro de tamanho fixo usado no catálogo de perfis.
+
+Tocar no desenho abre ele em tela cheia, com zoom, e com o nome completo do
+produto escrito por cima — é na lista que o nome aparece cortado, e é ao
+abrir o desenho que se quer ter certeza de que é o produto certo. O resto da
+linha continua abrindo a ficha: são dois alvos distintos, de propósito.
+
+**Abrir uma linha dentro de uma tela virou navegação de verdade.**
+
+Faltava metade da correção do botão voltar. Abrir a linha "Suprema" no
+catálogo troca a lista inteira — é mudar de tela aos olhos de quem usa —,
+mas era só estado interno: o histórico do navegador nunca soube que aquilo
+aconteceu. Então "voltar", indo corretamente para a tela anterior de
+verdade, pulava o nível e caía na tela de onde o catálogo tinha sido aberto.
+Início → Modelos de perfil → Suprema → Voltar levava para o Início.
+
+Agora esses níveis moram no endereço da tela, e descer um nível é uma
+navegação como qualquer outra. Vale para o catálogo (linha → perfis), para o
+estoque de sobras (linha → perfis → peças) e para a escolha de perfil ao
+cadastrar ou procurar uma sobra.
+
+Isso conserta junto o botão físico de voltar do Android e o gesto de voltar
+do navegador, que antes abandonavam a tela inteira — ou o cadastro pela
+metade — quando a pessoa só queria subir um degrau. E, como o endereço
+passou a descrever o que está na tela, recarregar a página devolve a pessoa
+ao mesmo lugar em vez de jogá-la na raiz.
 
 ## 1.6.52 — 20/08/2026
 

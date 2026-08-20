@@ -4,11 +4,18 @@ import { cn } from '@/lib/utilitarios'
 interface PropsMiniatura {
   link: string | null | undefined
   codigo: string
+  /**
+   * Substitui o texto alternativo padrão, que fala em "perfil". A lista de
+   * produtos reaproveita esta miniatura — o quadro é o mesmo, só o que ele
+   * representa é que muda, e quem usa leitor de tela precisa ouvir "produto"
+   * ali, não "perfil".
+   */
+  alt?: string
   className?: string
 }
 
 /**
- * Miniatura do desenho técnico, para listas.
+ * Miniatura do desenho técnico, para listas — de perfis e de produtos.
  *
  * O quadro tem tamanho fixo mesmo sem imagem. Sem isso, a lista se desloca
  * conforme as imagens chegam — e no celular a pessoa toca no item errado
@@ -17,7 +24,12 @@ interface PropsMiniatura {
  * Fundo branco porque desenho de catálogo é traço preto sobre branco: no tema
  * escuro, sem fundo, o desenho simplesmente some.
  */
-export function MiniaturaPerfil({ link, codigo, className }: PropsMiniatura) {
+export function MiniaturaPerfil({
+  link,
+  codigo,
+  alt,
+  className,
+}: PropsMiniatura) {
   return (
     <div
       className={cn(
@@ -28,7 +40,7 @@ export function MiniaturaPerfil({ link, codigo, className }: PropsMiniatura) {
       {link ? (
         <img
           src={link}
-          alt={`Desenho técnico do perfil ${codigo}`}
+          alt={alt ?? `Desenho técnico do perfil ${codigo}`}
           loading="lazy"
           className="size-full object-contain p-0.5"
         />

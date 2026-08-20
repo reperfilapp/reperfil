@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import {
   useProdutos,
+  useCapasProdutos,
   useCriarProduto,
   useEditarProduto,
   useDesativarProduto,
@@ -21,6 +22,8 @@ import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import { FormularioProduto } from '@/componentes/produto/FormularioProduto'
+import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
+import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
 import { formatarMedidaProduto } from '@/dominio/produto'
 import type { Produto } from '@/tipos/banco'
 
@@ -40,6 +43,7 @@ export default function Produtos() {
   const podeEditar = podeGerenciarCadastros(perfil)
 
   const { data: produtos, isPending } = useProdutos(true)
+  const { data: capas } = useCapasProdutos()
   const criar = useCriarProduto()
   const editar = useEditarProduto()
   const desativar = useDesativarProduto()
@@ -50,6 +54,9 @@ export default function Produtos() {
   const [editando, setEditando] = useState<Produto | null>(null)
   const [form, setForm] = useState<DadosProduto>(VAZIO)
   const [erro, setErro] = useState<string | null>(null)
+  /** Produto cujo desenho está aberto em tela cheia. */
+  const [ampliado, setAmpliado] = useState<Produto | null>(null)
+
   function abrirNovo() {
     setEditando(null)
     setForm(VAZIO)
@@ -144,6 +151,32 @@ export default function Produtos() {
             key={produto.id}
             className="bg-superficie flex items-center gap-3 rounded-xl p-4 shadow-sm"
           >
+            {/* FORA do link do produto, de propósito: aqui o desenho não é
+                enfeite da linha, é o que se quer olhar de perto — tocar nele
+                abre a imagem em tela cheia em vez de abrir a ficha. Sem
+                desenho, fica o quadro vazio, que é o que mantém todas as
+                linhas do mesmo tamanho. */}
+            {capas?.get(produto.id) ? (
+              <button
+                type="button"
+                onClick={() => setAmpliado(produto)}
+                aria-label={`Ampliar desenho técnico de ${produto.nome}`}
+                className="shrink-0"
+              >
+                <MiniaturaPerfil
+                  link={capas.get(produto.id)}
+                  codigo={produto.codigo}
+                  alt={`Desenho técnico de ${produto.nome}`}
+                />
+              </button>
+            ) : (
+              <MiniaturaPerfil
+                link={null}
+                codigo={produto.codigo}
+                alt={`${produto.nome} não tem desenho técnico`}
+              />
+            )}
+
             <Link
               to={`/produtos/${produto.id}`}
               className="flex min-w-0 flex-1 items-center gap-2"
@@ -217,6 +250,18 @@ export default function Produtos() {
           erro={erro}
         />
       </Modal>
+
+      {/* O nome vai escrito por cima: na linha ele aparece cortado, e é ao
+          abrir o desenho que se precisa dele inteiro para ter certeza de que
+          é o produto certo. */}
+      {ampliado && capas?.get(ampliado.id) && (
+        <VisualizadorImagem
+          src={capas.get(ampliado.id)!}
+          alt={`Desenho técnico de ${ampliado.nome}`}
+          titulo={`${ampliado.nome} · ${ampliado.codigo}`}
+          aoFechar={() => setAmpliado(null)}
+        />
+      )}
     </PaginaLista>
   )
 }

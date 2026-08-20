@@ -26,6 +26,7 @@ import {
 } from '@/dominio/estoqueResumo'
 import { Botao } from '@/componentes/ui/Botao'
 import { AlternadorOrdenacao } from '@/componentes/ui/AlternadorOrdenacao'
+import { useNiveisNaUrl } from '@/componentes/useNiveisNaUrl'
 import { ORDENACAO_PADRAO } from '@/dominio/ordenacaoListas'
 /*
  * Carregamento tardio: o leitor de QR traz a biblioteca de decodificação e a
@@ -105,15 +106,19 @@ export default function Sobras() {
    *
    * A busca e o QR Code ignoram o agrupamento: quem tem o código na mão
    * quer a peça, não a linha dela.
-   */
-  const [linhaAberta, setLinhaAberta] = useState<string | null>(null)
-  /*
+   *
    * Dentro da linha vem a lista de PERFIS, e só depois as peças. O depósito
    * tem dezenas de peças por linha, e rolar todas para achar as do perfil
    * que interessa é o mesmo trabalho que o agrupamento por linha já veio
    * resolver um nível acima.
+   *
+   * Os dois níveis ficam na URL, e não em estado: descer um nível é mudar de
+   * tela aos olhos de quem usa, e precisa ser navegação de verdade para o
+   * "voltar" subir um degrau em vez de sair da tela. Ver `useNiveisNaUrl`.
    */
-  const [perfilAberto, setPerfilAberto] = useState<string | null>(null)
+  const { nivel, abrir, voltarNivel } = useNiveisNaUrl(['linha', 'perfil'])
+  const linhaAberta = nivel('linha')
+  const perfilAberto = nivel('perfil')
   // Só vale na lista de perfis de uma linha — a de sobras de um perfil já
   // vem sem essa ambiguidade, não há "nome" a mais para ordenar.
   const [ordenacao, setOrdenacao] = useState(ORDENACAO_PADRAO)
@@ -263,13 +268,7 @@ export default function Sobras() {
                   obrigaria a refazer a escolha da linha só para ver outro
                   perfil dela. */}
               <BotaoVoltar
-                onClick={() => {
-                  if (perfilAberto !== null) {
-                    setPerfilAberto(null)
-                  } else {
-                    setLinhaAberta(null)
-                  }
-                }}
+                onClick={voltarNivel}
                 rotulo={perfilAberto !== null ? 'Perfis' : 'Linhas'}
                 className="shrink-0"
               />
@@ -297,7 +296,7 @@ export default function Sobras() {
           <Botao
             variante="contorno"
             tamanho="largura_total"
-            onClick={() => setLinhaAberta(TODAS)}
+            onClick={() => abrir({ linha: TODAS, perfil: null })}
           >
             Ver todas as sobras
           </Botao>
@@ -341,8 +340,7 @@ export default function Sobras() {
               <button
                 type="button"
                 onClick={() => {
-                  setLinhaAberta(linha)
-                  setPerfilAberto(null)
+                  abrir({ linha, perfil: null })
                 }}
                 className="bg-superficie hover:bg-superficie-2 flex min-h-16 w-full items-center gap-3 rounded-xl p-4 text-left shadow-sm"
               >
@@ -375,7 +373,7 @@ export default function Sobras() {
             <li key={id}>
               <button
                 type="button"
-                onClick={() => setPerfilAberto(id)}
+                onClick={() => abrir({ perfil: id })}
                 className="bg-superficie hover:bg-superficie-2 flex min-h-16 w-full items-center gap-3 rounded-xl p-4 text-left shadow-sm"
               >
                 <MiniaturaPerfil

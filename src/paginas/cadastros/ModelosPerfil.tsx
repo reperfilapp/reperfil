@@ -27,6 +27,7 @@ import { podeGerenciarCadastros } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { AlternadorOrdenacao } from '@/componentes/ui/AlternadorOrdenacao'
+import { useNiveisNaUrl } from '@/componentes/useNiveisNaUrl'
 import { ORDENACAO_PADRAO } from '@/dominio/ordenacaoListas'
 import { Modal } from '@/componentes/ui/Modal'
 import { FormularioModeloPerfil } from '@/componentes/perfil/FormularioModeloPerfil'
@@ -90,8 +91,13 @@ export default function ModelosPerfil() {
    * que não interessam. A BUSCA ignora este filtro de propósito: quem
    * digita um código quer achá-lo esteja onde estiver, e não descobrir
    * depois que a peça existia noutra linha.
+   *
+   * Fica na URL, e não em estado: abrir uma linha é mudar de tela aos olhos
+   * de quem usa, e precisa ser uma navegação de verdade para o "voltar"
+   * desfazer só ela. Ver `useNiveisNaUrl`.
    */
-  const [linhaAberta, setLinhaAberta] = useState<string | null>(null)
+  const { nivel, abrir, voltarNivel } = useNiveisNaUrl(['linha'])
+  const linhaAberta = nivel('linha')
   const [ordenacao, setOrdenacao] = useState(ORDENACAO_PADRAO)
   const [aberto, setAberto] = useState(false)
   const [editando, setEditando] = useState<ModeloPerfil | null>(null)
@@ -298,7 +304,7 @@ export default function ModelosPerfil() {
               </p>
               <AlternadorOrdenacao estado={ordenacao} aoMudar={setOrdenacao} />
               <BotaoVoltar
-                onClick={() => setLinhaAberta(null)}
+                onClick={voltarNivel}
                 rotulo="Linhas"
                 className="shrink-0"
               />
@@ -314,7 +320,7 @@ export default function ModelosPerfil() {
           <Botao
             variante="contorno"
             tamanho="largura_total"
-            onClick={() => setLinhaAberta(TODAS)}
+            onClick={() => abrir({ linha: TODAS })}
           >
             Ver todos os perfis
           </Botao>
@@ -328,7 +334,7 @@ export default function ModelosPerfil() {
             <li key={linha}>
               <button
                 type="button"
-                onClick={() => setLinhaAberta(linha)}
+                onClick={() => abrir({ linha })}
                 className="bg-superficie hover:bg-superficie-2 flex min-h-16 w-full items-center gap-3 rounded-xl p-4 text-left shadow-sm"
               >
                 <Layers

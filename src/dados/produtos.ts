@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { chaves } from '@/lib/consultas'
+import {
+  obterLinksTemporarios,
+  BALDE_IMAGENS_PRODUTO,
+} from '@/lib/armazenamento'
 import type { Produto, ItemListaTecnica } from '@/tipos/banco'
 
 export function useProdutos(incluirInativos = false) {
@@ -105,6 +109,54 @@ export function useListaTecnicaCompleta() {
   return useQuery({
     queryKey: [...chaves.listaTecnica, 'todos'],
     queryFn: () => buscarListaTecnica(null),
+  })
+}
+
+/**
+ * O desenho técnico de cada produto, por id, pronto para exibir na lista.
+ *
+ * Uma consulta e UM pedido de links para a lista inteira, como as capas dos
+ * perfis: gerar o link produto a produto seria uma ida ao servidor por linha
+ * da tela, e no depósito é isso que faz a lista parecer travada.
+ *
+ * Produto sem desenho simplesmente não entra no mapa — a tela desenha o
+ * quadro vazio, que é o que mantém as linhas do mesmo tamanho.
+ */
+export function useCapasProdutos() {
+  return useQuery({
+    queryKey: [...chaves.produtos, 'capas'],
+    queryFn: async (): Promise<Map<string, string>> => {
+      const { data, error } = await supabase
+        .from('produtos')
+        .select('id, desenho_url')
+        .not('desenho_url', 'is', null)
+
+      if (error) {
+        // Antes da migração a tabela nem existe: sem desenho nenhum, e não
+        // um erro de banco atravessado na tela de produtos.
+        if (error.code === '42P01') return new Map()
+        throw new Error(error.message)
+      }
+
+      const registros = data as { id: string; desenho_url: string }[]
+
+      const links = await obterLinksTemporarios(
+        BALDE_IMAGENS_PRODUTO,
+        registros.map((registro) => registro.desenho_url),
+      )
+
+      const capas = new Map<string, string>()
+
+      for (const registro of registros) {
+        const link = links.get(registro.desenho_url)
+
+        if (link) capas.set(registro.id, link)
+      }
+
+      return capas
+    },
+    // O link assinado vale uma hora; renovar antes evita imagem quebrada.
+    staleTime: 45 * 60_000,
   })
 }
 

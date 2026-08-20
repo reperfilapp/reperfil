@@ -4,6 +4,13 @@ import { X, ZoomIn, ZoomOut, Maximize } from 'lucide-react'
 interface PropsVisualizador {
   src: string
   alt: string
+  /**
+   * Nome escrito por cima da imagem, quando saber DE QUEM é o desenho
+   * importa. Na lista de produtos o nome aparece cortado na linha, e é
+   * justamente ao abrir o desenho que a pessoa precisa dele inteiro para
+   * ter certeza de que está olhando o produto certo.
+   */
+  titulo?: string
   aoFechar: () => void
 }
 
@@ -27,7 +34,12 @@ const PASSO = 0.5
  * Os botões existem mesmo havendo gesto: com luva, a pinça falha, e no
  * computador nem todo mundo descobre que a roda funciona aqui.
  */
-export function VisualizadorImagem({ src, alt, aoFechar }: PropsVisualizador) {
+export function VisualizadorImagem({
+  src,
+  alt,
+  titulo,
+  aoFechar,
+}: PropsVisualizador) {
   const [escala, setEscala] = useState(1)
   const [deslocamento, setDeslocamento] = useState({ x: 0, y: 0 })
 
@@ -162,6 +174,15 @@ export function VisualizadorImagem({ src, alt, aoFechar }: PropsVisualizador) {
           ampliado ? 'cursor-grab' : ''
         }`}
       />
+
+      {/* O nome, quando há. `pr-20` abre caminho para o X do canto, e
+          `pointer-events-none` deixa o arrasto da imagem passar por baixo —
+          senão a faixa viraria uma zona morta no alto da tela. */}
+      {titulo && (
+        <p className="pointer-events-none absolute inset-x-0 top-0 px-4 py-4 pr-20 text-sm font-semibold text-balance text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+          {titulo}
+        </p>
+      )}
 
       {/* Controles por cima da imagem. `pointer-events-none` no container
           para não roubar o arrasto; os botões reativam o toque. */}

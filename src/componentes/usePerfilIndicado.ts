@@ -29,7 +29,14 @@ export function usePerfilIndicado(aoIndicar: (modelo: ModeloPerfil) => void) {
 
     // Some com o parâmetro mesmo quando o perfil não existe mais: deixá-lo
     // na barra de endereços faria a tela tentar de novo a cada renderização.
-    definirParametros({}, { replace: true })
+    //
+    // Só ELE, e não a URL inteira: a linha aberta também mora nos parâmetros
+    // (ver `useNiveisNaUrl`), e limpar tudo fechava o nível junto, jogando a
+    // pessoa de volta na lista de linhas depois de identificar o perfil.
+    const restantes = new URLSearchParams(parametros)
+
+    restantes.delete('perfil')
+    definirParametros(restantes, { replace: true })
 
     if (encontrado) aoIndicar(encontrado)
     // `aoIndicar` costuma ser uma função nova a cada renderização; incluí-la
