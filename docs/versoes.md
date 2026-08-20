@@ -45,6 +45,35 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.52 — 20/08/2026
+
+**O botão voltar agora volta para onde você realmente estava.**
+
+Uma ficha de perfil abre a partir do catálogo, mas também de uma sobra, de
+uma lista técnica, de uma busca — o mesmo destino, vários pontos de partida.
+O botão "voltar" de cada tela apontava para um destino fixo, escolhido na
+hora de programar a tela (o catálogo, no caso do perfil) — e quem chegasse
+por qualquer outro caminho, ao voltar, caía nesse destino fixo em vez de
+voltar para onde estava, tendo que refazer o trajeto inteiro de novo.
+
+Agora, existindo uma tela anterior de verdade nesta aba, o botão volta para
+ELA — não para o destino fixo. O destino fixo continua existindo, mas só
+entra em ação quando a tela abre "do nada" (link externo, atalho salvo, a
+primeira tela depois de abrir o aplicativo): aí não existe navegador para
+onde voltar, e o destino fixo é a melhor aproximação de onde a pessoa
+"deveria" estar.
+
+A correção foi num único lugar — o componente `BotaoVoltar`, usado por todo
+o app — porque o problema era o mesmo em toda parte.
+
+**O texto virou "Voltar", neutro, exatamente nesse caso.** Voltando pelo
+histórico o destino é a tela anterior de verdade, que pode não ser a que o
+rótulo de cada tela nomeia (a ficha do perfil sempre passa "Perfis" como
+rótulo, mesmo quando se chega a ela pela lista técnica ou por uma sobra) —
+um texto específico apontando pro lugar errado atrapalha mais do que ajuda.
+O rótulo original só aparece quando o destino também é o fixo de reserva, e
+aí ele volta a ser exato.
+
 ## 1.6.51 — 20/08/2026
 
 **A lista de faltas recolhida, e a ordenação com direção invertível.**
