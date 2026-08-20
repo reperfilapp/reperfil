@@ -301,3 +301,35 @@ export function useDesativarModeloPerfil() {
     },
   })
 }
+
+/**
+ * Apaga o perfil de verdade — não desativa.
+ *
+ * Só faz sentido oferecer isto quando a tela já confirmou, com os dados que
+ * tem em mãos, que nenhuma sobra e nenhuma lista técnica apontam para o
+ * perfil: o banco tem `on delete restrict` nas duas tabelas de propósito, e a
+ * mensagem de erro (código 23503) é o segundo cinto de segurança, para o caso
+ * de outra pessoa ter cadastrado uma sobra no minuto entre a tela carregar e
+ * o toque no botão.
+ */
+export function useExcluirModeloPerfil() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('modelos_perfil').delete().eq('id', id)
+
+      if (error) {
+        if (error.code === '23503') {
+          throw new Error(
+            'Este perfil está em uso — no estoque ou em uma lista técnica — e não pode ser apagado. Desative-o em vez disso.',
+          )
+        }
+        throw new Error(error.message)
+      }
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.modelosPerfil })
+    },
+  })
+}

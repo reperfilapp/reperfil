@@ -1,5 +1,7 @@
-import { CheckCircle2, XCircle, HelpCircle } from 'lucide-react'
+import { useState } from 'react'
+import { CheckCircle2, XCircle, HelpCircle, ChevronDown } from 'lucide-react'
 import { formatarComprimento } from '@/dominio/medidas'
+import { cn } from '@/lib/utilitarios'
 
 interface Falta {
   perfil: string
@@ -43,6 +45,10 @@ export function Veredito({
   semReceita: boolean
   faltas: readonly Falta[]
 }) {
+  // Só usado no quadro "não dá" — os outros dois casos são curtos o
+  // suficiente para caber inteiros na tela sem precisar recolher.
+  const [aberto, setAberto] = useState(false)
+
   if (semReceita) {
     return (
       <section className="bg-superficie-2 flex items-start gap-3 rounded-xl p-4">
@@ -97,46 +103,67 @@ export function Veredito({
        ficava invisível. Agora fundo e texto viram juntos. */
     <section className="bg-aviso border-aviso-borda text-aviso-texto flex items-start gap-3 rounded-xl border p-4">
       <XCircle aria-hidden="true" className="mt-0.5 size-6 shrink-0" />
-      <div className="min-w-0">
-        <p className="font-semibold">
+      <div className="min-w-0 flex-1">
+        {/* Recolhido por padrão: o título já responde a pergunta ("dá ou não
+            dá"), e a lista de faltas — que pode passar de dez linhas — é o
+            detalhe de quem vai atrás de material, não o que se lê de
+            relance ao abrir o produto. */}
+        <button
+          type="button"
+          onClick={() => setAberto(!aberto)}
+          aria-expanded={aberto}
+          className="flex w-full items-center justify-between gap-2 text-left font-semibold"
+        >
           {desejada === 1
             ? 'Não dá com as sobras de hoje.'
             : `Não dá para as ${desejada} unidades com as sobras de hoje.`}
-        </p>
+          <ChevronDown
+            aria-hidden="true"
+            className={cn(
+              'size-4 shrink-0 transition-transform',
+              aberto && 'rotate-180',
+            )}
+          />
+        </button>
 
-        {/* Quantas dariam, quando dá alguma: "não dá para 5, mas dá para 2"
-            é resposta melhor do que "não dá", e às vezes resolve o pedido
-            pela metade enquanto o material novo não chega. */}
-        {unidades > 0 && (
-          <p className="mt-1 text-sm opacity-80">
-            Dá para {unidades} {unidades === 1 ? 'unidade' : 'unidades'}.
-          </p>
-        )}
-
-        {soFaltaAcabamento ? (
-          /* Tudo verde na lista e "não dá" aqui em cima seria
-             incompreensível sem esta frase. */
-          <p className="mt-1 text-sm opacity-80">
-            Há material para todos os cortes, mas em acabamentos diferentes — e
-            uma peça sai toda do mesmo acabamento. Junte o que falta num
-            acabamento só, ou confira se as sobras estão cadastradas com o
-            acabamento certo.
-          </p>
-        ) : faltas.length === 0 ? (
-          <p className="mt-1 text-sm opacity-80">
-            Não há sobra disponível dos perfis desta lista.
-          </p>
-        ) : (
+        {aberto && (
           <>
-            <p className="mt-1 text-sm opacity-80">Falta:</p>
-            <ul className="mt-1 flex flex-col gap-1 text-sm">
-              {faltas.map((falta, i) => (
-                <li key={i} className="tabular-nums">
-                  {falta.faltam} × {formatarComprimento(falta.comprimento_mm)}{' '}
-                  de <span className="font-medium">{falta.perfil}</span>
-                </li>
-              ))}
-            </ul>
+            {/* Quantas dariam, quando dá alguma: "não dá para 5, mas dá para
+                2" é resposta melhor do que "não dá", e às vezes resolve o
+                pedido pela metade enquanto o material novo não chega. */}
+            {unidades > 0 && (
+              <p className="mt-1 text-sm opacity-80">
+                Dá para {unidades} {unidades === 1 ? 'unidade' : 'unidades'}.
+              </p>
+            )}
+
+            {soFaltaAcabamento ? (
+              /* Tudo verde na lista e "não dá" aqui em cima seria
+                 incompreensível sem esta frase. */
+              <p className="mt-1 text-sm opacity-80">
+                Há material para todos os cortes, mas em acabamentos
+                diferentes — e uma peça sai toda do mesmo acabamento. Junte o
+                que falta num acabamento só, ou confira se as sobras estão
+                cadastradas com o acabamento certo.
+              </p>
+            ) : faltas.length === 0 ? (
+              <p className="mt-1 text-sm opacity-80">
+                Não há sobra disponível dos perfis desta lista.
+              </p>
+            ) : (
+              <>
+                <p className="mt-1 text-sm opacity-80">Falta:</p>
+                <ul className="mt-1 flex flex-col gap-1 text-sm">
+                  {faltas.map((falta, i) => (
+                    <li key={i} className="tabular-nums">
+                      {falta.faltam} ×{' '}
+                      {formatarComprimento(falta.comprimento_mm)} de{' '}
+                      <span className="font-medium">{falta.perfil}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </>
         )}
       </div>

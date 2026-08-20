@@ -45,6 +45,76 @@ Depois descreva a mudança aqui embaixo e faça o commit. O build sobe sozinho.
 
 ---
 
+## 1.6.51 — 20/08/2026
+
+**A lista de faltas recolhida, e a ordenação com direção invertível.**
+
+**"Não dá com as sobras de hoje" agora abre e fecha.** Numa lista técnica de
+doze perfis sem estoque, a resposta virava uma parede de texto entre o botão
+de produzir e a lista técnica de verdade. Recolhido, só o título fica à
+vista — clicar nele expande a lista do que falta; clicar de novo recolhe.
+
+**Os botões de ordenar agora invertem a direção.** Antes só alternavam entre
+"mais estoque" e "A→Z"; tocar de novo no que já está ativo agora inverte —
+"mais estoque" vira "menos estoque", "A→Z" vira "Z→A". O ícone de cada botão
+muda para mostrar a direção atual.
+
+## 1.6.50 — 20/08/2026
+
+**Ordenar por nome, além de por estoque.**
+
+Toda lista de perfis ou linhas do app já vinha ordenada com o que tem mais
+estoque primeiro — o padrão certo para quem procura o que aproveitar, mas não
+para quem já sabe o código e quer achá-lo alfabeticamente. Um par de botões
+("mais estoque primeiro" / "A→Z") na mesma barra onde já aparecia o nome da
+linha e o botão de voltar alterna entre as duas, sem mexer no padrão de
+ninguém: continua abrindo por estoque, como sempre abriu.
+
+Aparece nas cinco telas que agrupam por linha: Cadastrar sobra, Procurar
+sobra, Modelos de perfil, Estoque de sobras e Linhas e sistemas — esta última
+ordenando as próprias linhas, as demais ordenando os perfis (ou, no Estoque de
+sobras, só no nível dos perfis — dentro de um perfil já aberto as peças são a
+mesma coisa em comprimentos diferentes, sem nome para ordenar).
+
+## 1.6.49 — 20/08/2026
+
+**Corrigir a quantidade de uma sobra já cadastrada.**
+
+Toda mudança de quantidade até aqui nascia de um evento físico: cadastrar,
+reservar, cortar. Faltava o outro caso — "digitei 5 no lugar de 2" —, e quem
+tentava corrigir esbarrava sem saber onde. Um lápis ao lado da quantidade, na
+ficha da própria sobra, abre a correção; **zero é um valor aceito**, e zerar
+esvazia o lote e o marca como descartado, em vez de ficar "disponível" com
+zero peças, que não diz nada a quem olhar a lista depois.
+
+A correção **exige um motivo** — a mesma exigência que já existia no banco
+para esse tipo de movimentação, e que fica registrada no histórico da peça
+sem apagar o valor anterior. Não é possível corrigir para menos do que já
+está reservado; para isso, cancele a reserva primeiro.
+
+⚠️ Depende da migração `20260820100000_ajustar_quantidade_lote.sql`, ainda
+não aplicada no banco.
+
+## 1.6.48 — 20/08/2026
+
+**Usar uma sobra direto da ficha dela, e apagar perfil sem uso.**
+
+**Botão "Usar peça" na ficha da sobra.** O único caminho para dar baixa era
+"Procurar sobra", que busca por perfil, cor e comprimento — repetir essa busca
+com a peça certa já na tela não fazia sentido para quem chegou até ali pelo
+código, pela lista técnica ou por um link. O botão reserva a quantidade ali
+mesmo e leva para Reservas, onde continuam os passos de retirar da prateleira
+e confirmar o corte — o fluxo em si não mudou, só ganhou uma porta de entrada
+a mais.
+
+**Lixeira nos perfis sem uso.** Antes só dava para desativar um modelo de
+perfil, nunca apagar de vez. Agora a lista mostra o ícone de lixeira quando —
+e só quando — nenhuma sobra (nem consumida) e nenhuma lista técnica apontam
+para aquele perfil; é a mesma regra que o banco já aplicava (`on delete
+restrict`), só que decidindo ali se mostra o botão, em vez de deixar a pessoa
+tentar e esbarrar num erro técnico. Perfil em uso continua só podendo ser
+arquivado.
+
 ## 1.6.47 — 19/08/2026
 
 **Quatro atalhos na tela inicial, do mesmo tamanho.**

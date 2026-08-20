@@ -25,6 +25,8 @@ import {
   maiorPrimeiro,
 } from '@/dominio/estoqueResumo'
 import { Botao } from '@/componentes/ui/Botao'
+import { AlternadorOrdenacao } from '@/componentes/ui/AlternadorOrdenacao'
+import { ORDENACAO_PADRAO } from '@/dominio/ordenacaoListas'
 /*
  * Carregamento tardio: o leitor de QR traz a biblioteca de decodificação e a
  * etiqueta traz a de geração — juntas, boa parte do JavaScript da aplicação.
@@ -112,6 +114,9 @@ export default function Sobras() {
    * resolver um nível acima.
    */
   const [perfilAberto, setPerfilAberto] = useState<string | null>(null)
+  // Só vale na lista de perfis de uma linha — a de sobras de um perfil já
+  // vem sem essa ambiguidade, não há "nome" a mais para ordenar.
+  const [ordenacao, setOrdenacao] = useState(ORDENACAO_PADRAO)
 
   const encontradas = (sobras ?? []).filter((sobra) => combina(sobra, busca))
   const buscando = busca.trim() !== ''
@@ -154,10 +159,19 @@ export default function Sobras() {
   ]
     .map(([id, modelo]) => ({ id, modelo, resumo: resumoDe(porPerfil, id) }))
     .sort((a, b) => {
-      const porTamanho = maiorPrimeiro(a.resumo, b.resumo)
+      if (ordenacao.criterio === 'nome') {
+        const porNome = (a.modelo?.codigo ?? '').localeCompare(
+          b.modelo?.codigo ?? '',
+          'pt-BR',
+        )
+        return ordenacao.decrescente ? -porNome : porNome
+      }
 
-      return porTamanho !== 0
-        ? porTamanho
+      const porTamanho = maiorPrimeiro(a.resumo, b.resumo)
+      const porEstoque = ordenacao.decrescente ? porTamanho : -porTamanho
+
+      return porEstoque !== 0
+        ? porEstoque
         : (a.modelo?.codigo ?? '').localeCompare(
             b.modelo?.codigo ?? '',
             'pt-BR',
@@ -225,7 +239,7 @@ export default function Sobras() {
           {/* Dentro de uma linha: diz onde se está e como voltar. Fica no
               cabeçalho, junto da busca, e não some ao rolar a lista. */}
           {!isPending && !buscando && linhaAberta !== null && (
-            <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="mb-3 flex items-center justify-between gap-2">
               <p className="min-w-0 truncate font-semibold">
                 {perfilEmFoco
                   ? `${perfilEmFoco.modelo?.codigo ?? ''} ${perfilEmFoco.modelo?.descricao ?? ''}`
@@ -236,6 +250,13 @@ export default function Sobras() {
                   ({perfilEmFoco ? visiveis.length : perfis.length})
                 </span>
               </p>
+
+              {/* Só na lista de perfis: dentro de um perfil já aberto, as
+                  sobras são a mesma peça em lotes diferentes — não há nome
+                  para ordenar por ele, só o comprimento de cada lote. */}
+              {!perfilEmFoco && (
+                <AlternadorOrdenacao estado={ordenacao} aoMudar={setOrdenacao} />
+              )}
 
               {/* Volta um nível de cada vez: do perfil para os perfis da
                   linha, e da linha para as linhas. Pular direto para o topo

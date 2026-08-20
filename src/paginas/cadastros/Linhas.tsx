@@ -18,6 +18,8 @@ import {
 } from '@/dominio/estoqueResumo'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
+import { AlternadorOrdenacao } from '@/componentes/ui/AlternadorOrdenacao'
+import { ORDENACAO_PADRAO } from '@/dominio/ordenacaoListas'
 import { CampoSugestao } from '@/componentes/ui/CampoSugestao'
 import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
@@ -55,6 +57,7 @@ export default function Linhas() {
   const [novoNome, setNovoNome] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [resultado, setResultado] = useState<string | null>(null)
+  const [ordenacao, setOrdenacao] = useState(ORDENACAO_PADRAO)
 
   // Mesma ordem do resto do app: quem tem mais estoque primeiro. Aqui a
   // lista serve para faxina de nomes repetidos, e a linha com material é a
@@ -70,10 +73,16 @@ export default function Linhas() {
       if (a.linha === SEM_LINHA) return 1
       if (b.linha === SEM_LINHA) return -1
 
-      const porTamanho = maiorPrimeiro(a.resumo, b.resumo)
+      if (ordenacao.criterio === 'nome') {
+        const porNome = a.linha.localeCompare(b.linha, 'pt-BR')
+        return ordenacao.decrescente ? -porNome : porNome
+      }
 
-      return porTamanho !== 0
-        ? porTamanho
+      const porTamanho = maiorPrimeiro(a.resumo, b.resumo)
+      const porEstoque = ordenacao.decrescente ? porTamanho : -porTamanho
+
+      return porEstoque !== 0
+        ? porEstoque
         : a.linha.localeCompare(b.linha, 'pt-BR')
     })
   // "Sem linha" não é uma linha: é a ausência dela. Renomear ali significaria
@@ -138,12 +147,19 @@ export default function Linhas() {
         <>
           <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
 
-          <header className="mb-5">
-            <h1 className="text-2xl font-bold">Linhas e sistemas</h1>
-            <p className="text-texto-suave mt-1">
-              Como os perfis estão agrupados. Renomear para um nome que já
-              existe junta as duas linhas.
-            </p>
+          <header className="mb-5 flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold">Linhas e sistemas</h1>
+              <p className="text-texto-suave mt-1">
+                Como os perfis estão agrupados. Renomear para um nome que já
+                existe junta as duas linhas.
+              </p>
+            </div>
+            <AlternadorOrdenacao
+              estado={ordenacao}
+              aoMudar={setOrdenacao}
+              className="mt-1"
+            />
           </header>
 
           {resultado && (

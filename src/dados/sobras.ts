@@ -261,6 +261,50 @@ export function useSomarAoLote() {
 }
 
 /**
+ * Corrige a quantidade de um lote já cadastrado — para erro de digitação, e
+ * não para consumo.
+ *
+ * Toda outra mudança de quantidade neste arquivo nasce de um evento físico:
+ * cadastrar, reservar, cortar. Esta é a exceção — "digitei 5 no lugar de 2" —
+ * e por isso exige justificativa: fica registrado no histórico, sem apagar o
+ * valor anterior, para quem olhar depois entender o que aconteceu.
+ *
+ * Zero é um valor válido aqui, diferente do cadastro de uma sobra nova: uma
+ * peça já cadastrada por engano precisa poder ser zerada.
+ */
+export function useAjustarQuantidadeLote() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      loteId,
+      novaQuantidade,
+      justificativa,
+    }: {
+      loteId: string
+      novaQuantidade: number
+      justificativa: string
+    }): Promise<LoteSobra> => {
+      const { data, error } = await supabase.rpc('ajustar_quantidade_lote', {
+        p_lote_id: loteId,
+        p_nova_quantidade: novaQuantidade,
+        p_justificativa: justificativa,
+      })
+
+      if (error) throw new Error(error.message)
+
+      return data as LoteSobra
+    },
+    onSuccess: (_, { loteId }) => {
+      void cliente.invalidateQueries({ queryKey: chaves.sobras })
+      void cliente.invalidateQueries({
+        queryKey: [...chaves.sobras, 'historico', loteId],
+      })
+    },
+  })
+}
+
+/**
  * Move as peças de um lote para outro equivalente.
  *
  * Uma chamada só, e não "somar aqui, encerrar ali": se a rede caísse entre

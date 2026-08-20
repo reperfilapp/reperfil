@@ -26,6 +26,8 @@ import {
 import { MiniaturaPerfil } from './MiniaturaPerfil'
 import { VisualizadorImagem } from './ui/VisualizadorImagem'
 import { BotaoVoltar } from './ui/BotaoVoltar'
+import { AlternadorOrdenacao } from './ui/AlternadorOrdenacao'
+import { ORDENACAO_PADRAO } from '@/dominio/ordenacaoListas'
 import { cn } from '@/lib/utilitarios'
 import type { ModeloPerfil } from '@/tipos/banco'
 
@@ -71,6 +73,9 @@ export function SeletorPerfil({
    * achá-lo esteja em que linha estiver.
    */
   const [linhaAberta, setLinhaAberta] = useState<string | null>(null)
+  // Alterna a lista de perfis (não a de linhas) entre estoque e nome, e a
+  // direção de cada um. Começa no padrão do app: mais estoque primeiro.
+  const [ordenacao, setOrdenacao] = useState(ORDENACAO_PADRAO)
 
   const encontrados = filtrarModelos(modelos ?? [], busca)
   const buscando = busca.trim() !== ''
@@ -114,13 +119,19 @@ export function SeletorPerfil({
   // Ordena uma cópia: `visiveis` vem de `filtrarModelos`, e ordenar no lugar
   // mexeria no array que o React Query guarda em cache.
   const visiveisOrdenados = [...visiveis].sort((a, b) => {
+    if (ordenacao.criterio === 'nome') {
+      const porNome = a.codigo.localeCompare(b.codigo, 'pt-BR')
+      return ordenacao.decrescente ? -porNome : porNome
+    }
+
     const porTamanho = maiorPrimeiro(
       resumoDe(porPerfil, a.id),
       resumoDe(porPerfil, b.id),
     )
+    const porEstoque = ordenacao.decrescente ? porTamanho : -porTamanho
 
-    return porTamanho !== 0
-      ? porTamanho
+    return porEstoque !== 0
+      ? porEstoque
       : a.codigo.localeCompare(b.codigo, 'pt-BR')
   })
 
@@ -351,15 +362,16 @@ export function SeletorPerfil({
         </button>
       )}
 
-      {/* Dentro de uma linha: diz onde se está e como voltar. */}
+      {/* Dentro de uma linha: diz onde se está, como ordenar e como voltar. */}
       {!isPending && !buscando && linhaAberta !== null && (
-        <div className="flex shrink-0 items-center justify-between gap-3">
+        <div className="flex shrink-0 items-center justify-between gap-2">
           <p className="min-w-0 truncate text-sm font-semibold">
             {linhaAberta === TODAS ? 'Todos os perfis' : linhaAberta}
             <span className="text-texto-suave ml-2 font-normal">
               ({visiveis.length})
             </span>
           </p>
+          <AlternadorOrdenacao estado={ordenacao} aoMudar={setOrdenacao} />
           <BotaoVoltar
             onClick={() => setLinhaAberta(null)}
             rotulo="Linhas"

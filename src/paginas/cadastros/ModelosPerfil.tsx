@@ -9,12 +9,14 @@ import {
   Camera,
   Archive,
   ArchiveRestore,
+  Trash2,
 } from 'lucide-react'
 import {
   useModelosPerfil,
   useCriarModeloPerfil,
   useEditarModeloPerfil,
   useDesativarModeloPerfil,
+  useExcluirModeloPerfil,
   filtrarModelos,
   agruparPorLinha,
   SEM_LINHA,
@@ -24,12 +26,15 @@ import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeGerenciarCadastros } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
+import { AlternadorOrdenacao } from '@/componentes/ui/AlternadorOrdenacao'
+import { ORDENACAO_PADRAO } from '@/dominio/ordenacaoListas'
 import { Modal } from '@/componentes/ui/Modal'
 import { FormularioModeloPerfil } from '@/componentes/perfil/FormularioModeloPerfil'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
 import { useSobras } from '@/dados/sobras'
+import { useListaTecnicaCompleta } from '@/dados/produtos'
 import {
   resumirPorLinha,
   resumirPorPerfil,
@@ -71,8 +76,10 @@ export default function ModelosPerfil() {
   const criar = useCriarModeloPerfil()
   const editar = useEditarModeloPerfil()
   const desativar = useDesativarModeloPerfil()
+  const excluir = useExcluirModeloPerfil()
   const { data: capas } = useCapasDesenhos()
   const { data: sobras } = useSobras()
+  const { data: itensListaTecnica } = useListaTecnicaCompleta()
   const [busca, setBusca] = useState('')
   /*
    * Linha escolhida para ver, `null` enquanto a pessoa está na lista de
@@ -85,10 +92,13 @@ export default function ModelosPerfil() {
    * depois que a peça existia noutra linha.
    */
   const [linhaAberta, setLinhaAberta] = useState<string | null>(null)
+  const [ordenacao, setOrdenacao] = useState(ORDENACAO_PADRAO)
   const [aberto, setAberto] = useState(false)
   const [editando, setEditando] = useState<ModeloPerfil | null>(null)
   const [form, setForm] = useState<DadosModeloPerfil>(VAZIO)
   const [erro, setErro] = useState<string | null>(null)
+  const [apagando, setApagando] = useState<ModeloPerfil | null>(null)
+  const [erroApagar, setErroApagar] = useState<string | null>(null)
 
   const encontrados = filtrarModelos(modelos ?? [], busca)
   const buscando = busca.trim() !== ''
@@ -104,6 +114,24 @@ export default function ModelosPerfil() {
     sobras ?? [],
     (sobra) => sobra.modelo?.linha?.trim() || SEM_LINHA,
   )
+
+  /*
+   * Quem pode ser apagado de verdade, e não só arquivado.
+   *
+   * As duas perguntas são as mesmas que o banco faz com `on delete
+   * restrict`: nenhuma sobra (de qualquer status — até uma consumida ainda
+   * aponta para o perfil) e nenhuma lista técnica. Calcular aqui, com o que
+   * já está carregado, evita uma pergunta ao servidor por linha da lista só
+   * para decidir se mostra o ícone.
+   */
+  const perfisComEstoque = new Set(
+    (sobras ?? []).map((sobra) => sobra.modelo_perfil_id),
+  )
+  const perfisEmUso = new Set(
+    (itensListaTecnica ?? []).map((item) => item.modelo_perfil_id),
+  )
+  const podeApagar = (modelo: ModeloPerfil) =>
+    !perfisComEstoque.has(modelo.id) && !perfisEmUso.has(modelo.id)
 
   const grupos = agruparPorLinha(modelos ?? [])
     .map((grupo) => ({ ...grupo, resumo: resumoDe(porLinha, grupo.linha) }))
@@ -133,13 +161,19 @@ export default function ModelosPerfil() {
   // Cópia antes de ordenar: `visiveis` sai de `filtrarModelos`, e ordenar no
   // lugar mexeria no array guardado pelo React Query.
   const visiveisOrdenados = [...visiveis].sort((a, b) => {
+    if (ordenacao.criterio === 'nome') {
+      const porNome = a.codigo.localeCompare(b.codigo, 'pt-BR')
+      return ordenacao.decrescente ? -porNome : porNome
+    }
+
     const porTamanho = maiorPrimeiro(
       resumoDe(porPerfil, a.id),
       resumoDe(porPerfil, b.id),
     )
+    const porEstoque = ordenacao.decrescente ? porTamanho : -porTamanho
 
-    return porTamanho !== 0
-      ? porTamanho
+    return porEstoque !== 0
+      ? porEstoque
       : a.codigo.localeCompare(b.codigo, 'pt-BR')
   })
 
@@ -255,13 +289,14 @@ export default function ModelosPerfil() {
 
           {/* Onde se está e como voltar — no cabeçalho, não some ao rolar. */}
           {!isPending && !buscando && linhaAberta !== null && (
-            <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="mb-3 flex items-center justify-between gap-2">
               <p className="min-w-0 truncate font-semibold">
                 {linhaAberta === TODAS ? 'Todos os perfis' : linhaAberta}
                 <span className="text-texto-suave ml-2 font-normal">
                   ({visiveis.length})
                 </span>
               </p>
+              <AlternadorOrdenacao estado={ordenacao} aoMudar={setOrdenacao} />
               <BotaoVoltar
                 onClick={() => setLinhaAberta(null)}
                 rotulo="Linhas"
@@ -410,6 +445,23 @@ export default function ModelosPerfil() {
                     <ArchiveRestore aria-hidden="true" className="size-4" />
                   )}
                 </Botao>
+
+                {/* Só aparece quando dá para apagar de verdade — na maioria
+                    das linhas, com sobra ou lista técnica, o botão nem
+                    existe, em vez de existir desabilitado explicando por quê. */}
+                {podeApagar(modelo) && (
+                  <Botao
+                    variante="contorno"
+                    onClick={() => {
+                      setApagando(modelo)
+                      setErroApagar(null)
+                    }}
+                    aria-label={`Apagar ${modelo.codigo}`}
+                    title="Apagar"
+                  >
+                    <Trash2 aria-hidden="true" className="size-4" />
+                  </Botao>
+                )}
               </>
             )}
           </li>
@@ -430,6 +482,54 @@ export default function ModelosPerfil() {
           salvando={criar.isPending || editar.isPending}
           erro={erro}
         />
+      </Modal>
+
+      <Modal
+        aberto={apagando !== null}
+        aoFechar={() => setApagando(null)}
+        titulo="Apagar perfil"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm">
+            Apagar <strong className="font-mono">{apagando?.codigo}</strong>{' '}
+            {apagando?.descricao} de vez — diferente de desativar, não há como
+            desfazer.
+          </p>
+
+          {erroApagar && (
+            <p role="alert" className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm">
+              {erroApagar}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <Botao variante="contorno" onClick={() => setApagando(null)} className="flex-1">
+              Cancelar
+            </Botao>
+            <Botao
+              variante="destrutiva"
+              carregando={excluir.isPending}
+              onClick={async () => {
+                if (!apagando) return
+
+                setErroApagar(null)
+
+                try {
+                  await excluir.mutateAsync(apagando.id)
+                  setApagando(null)
+                } catch (e) {
+                  setErroApagar(
+                    e instanceof Error ? e.message : 'Não foi possível apagar.',
+                  )
+                }
+              }}
+              className="flex-1"
+            >
+              <Trash2 aria-hidden="true" className="size-4" />
+              Apagar
+            </Botao>
+          </div>
+        </div>
       </Modal>
     </PaginaLista>
   )

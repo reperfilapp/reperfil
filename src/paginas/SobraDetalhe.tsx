@@ -1,15 +1,33 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { Tag, MapPin, ChevronRight, History, Layers } from 'lucide-react'
-import { useSobra, useHistoricoDoLote } from '@/dados/sobras'
+import { Link, useParams, useNavigate } from 'react-router-dom'
+import {
+  Tag,
+  MapPin,
+  ChevronRight,
+  History,
+  Layers,
+  PackageMinus,
+  PackageCheck,
+  Pencil,
+} from 'lucide-react'
+import {
+  useSobra,
+  useHistoricoDoLote,
+  useAjustarQuantidadeLote,
+} from '@/dados/sobras'
+import { useReservarSobra } from '@/dados/reservas'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
 import { obterLinkTemporario, BALDE_FOTOS } from '@/lib/armazenamento'
+import { useAutenticacao } from '@/autenticacao/useAutenticacao'
+import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { PaginaDetalhe, FichaDados } from '@/componentes/PaginaDetalhe'
 import { Secao } from '@/componentes/ui/Secao'
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { EtiquetaSobra } from '@/componentes/EtiquetaSobra'
 import { Botao } from '@/componentes/ui/Botao'
+import { Modal } from '@/componentes/ui/Modal'
+import { CampoQuantidade } from '@/componentes/ui/CampoQuantidade'
 import { formatarComprimento } from '@/dominio/medidas'
 import {
   areaSecaoMm2,
@@ -57,11 +75,23 @@ const ROTULO_MOVIMENTO: Record<string, string> = {
 
 export default function SobraDetalhe() {
   const { id } = useParams<{ id: string }>()
+  const navegar = useNavigate()
+  const { perfil } = useAutenticacao()
+  const podeMovimentar = podeMovimentarEstoque(perfil)
   const { data: sobra, isPending, error, refetch } = useSobra(id ?? null)
   const { data: historico } = useHistoricoDoLote(id ?? null)
   const { data: capas } = useCapasDesenhos('imagem')
+  const reservar = useReservarSobra()
+  const ajustar = useAjustarQuantidadeLote()
   const [etiqueta, setEtiqueta] = useState(false)
   const [fotoPeca, setFotoPeca] = useState<string | null>(null)
+  const [usando, setUsando] = useState(false)
+  const [quantidadeUsar, setQuantidadeUsar] = useState(1)
+  const [erroUsar, setErroUsar] = useState<string | null>(null)
+  const [corrigindo, setCorrigindo] = useState(false)
+  const [novaQuantidade, setNovaQuantidade] = useState(0)
+  const [justificativa, setJustificativa] = useState('')
+  const [erroCorrigir, setErroCorrigir] = useState<string | null>(null)
 
   // A foto da peça fica em balde privado: precisa de link temporário.
   useEffect(() => {
@@ -97,6 +127,53 @@ export default function SobraDetalhe() {
 
   const livres = sobra.quantidade - sobra.quantidade_reservada
 
+  function abrirUsar() {
+    setQuantidadeUsar(1)
+    setErroUsar(null)
+    setUsando(true)
+  }
+
+  async function confirmarUso() {
+    setErroUsar(null)
+
+    try {
+      await reservar.mutateAsync({
+        loteId: sobra!.id,
+        quantidade: quantidadeUsar,
+      })
+      setUsando(false)
+      navegar('/reservas')
+    } catch (e) {
+      setErroUsar(
+        e instanceof Error ? e.message : 'Não foi possível reservar a peça.',
+      )
+    }
+  }
+
+  function abrirCorrecao() {
+    setNovaQuantidade(sobra!.quantidade)
+    setJustificativa('')
+    setErroCorrigir(null)
+    setCorrigindo(true)
+  }
+
+  async function confirmarCorrecao() {
+    setErroCorrigir(null)
+
+    try {
+      await ajustar.mutateAsync({
+        loteId: sobra!.id,
+        novaQuantidade,
+        justificativa,
+      })
+      setCorrigindo(false)
+    } catch (e) {
+      setErroCorrigir(
+        e instanceof Error ? e.message : 'Não foi possível corrigir a quantidade.',
+      )
+    }
+  }
+
   return (
     <PaginaDetalhe
       voltarPara="/sobras"
@@ -112,10 +189,18 @@ export default function SobraDetalhe() {
         </span>
       }
       acoes={
-        <Botao variante="contorno" onClick={() => setEtiqueta(true)}>
-          <Tag aria-hidden="true" className="size-4" />
-          Ver etiqueta
-        </Botao>
+        <>
+          {podeMovimentar && livres > 0 && (
+            <Botao onClick={abrirUsar}>
+              <PackageMinus aria-hidden="true" className="size-4" />
+              Usar peça
+            </Botao>
+          )}
+          <Botao variante="contorno" onClick={() => setEtiqueta(true)}>
+            <Tag aria-hidden="true" className="size-4" />
+            Ver etiqueta
+          </Botao>
+        </>
       }
     >
       {/* O perfil, clicável — leva à ficha técnica completa. */}
@@ -182,8 +267,19 @@ export default function SobraDetalhe() {
           </p>
         </div>
         <div>
-          <p className="text-destaque-texto text-sm font-medium opacity-80">
+          <p className="text-destaque-texto flex items-center gap-1.5 text-sm font-medium opacity-80">
             Quantidade
+            {podeMovimentar && sobra.status !== 'consumida' && (
+              <button
+                type="button"
+                onClick={abrirCorrecao}
+                aria-label="Corrigir quantidade cadastrada"
+                title="Corrigir quantidade"
+                className="opacity-70 hover:opacity-100"
+              >
+                <Pencil aria-hidden="true" className="size-3.5" />
+              </button>
+            )}
           </p>
           <p className="text-destaque-texto text-3xl font-bold tabular-nums">
             {sobra.quantidade}
@@ -332,6 +428,128 @@ export default function SobraDetalhe() {
       {etiqueta && (
         <EtiquetaSobra sobra={sobra} aoFechar={() => setEtiqueta(false)} />
       )}
+
+      {/* "Usar peça" é o primeiro passo do fluxo reservar → retirar → cortar
+          (tela Reservas). Existe aqui, e não só em "Procurar sobra", porque
+          quem já está com a sobra certa na mão — abriu pelo código, pela
+          busca ou por um link — não deveria precisar refazer a busca por
+          perfil e comprimento para chegar à mesma peça. */}
+      <Modal aberto={usando} aoFechar={() => setUsando(false)} titulo="Usar peça">
+        <div className="flex flex-col gap-4">
+          <p className="text-sm">
+            Reserva peças de <strong className="font-mono">{sobra.codigo}</strong>{' '}
+            — o próximo passo (retirar da prateleira e confirmar o corte) fica
+            na tela Reservas.
+          </p>
+
+          <CampoQuantidade
+            valor={quantidadeUsar}
+            aoMudar={setQuantidadeUsar}
+            maximo={livres}
+          />
+
+          {erroUsar && (
+            <p role="alert" className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm">
+              {erroUsar}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <Botao variante="contorno" onClick={() => setUsando(false)} className="flex-1">
+              Cancelar
+            </Botao>
+            <Botao
+              onClick={() => void confirmarUso()}
+              carregando={reservar.isPending}
+              className="flex-1"
+            >
+              <PackageCheck aria-hidden="true" className="size-4" />
+              Reservar
+            </Botao>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Corrigir a quantidade cadastrada — para erro de digitação, e não
+          para consumo. Zero é um valor válido aqui: uma peça lançada por
+          engano precisa poder ser zerada, o que a esvazia e a marca como
+          descartada, em vez de deixar "disponível" com zero unidades — o que
+          não diz nada a quem olhar a lista depois. */}
+      <Modal
+        aberto={corrigindo}
+        aoFechar={() => setCorrigindo(false)}
+        titulo="Corrigir quantidade"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm">
+            Quantidade cadastrada hoje de{' '}
+            <strong className="font-mono">{sobra.codigo}</strong>:{' '}
+            <strong>{sobra.quantidade}</strong>. Use isto para corrigir um erro
+            de cadastro — não para dar baixa por um corte (isso fica em "Usar
+            peça").
+          </p>
+
+          <CampoQuantidade
+            rotulo="Quantidade correta"
+            valor={novaQuantidade}
+            aoMudar={setNovaQuantidade}
+            minimo={0}
+          />
+
+          {novaQuantidade === 0 && (
+            <p className="bg-atencao-50 text-atencao-700 rounded-xl px-4 py-3 text-sm">
+              Zerar esvazia o lote e marca esta peça como <strong>descartada</strong>.
+            </p>
+          )}
+
+          {sobra.quantidade_reservada > 0 && (
+            <p className="text-texto-suave text-sm">
+              {sobra.quantidade_reservada} já{' '}
+              {sobra.quantidade_reservada === 1 ? 'está reservada' : 'estão reservadas'}{' '}
+              — não é possível corrigir para menos que isso sem antes cancelar
+              a reserva.
+            </p>
+          )}
+
+          <label className="flex flex-col gap-1.5">
+            <span className="font-medium">Motivo do ajuste</span>
+            <input
+              type="text"
+              value={justificativa}
+              onChange={(e) => setJustificativa(e.target.value)}
+              placeholder="Ex.: digitei a quantidade errada ao cadastrar"
+              className="border-borda bg-superficie min-h-12 rounded-xl border-2 px-4"
+            />
+            <span className="text-texto-suave text-sm">
+              Fica registrado no histórico, sem apagar o valor anterior.
+            </span>
+          </label>
+
+          {erroCorrigir && (
+            <p role="alert" className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm">
+              {erroCorrigir}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <Botao variante="contorno" onClick={() => setCorrigindo(false)} className="flex-1">
+              Cancelar
+            </Botao>
+            <Botao
+              variante={novaQuantidade === 0 ? 'destrutiva' : 'primaria'}
+              onClick={() => void confirmarCorrecao()}
+              disabled={
+                novaQuantidade === sobra.quantidade ||
+                justificativa.trim().length < 5
+              }
+              carregando={ajustar.isPending}
+              className="flex-1"
+            >
+              Confirmar
+            </Botao>
+          </div>
+        </div>
+      </Modal>
     </PaginaDetalhe>
   )
 }
