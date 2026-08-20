@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Search,
   Check,
-  ZoomIn,
   ChevronRight,
   Layers,
   Camera,
@@ -29,7 +28,7 @@ import { BotaoVoltar } from './ui/BotaoVoltar'
 import { AlternadorOrdenacao } from './ui/AlternadorOrdenacao'
 import { useNiveisNaUrl } from './useNiveisNaUrl'
 import { ORDENACAO_PADRAO } from '@/dominio/ordenacaoListas'
-import { cn } from '@/lib/utilitarios'
+
 import type { ModeloPerfil } from '@/tipos/banco'
 
 /** Valor de `linhaAberta` que significa "ignorar o agrupamento". */

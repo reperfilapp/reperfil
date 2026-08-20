@@ -24,7 +24,7 @@ import {
   formatarResumo,
   maiorPrimeiro,
 } from '@/dominio/estoqueResumo'
-import { Botao } from '@/componentes/ui/Botao'
+
 import { AlternadorOrdenacao } from '@/componentes/ui/AlternadorOrdenacao'
 import { useNiveisNaUrl } from '@/componentes/useNiveisNaUrl'
 import { ORDENACAO_PADRAO } from '@/dominio/ordenacaoListas'
