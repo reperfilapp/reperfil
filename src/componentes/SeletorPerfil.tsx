@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Search,
-  Check,
   ChevronRight,
   Layers,
   Camera,
@@ -60,7 +59,6 @@ export function SeletorPerfil({
   const local = useLocation()
   const { data: modelos, isPending } = useModelosPerfil()
   const { data: capas } = useCapasDesenhos('imagem')
-  const { data: fotos } = useCapasDesenhos('foto')
   const { data: sobras } = useSobras()
   const [busca, setBusca] = useState('')
   const [ampliado, setAmpliado] = useState<string | null>(null)
@@ -145,7 +143,8 @@ export function SeletorPerfil({
 
   if (selecionado) {
     const desenho = capas?.get(selecionado.id)
-    const foto = fotos?.get(selecionado.id)
+    const qtdLotes = sobras?.filter((s) => s.modelo_perfil_id === selecionado.id).length ?? 0
+    const resumo = resumoDe(porPerfil, selecionado.id)
 
     /*
      * O card inteiro abre a ficha completa do perfil — mesma convenção de
@@ -166,87 +165,45 @@ export function SeletorPerfil({
             }
           }}
           aria-label={`Ver ficha completa do perfil ${selecionado.codigo}`}
-          className="border-marca-cinza bg-aluminio-100 hover:bg-aluminio-200 flex cursor-pointer flex-col gap-3 rounded-xl border-2 p-3"
+          className="border-borda bg-superficie hover:bg-superficie-2 flex cursor-pointer items-start gap-3 rounded-xl border-2 px-3 py-3"
         >
-          {/* Desenho e foto lado a lado: a geometria e a peça real. É a
-              conferência mais rápida possível contra a ponta na mão. */}
-          <div className="flex gap-2">
+          {/* Desenho técnico pequeno */}
+          <div className="shrink-0 w-[4.5rem] h-[4.5rem] flex items-center justify-center border border-borda rounded-lg bg-white">
             {desenho ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setAmpliado(desenho)
-                }}
-                className="border-borda relative overflow-hidden rounded-lg border bg-white"
-                aria-label="Ampliar desenho técnico"
-              >
-                <img
-                  src={desenho}
-                  alt={`Desenho técnico do perfil ${selecionado.codigo}`}
-                  className="size-24 object-contain p-1"
-                />
-              </button>
+              <img
+                src={desenho}
+                alt={`Desenho técnico do perfil ${selecionado.codigo}`}
+                className="max-w-[3.5rem] max-h-[3.5rem] object-contain"
+              />
             ) : (
               <MiniaturaPerfil
                 link={null}
                 codigo={selecionado.codigo}
-                className="size-24"
               />
-            )}
-
-            {foto && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setAmpliado(foto)
-                }}
-                className="border-borda relative overflow-hidden rounded-lg border"
-                aria-label="Ampliar foto do perfil"
-              >
-                <img
-                  src={foto}
-                  alt={`Foto do perfil ${selecionado.codigo}`}
-                  className="size-24 object-cover"
-                />
-              </button>
             )}
           </div>
 
-          <div className="min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-grafite-900 flex items-center gap-1.5 font-mono font-bold">
-                <Check
-                  aria-hidden="true"
-                  className="text-grafite-700 size-4 shrink-0"
-                />
-                {selecionado.codigo}
-              </p>
-              {/* Ícone sozinho, sem texto: o card inteiro já é clicável e
-                  já tem o rótulo "Ver ficha completa" no aria-label. */}
-              <ChevronRight
-                aria-hidden="true"
-                className="text-acao-600 size-4 shrink-0"
-              />
-            </div>
-
-            <p className="text-grafite-800 text-sm">{selecionado.descricao}</p>
+          {/* Informações compactas */}
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <p className="text-[0.8rem] leading-snug line-clamp-2">
+              <strong className="text-acao-600 font-bold">{selecionado.codigo}</strong>
+              <span className="text-grafite-900 font-bold"> — {selecionado.descricao}</span>
+            </p>
             {selecionado.linha && (
-              <p className="text-grafite-600 truncate text-sm">
-                {selecionado.linha}
-              </p>
+              <p className="text-xs text-texto-suave">{selecionado.linha}</p>
             )}
-
-            {/* Sem truncate de propósito: "lateral da porta de correr de 8
-                folhas com barra antipânico" não pode virar "lateral da
-                porta…" — é justamente o texto que confirma a peça certa. */}
             {selecionado.aplicacao && (
-              <p className="text-acao-700 bg-acao-100 mt-1 inline-block rounded px-2 py-0.5 text-xs break-words">
-                {selecionado.aplicacao}
-              </p>
+              <p className="text-acao-600 text-xs mt-0.5">{selecionado.aplicacao}</p>
             )}
+            <p className="text-texto-suave text-xs tabular-nums mt-0.5">
+              {formatarResumo(resumo)} · {qtdLotes} {qtdLotes === 1 ? 'lote' : 'lotes'}
+            </p>
           </div>
+
+          <ChevronRight
+            aria-hidden="true"
+            className="text-texto-suave size-4 shrink-0 mt-1"
+          />
         </div>
 
         {ampliado && (

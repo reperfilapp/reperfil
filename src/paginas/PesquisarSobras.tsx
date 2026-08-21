@@ -107,6 +107,14 @@ export default function PesquisarSobras() {
       acabamentoCor: s.acabamento?.cor_hex ?? null,
     }))
 
+  const acabamentosDisponiveisIds = new Set(
+    candidatas.map((s) => s.acabamentoId)
+  )
+
+  const opcoesAcabamento = modelo
+    ? acabamentos?.filter((a) => acabamentosDisponiveisIds.has(a.id))
+    : acabamentos
+
   // Só pesquisa quando não há reserva confirmada (evita mensagem contraditória).
   const achados =
     podePesquisar && !reservadaCodigo
@@ -164,7 +172,10 @@ export default function PesquisarSobras() {
             <label className="font-medium">Perfil</label>
             {modelo && (
               <BotaoVoltar
-                onClick={() => setModelo(null)}
+                onClick={() => {
+                  setModelo(null)
+                  setAcabamentoId('')
+                }}
                 rotulo="Trocar perfil"
               />
             )}
@@ -175,7 +186,13 @@ export default function PesquisarSobras() {
               enquanto a lista está aberta — com o perfil escolhido, o
               cartão de confirmação assume a altura natural dele. */}
           <div className={cn(!modelo && 'flex h-96 flex-col')}>
-            <SeletorPerfil selecionado={modelo} aoSelecionar={setModelo} />
+            <SeletorPerfil
+              selecionado={modelo}
+              aoSelecionar={(m) => {
+                setModelo(m)
+                setAcabamentoId('')
+              }}
+            />
           </div>
         </div>
 
@@ -185,7 +202,7 @@ export default function PesquisarSobras() {
           onChange={(e) => setAcabamentoId(e.target.value)}
         >
           <option value="">Selecione o acabamento…</option>
-          {acabamentos?.map((a) => (
+          {opcoesAcabamento?.map((a) => (
             <option key={a.id} value={a.id}>
               {a.nome}
             </option>

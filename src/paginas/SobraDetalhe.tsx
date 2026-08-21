@@ -26,15 +26,22 @@ import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { EtiquetaSobra } from '@/componentes/EtiquetaSobra'
 import { Botao } from '@/componentes/ui/Botao'
 import { Modal } from '@/componentes/ui/Modal'
-import { CampoQuantidade } from '@/componentes/ui/CampoQuantidade'
+import { CampoMedida } from '@/componentes/ui/CampoMedida'
 import { ModalEditarSobra } from '@/componentes/ModalEditarSobra'
 import { AmostraCor } from '@/componentes/ui/AmostraCor'
-import { formatarComprimento } from '@/dominio/medidas'
+import {
+  formatarComprimento,
+  interpretarMedidaDigitada,
+} from '@/dominio/medidas'
+import { cortesQueUmLoteComporta } from '@/dominio/pesquisa'
+import { useConfiguracoes, paraConfiguracaoCorte } from '@/dados/configuracoes'
+import { CONFIGURACAO_CORTE_PADRAO } from '@/dominio/corte'
 import {
   areaSecaoMm2,
   formatarAreaSecao,
   formatarMedidasSecao,
 } from '@/dominio/secao'
+import type { UnidadeMedida } from '@/config/aplicacao'
 import type { StatusLote, EstadoConservacao } from '@/tipos/banco'
 
 const ROTULO_STATUS: Record<StatusLote, string> = {
@@ -84,10 +91,13 @@ export default function SobraDetalhe() {
   const { data: historico } = useHistoricoDoLote(id ?? null)
   const { data: capas } = useCapasDesenhos('imagem')
   const reservar = useReservarSobra()
+  const { data: config } = useConfiguracoes()
   const [etiqueta, setEtiqueta] = useState(false)
   const [fotoPeca, setFotoPeca] = useState<string | null>(null)
   const [usando, setUsando] = useState(false)
-  const [quantidadeUsar, setQuantidadeUsar] = useState(1)
+  const [textoMedidaUsar, setTextoMedidaUsar] = useState('')
+  const [unidadeUsar, setUnidadeUsar] = useState<UnidadeMedida>('mm')
+  const [quantidadeCortes, setQuantidadeCortes] = useState(1)
   const [erroUsar, setErroUsar] = useState<string | null>(null)
   const [editando, setEditando] = useState(false)
 
@@ -125,8 +135,16 @@ export default function SobraDetalhe() {
 
   const livres = sobra.quantidade - sobra.quantidade_reservada
 
+  const configCorte = config
+    ? paraConfiguracaoCorte(config)
+    : CONFIGURACAO_CORTE_PADRAO
+
+  const corteMmUsar = interpretarMedidaDigitada(textoMedidaUsar, unidadeUsar)
+
   function abrirUsar() {
-    setQuantidadeUsar(1)
+    setTextoMedidaUsar('')
+    setUnidadeUsar('mm')
+    setQuantidadeCortes(1)
     setErroUsar(null)
     setUsando(true)
   }
@@ -134,16 +152,43 @@ export default function SobraDetalhe() {
   async function confirmarUso() {
     setErroUsar(null)
 
+    if (!corteMmUsar || corteMmUsar <= 0) {
+      setErroUsar('Informe o comprimento do corte.')
+      return
+    }
+
+    const cortesPorPeca = cortesQueUmLoteComporta(
+      sobra!.comprimento_mm,
+      corteMmUsar,
+      configCorte,
+    )
+
+    if (cortesPorPeca <= 0) {
+      setErroUsar('Este corte não cabe nesta peça.')
+      return
+    }
+
+    const pecasNecessarias = Math.ceil(quantidadeCortes / cortesPorPeca)
+
+    if (pecasNecessarias > livres) {
+      setErroUsar(
+        `São necessárias ${pecasNecessarias} peças, mas só ${livres} ${livres === 1 ? 'está livre' : 'estão livres'}.`,
+      )
+      return
+    }
+
     try {
       await reservar.mutateAsync({
         loteId: sobra!.id,
-        quantidade: quantidadeUsar,
+        quantidade: pecasNecessarias,
+        comprimentoCorteMm: corteMmUsar,
+        quantidadeCortes,
       })
       setUsando(false)
       navegar('/reservas')
     } catch (e) {
       setErroUsar(
-        e instanceof Error ? e.message : 'Não foi possível reservar a peça.',
+        e instanceof Error ? e.message : 'Não foi possível reservar.',
       )
     }
   }
@@ -167,7 +212,7 @@ export default function SobraDetalhe() {
           {podeMovimentar && sobra.status !== 'consumida' && (
             <Botao variante="contorno" onClick={() => setEditando(true)} className="flex-1 sm:flex-none">
               <Pencil aria-hidden="true" className="size-4" />
-              Editar
+              Editar sobra
             </Botao>
           )}
           {podeMovimentar && livres > 0 && (
@@ -411,11 +456,49 @@ export default function SobraDetalhe() {
             na tela Reservas.
           </p>
 
-          <CampoQuantidade
-            valor={quantidadeUsar}
-            aoMudar={setQuantidadeUsar}
-            maximo={livres}
+          <CampoMedida
+            rotulo="Comprimento de cada corte"
+            texto={textoMedidaUsar}
+            unidade={unidadeUsar}
+            aoMudarTexto={setTextoMedidaUsar}
+            aoMudarUnidade={setUnidadeUsar}
           />
+
+          <div>
+            <p className="mb-1 font-medium">Quantos cortes?</p>
+            <p className="text-texto-suave mb-2 text-xs">
+              Número de peças do tamanho acima que você precisa produzir.
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setQuantidadeCortes((q) => Math.max(1, q - 1))}
+                aria-label="Diminuir quantidade de cortes"
+                className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-14 w-14 shrink-0 rounded-xl border-2 text-2xl font-bold"
+              >
+                −
+              </button>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={quantidadeCortes}
+                onChange={(e) => {
+                  const n = Number(e.target.value.replace(/\D/g, ''))
+                  setQuantidadeCortes(Number.isFinite(n) && n >= 1 ? n : 1)
+                }}
+                aria-label="Quantidade de cortes"
+                className="border-borda bg-superficie min-h-14 min-w-0 flex-1 rounded-xl border-2 text-center text-2xl font-semibold tabular-nums"
+              />
+              <button
+                type="button"
+                onClick={() => setQuantidadeCortes((q) => Math.min(999, q + 1))}
+                aria-label="Aumentar quantidade de cortes"
+                className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-14 w-14 shrink-0 rounded-xl border-2 text-2xl font-bold"
+              >
+                +
+              </button>
+            </div>
+          </div>
 
           {erroUsar && (
             <p role="alert" className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm">
