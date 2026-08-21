@@ -67,6 +67,44 @@ export default function Reservas() {
       ? planejarCorte(cortando.lote.comprimento_mm, [usadoMm], configCorte)
       : null
 
+  /**
+   * Calcula o comprimento total a cortar desta peça física com base nos dados
+   * da reserva: quantidadeCortes × (comprimentoCorte + espessuraSerra) menos
+   * a última passada de serra (o último corte não gera perda quando termina
+   * no fim do material aproveitado).
+   *
+   * Este valor é uma sugestão — o serralheiro pode ajustar se necessário.
+   */
+  function calcularConsumoSugerido(reserva: ReservaDetalhada): number | null {
+    if (
+      reserva.comprimento_corte_mm === null ||
+      reserva.quantidade_cortes === null
+    ) {
+      return null
+    }
+
+    const n = reserva.quantidade_cortes
+    const corte = reserva.comprimento_corte_mm
+    const serra = configCorte.espessuraSerraMm
+
+    // n cortes + (n-1) serras entre eles (o último corte não precisa separar nada)
+    return n * corte + (n - 1) * serra
+  }
+
+  function abrirModalCorte(reserva: ReservaDetalhada) {
+    const sugerido = calcularConsumoSugerido(reserva)
+    setCortando(reserva)
+    setErro(null)
+
+    if (sugerido !== null && sugerido > 0) {
+      // Pré-preenche em mm para não perder precisão na conversão.
+      setTextoUsado(String(sugerido))
+      setUnidade('mm')
+    } else {
+      setTextoUsado('')
+    }
+  }
+
   async function confirmarCorte() {
     if (!cortando || usadoMm === null || !previa?.cabe) return
 
@@ -125,6 +163,31 @@ export default function Reservas() {
     return `vence em ${Math.floor(horas / 24)} dia(s)`
   }
 
+  /**
+   * Linha descritiva da reserva:
+   * - Reservas novas: "5 cortes de 1 m (1 peça separada)"
+   * - Reservas antigas (sem dados de corte): "5 peças de 6 m"
+   */
+  function descricaoReserva(reserva: ReservaDetalhada): string {
+    const temDadosCorte =
+      reserva.comprimento_corte_mm !== null &&
+      reserva.quantidade_cortes !== null
+
+    if (temDadosCorte) {
+      const cortes = reserva.quantidade_cortes!
+      const tamanho = formatarComprimento(reserva.comprimento_corte_mm!)
+      const pecas = reserva.quantidade
+      return `${cortes} ${cortes === 1 ? 'corte' : 'cortes'} de ${tamanho} · ${pecas} ${pecas === 1 ? 'peça separada do lote' : 'peças separadas do lote'}`
+    }
+
+    // Compatibilidade com reservas antigas.
+    const qtd = reserva.quantidade
+    const comp = reserva.lote
+      ? ` de ${formatarComprimento(reserva.lote.comprimento_mm)}`
+      : ''
+    return `${qtd} ${qtd === 1 ? 'peça' : 'peças'}${comp}`
+  }
+
   return (
     <PaginaLista
       cabecalho={
@@ -166,7 +229,7 @@ export default function Reservas() {
             key={reserva.id}
             className="bg-superficie rounded-xl p-4 shadow-sm"
           >
-            <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="mb-2 flex items-start justify-between gap-3">
               <Link
                 to={`/sobras/${reserva.lote_id}`}
                 className="flex min-w-0 items-center gap-2"
@@ -213,9 +276,9 @@ export default function Reservas() {
               </div>
             </div>
 
+            {/* Descrição clara do que foi reservado e do que será cortado */}
             <p className="text-texto-suave mb-3 text-xs">
-              {reserva.quantidade} {reserva.quantidade === 1 ? 'peça' : 'peças'}{' '}
-              · {venceEm(reserva)}
+              {descricaoReserva(reserva)} · {venceEm(reserva)}
             </p>
 
             <div className="flex flex-wrap gap-2">
@@ -231,11 +294,7 @@ export default function Reservas() {
               )}
 
               <Botao
-                onClick={() => {
-                  setCortando(reserva)
-                  setTextoUsado('')
-                  setErro(null)
-                }}
+                onClick={() => abrirModalCorte(reserva)}
                 className="flex-1"
               >
                 <Scissors aria-hidden="true" className="size-4" />
@@ -266,27 +325,64 @@ export default function Reservas() {
       >
         {cortando?.lote && (
           <div className="flex flex-col gap-4">
-            <p className="text-sm">
-              Lote <strong className="font-mono">{cortando.lote.codigo}</strong>{' '}
-              (Perfil {cortando.lote.modelo?.codigo}) de {formatarComprimento(cortando.lote.comprimento_mm)}.
-            </p>
+            {/* Resumo do que foi reservado */}
+            <div className="bg-superficie-2 rounded-xl p-3 text-sm">
+              <p className="font-semibold mb-1">O que foi reservado</p>
+              {cortando.comprimento_corte_mm !== null &&
+              cortando.quantidade_cortes !== null ? (
+                <p>
+                  <strong>{cortando.quantidade_cortes}</strong>{' '}
+                  {cortando.quantidade_cortes === 1 ? 'corte' : 'cortes'} de{' '}
+                  <strong>{formatarComprimento(cortando.comprimento_corte_mm)}</strong>{' '}
+                  — usando{' '}
+                  <strong>{cortando.quantidade}</strong>{' '}
+                  {cortando.quantidade === 1 ? 'peça' : 'peças'} de{' '}
+                  <strong>{formatarComprimento(cortando.lote.comprimento_mm)}</strong>{' '}
+                  do lote <span className="font-mono">{cortando.lote.codigo}</span>.
+                </p>
+              ) : (
+                <p>
+                  Lote <strong className="font-mono">{cortando.lote.codigo}</strong>{' '}
+                  ({cortando.quantidade} {cortando.quantidade === 1 ? 'peça' : 'peças'} de{' '}
+                  {formatarComprimento(cortando.lote.comprimento_mm)}).
+                </p>
+              )}
+            </div>
 
-            <CampoMedida
-              rotulo="Quanto foi cortado?"
-              texto={textoUsado}
-              unidade={unidade}
-              aoMudarTexto={setTextoUsado}
-              aoMudarUnidade={setUnidade}
-              autoFocus
-            />
+            <div>
+              <CampoMedida
+                rotulo="Comprimento total a consumir desta peça"
+                texto={textoUsado}
+                unidade={unidade}
+                aoMudarTexto={setTextoUsado}
+                aoMudarUnidade={setUnidade}
+                autoFocus={
+                  cortando.comprimento_corte_mm === null // só auto-foca quando não há pré-preenchimento
+                }
+              />
+              {cortando.comprimento_corte_mm !== null &&
+                cortando.quantidade_cortes !== null && (
+                  <p className="text-texto-suave mt-1.5 text-xs">
+                    Valor sugerido:{' '}
+                    {cortando.quantidade_cortes} ×{' '}
+                    {formatarComprimento(cortando.comprimento_corte_mm)} +{' '}
+                    {cortando.quantidade_cortes - 1} ×{' '}
+                    {formatarComprimento(configCorte.espessuraSerraMm)} (serra) ={' '}
+                    <strong>
+                      {formatarComprimento(calcularConsumoSugerido(cortando) ?? 0)}
+                    </strong>
+                    . Ajuste se necessário.
+                  </p>
+                )}
+            </div>
 
             {previa && !previa.cabe && (
               <p
                 role="alert"
                 className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm"
               >
-                Este corte não cabe na peça. Precisaria de{' '}
-                {formatarComprimento(previa.comprimentoNecessarioMm)}.
+                Este comprimento não cabe na peça. O máximo é{' '}
+                {formatarComprimento(cortando.lote.comprimento_mm)}.
               </p>
             )}
 

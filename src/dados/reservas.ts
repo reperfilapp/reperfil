@@ -23,6 +23,17 @@ export interface ReservaDetalhada extends Reserva {
     acabamento: { nome: string; cor_hex: string | null } | null
     localizacao: { codigo: string } | null
   } | null
+  /**
+   * Comprimento de cada corte solicitado na reserva, em mm.
+   * Null em reservas feitas antes da migração 20260821120000.
+   */
+  comprimento_corte_mm: number | null
+  /**
+   * Número de cortes solicitados.
+   * Junto com comprimento_corte_mm define o trabalho a ser feito na serra.
+   * Null em reservas antigas.
+   */
+  quantidade_cortes: number | null
 }
 
 /** Reservas que ainda exigem alguma ação. */
@@ -81,15 +92,23 @@ export function useReservarSobra() {
       loteId,
       quantidade,
       observacoes,
+      comprimentoCorteMm,
+      quantidadeCortes,
     }: {
       loteId: string
       quantidade: number
       observacoes?: string | null
+      /** Comprimento de cada corte pedido, em mm. */
+      comprimentoCorteMm?: number | null
+      /** Quantidade de cortes pedidos. */
+      quantidadeCortes?: number | null
     }): Promise<Reserva> => {
       const { data, error } = await supabase.rpc('reservar_sobra', {
         p_lote_id: loteId,
         p_quantidade: quantidade,
         p_observacoes: observacoes ?? null,
+        p_comprimento_corte_mm: comprimentoCorteMm ?? null,
+        p_quantidade_cortes: quantidadeCortes ?? null,
       })
 
       if (error) throw new Error(error.message)

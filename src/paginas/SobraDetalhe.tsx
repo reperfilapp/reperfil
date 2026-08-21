@@ -272,7 +272,7 @@ export default function SobraDetalhe() {
           </div>
         </div>
       </section>
-
+ 
       <FichaDados
         titulo="Dados da peça"
         linhas={[

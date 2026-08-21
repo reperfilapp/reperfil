@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   PackageCheck,
+  Scissors,
 } from 'lucide-react'
 import { useSobras } from '@/dados/sobras'
 import { useAcabamentos } from '@/dados/acabamentos'
@@ -37,12 +38,17 @@ import type { ModeloPerfil } from '@/tipos/banco'
  * Pesquisa de sobras para um corte.
  *
  * A pergunta que a tela responde é a do serralheiro no chão da oficina: "eu
- * preciso de um pedaço de tanto, deste perfil, nesta cor — tem alguma ponta
+ * preciso de N cortes de X mm, deste perfil, nesta cor — tem alguma ponta
  * que serve?".
  *
- * Por isso a ordem dos campos é essa, e não a ordem do banco: perfil, cor,
- * medida. É a sequência em que a informação chega na cabeça de quem está com
- * a lista de corte na mão.
+ * ── Semântica de quantidade ──────────────────────────────────────────────
+ *
+ * O usuário informa QUANTOS CORTES precisa e com qual comprimento.
+ * O sistema calcula quantas PEÇAS FÍSICAS do lote serão necessárias:
+ *
+ * Exemplo: "5 cortes de 1 m" de um lote com peças de 6 m
+ *   → 1 peça de 6 m comporta 5 cortes (5×1000 + 4×3 = 5012 mm < 6000 mm)
+ *   → reserva apenas 1 peça do lote, não 5
  */
 
 interface CandidataComDados extends CandidataSobra {
@@ -65,8 +71,9 @@ export default function PesquisarSobras() {
   const [acabamentoId, setAcabamentoId] = useState('')
   const [textoMedida, setTextoMedida] = useState('')
   const [unidade, setUnidade] = useState<UnidadeMedida>('mm')
-  const [quantidade, setQuantidade] = useState(1)
-  const [reservada, setReservada] = useState<string | null>(null)
+  const [quantidadeCortes, setQuantidadeCortes] = useState(1)
+  const [reservadaCodigo, setReservadaCodigo] = useState<string | null>(null)
+  const [reservadaInfo, setReservadaInfo] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
 
   const corteMm = interpretarMedidaDigitada(textoMedida, unidade)
@@ -100,23 +107,39 @@ export default function PesquisarSobras() {
       acabamentoCor: s.acabamento?.cor_hex ?? null,
     }))
 
-  const achados = podePesquisar
-    ? pesquisarSobras(
-        candidatas,
-        { corteMm, acabamentoId, quantidadeMinima: quantidade },
-        configCorte,
-      )
-    : []
+  // Só pesquisa quando não há reserva confirmada (evita mensagem contraditória).
+  const achados =
+    podePesquisar && !reservadaCodigo
+      ? pesquisarSobras(
+          candidatas,
+          { corteMm, acabamentoId, quantidadeCortes },
+          configCorte,
+        )
+      : []
 
-  async function reservarPeca(loteId: string, codigo: string) {
+  async function reservarPeca(
+    loteId: string,
+    codigo: string,
+    pecasNecessarias: number,
+  ) {
     setErro(null)
 
     try {
-      await reservar.mutateAsync({ loteId, quantidade })
-      setReservada(codigo)
+      await reservar.mutateAsync({
+        loteId,
+        // Reserva apenas as peças físicas necessárias do lote, não a quantidade de cortes.
+        quantidade: pecasNecessarias,
+        comprimentoCorteMm: corteMm ?? null,
+        quantidadeCortes,
+      })
+      setReservadaCodigo(codigo)
+      // Mensagem clara: quantos cortes de que tamanho, usando quantas peças.
+      setReservadaInfo(
+        pecasNecessarias === 1
+          ? `${quantidadeCortes} ${quantidadeCortes === 1 ? 'corte' : 'cortes'} de ${formatarComprimento(corteMm!)} a partir de 1 peça do lote ${codigo}`
+          : `${quantidadeCortes} ${quantidadeCortes === 1 ? 'corte' : 'cortes'} de ${formatarComprimento(corteMm!)} a partir de ${pecasNecessarias} peças do lote ${codigo}`,
+      )
     } catch (e) {
-      // A mensagem vem da função do banco e já é específica: "restam apenas
-      // 0 unidades — outra pessoa pode ter reservado agora há pouco".
       setErro(e instanceof Error ? e.message : 'Não foi possível reservar.')
     }
   }
@@ -170,7 +193,7 @@ export default function PesquisarSobras() {
         </CampoSelecao>
 
         <CampoMedida
-          rotulo="Comprimento do corte"
+          rotulo="Comprimento de cada corte"
           texto={textoMedida}
           unidade={unidade}
           aoMudarTexto={setTextoMedida}
@@ -178,12 +201,15 @@ export default function PesquisarSobras() {
         />
 
         <div>
-          <p className="mb-2 font-medium">Quantas peças?</p>
+          <p className="mb-1 font-medium">Quantos cortes?</p>
+          <p className="text-texto-suave mb-2 text-xs">
+            Número de peças do tamanho acima que você precisa produzir.
+          </p>
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setQuantidade((q) => Math.max(1, q - 1))}
-              aria-label="Diminuir quantidade"
+              onClick={() => setQuantidadeCortes((q) => Math.max(1, q - 1))}
+              aria-label="Diminuir quantidade de cortes"
               className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-16 w-16 shrink-0 rounded-xl border-2 text-2xl font-bold"
             >
               −
@@ -191,18 +217,18 @@ export default function PesquisarSobras() {
             <input
               type="text"
               inputMode="numeric"
-              value={quantidade}
+              value={quantidadeCortes}
               onChange={(e) => {
                 const n = Number(e.target.value.replace(/\D/g, ''))
-                setQuantidade(Number.isFinite(n) && n >= 1 ? n : 1)
+                setQuantidadeCortes(Number.isFinite(n) && n >= 1 ? n : 1)
               }}
-              aria-label="Quantidade"
+              aria-label="Quantidade de cortes"
               className="border-borda bg-superficie min-h-16 min-w-0 flex-1 rounded-xl border-2 text-center text-2xl font-semibold tabular-nums"
             />
             <button
               type="button"
-              onClick={() => setQuantidade((q) => Math.min(999, q + 1))}
-              aria-label="Aumentar quantidade"
+              onClick={() => setQuantidadeCortes((q) => Math.min(999, q + 1))}
+              aria-label="Aumentar quantidade de cortes"
               className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-16 w-16 shrink-0 rounded-xl border-2 text-2xl font-bold"
             >
               +
@@ -211,16 +237,19 @@ export default function PesquisarSobras() {
         </div>
       </div>
 
-      {reservada && (
+      {reservadaCodigo && (
         <div
           role="status"
-          className="bg-aluminio-100 text-grafite-800 mb-5 flex items-center gap-3 rounded-xl p-4"
+          className="bg-aluminio-100 text-grafite-800 mb-5 flex items-start gap-3 rounded-xl p-4"
         >
-          <PackageCheck aria-hidden="true" className="size-5 shrink-0" />
-          <p className="text-sm">
-            <strong>{reservada}</strong> reservada. Veja em Reservas para
-            confirmar a retirada.
-          </p>
+          <PackageCheck aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
+          <div className="text-sm">
+            <p className="font-semibold">Reserva confirmada!</p>
+            <p>{reservadaInfo}</p>
+            <p className="text-texto-suave mt-1">
+              Veja em <strong>Reservas</strong> para confirmar a retirada e o corte.
+            </p>
+          </div>
         </div>
       )}
 
@@ -233,7 +262,7 @@ export default function PesquisarSobras() {
         </p>
       )}
 
-      {podePesquisar && (
+      {podePesquisar && !reservadaCodigo && (
         <section aria-live="polite">
           <h2 className="mb-3 font-semibold">
             {achados.length === 0
@@ -245,8 +274,10 @@ export default function PesquisarSobras() {
             <div className="bg-superficie-2 text-texto-suave rounded-xl p-5 text-sm">
               <p className="mb-2">
                 Nenhuma peça deste perfil e acabamento comporta{' '}
-                {formatarComprimento(corteMm)}
-                {quantidade > 1 && ` (${quantidade} peças)`}.
+                {quantidadeCortes > 1
+                  ? `${quantidadeCortes} cortes de ${formatarComprimento(corteMm)}`
+                  : `1 corte de ${formatarComprimento(corteMm)}`}
+                .
               </p>
               <p>
                 O sistema não sugere sobra de acabamento diferente — duas peças
@@ -307,6 +338,16 @@ export default function PesquisarSobras() {
                     </p>
                   </div>
 
+                  {/* Resumo do plano de corte */}
+                  <div className="bg-superficie-2 mb-3 flex items-center gap-2 rounded-lg px-3 py-2 text-sm">
+                    <Scissors aria-hidden="true" className="text-texto-suave size-4 shrink-0" />
+                    <span>
+                      {resultado.pecasNecessarias === 1
+                        ? `1 peça deste lote basta para ${quantidadeCortes} ${quantidadeCortes === 1 ? 'corte' : 'cortes'} de ${formatarComprimento(corteMm!)}`
+                        : `${resultado.pecasNecessarias} peças deste lote para ${quantidadeCortes} cortes de ${formatarComprimento(corteMm!)}`}
+                    </span>
+                  </div>
+
                   {/* O que acontece com a peça se este corte for feito */}
                   <div
                     className={`mb-3 flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
@@ -322,9 +363,9 @@ export default function PesquisarSobras() {
                     )}
                     <span>
                       {aproveitamento === 'exato' &&
-                        'Consome a peça inteira, sem desperdício.'}
+                        'A peça é consumida por inteiro, sem desperdício.'}
                       {aproveitamento === 'ideal' &&
-                        `Sobram ${formatarComprimento(resultado.sobraResultanteMm)}, que voltam ao estoque.`}
+                        `Sobram ${formatarComprimento(resultado.sobraResultanteMm)} da primeira peça — volta ao estoque.`}
                       {aproveitamento === 'gera-descarte' &&
                         `Sobram ${formatarComprimento(resultado.sobraResultanteMm)} — vira descarte.`}
                     </span>
@@ -333,9 +374,13 @@ export default function PesquisarSobras() {
                   <Botao
                     tamanho="largura_total"
                     carregando={reservar.isPending}
-                    onClick={() => void reservarPeca(s.id, s.codigo)}
+                    onClick={() =>
+                      void reservarPeca(s.id, s.codigo, resultado.pecasNecessarias)
+                    }
                   >
-                    Reservar {quantidade > 1 && `${quantidade} peças`}
+                    {resultado.pecasNecessarias === 1
+                      ? `Reservar 1 peça (${quantidadeCortes} ${quantidadeCortes === 1 ? 'corte' : 'cortes'} de ${formatarComprimento(corteMm!)})`
+                      : `Reservar ${resultado.pecasNecessarias} peças (${quantidadeCortes} cortes de ${formatarComprimento(corteMm!)})`}
                   </Botao>
                 </li>
               )
@@ -344,7 +389,7 @@ export default function PesquisarSobras() {
         </section>
       )}
 
-      {!podePesquisar && (
+      {!podePesquisar && !reservadaCodigo && (
         <p className="bg-superficie-2 text-texto-suave rounded-xl p-5 text-center text-sm">
           Escolha o perfil, o acabamento e o comprimento do corte.
         </p>
