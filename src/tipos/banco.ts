@@ -154,6 +154,7 @@ export interface ModeloPerfil {
   peso_por_metro_g: number | null
   preco_por_metro_centavos: number | null
   observacoes: string | null
+  revisado: boolean
   ativo: boolean
   criado_em: string
 }

@@ -101,6 +101,7 @@ export default function ModelosPerfil() {
   const { nivel, abrir, voltarNivel } = useNiveisNaUrl(['linha'])
   const linhaAberta = nivel('linha')
   const [ordenacao, setOrdenacao] = useState(ORDENACAO_PADRAO)
+  const [filtroRevisao, setFiltroRevisao] = useState<'todos' | 'revisados' | 'pendentes'>('todos')
   const [aberto, setAberto] = useState(false)
   const [editando, setEditando] = useState<ModeloPerfil | null>(null)
   const [form, setForm] = useState<DadosModeloPerfil>(VAZIO)
@@ -167,9 +168,15 @@ export default function ModelosPerfil() {
             (m) => (m.linha?.trim() || SEM_LINHA) === linhaAberta,
           )
 
+  const visiveisComFiltro = visiveis.filter((m) => {
+    if (filtroRevisao === 'revisados') return m.revisado
+    if (filtroRevisao === 'pendentes') return !m.revisado
+    return true
+  })
+
   // Cópia antes de ordenar: `visiveis` sai de `filtrarModelos`, e ordenar no
   // lugar mexeria no array guardado pelo React Query.
-  const visiveisOrdenados = [...visiveis].sort((a, b) => {
+  const visiveisOrdenados = [...visiveisComFiltro].sort((a, b) => {
     if (ordenacao.criterio === 'nome') {
       const porNome = a.codigo.localeCompare(b.codigo, 'pt-BR')
       return ordenacao.decrescente ? -porNome : porNome
@@ -213,6 +220,7 @@ export default function ModelosPerfil() {
       altura_secao_mm: modelo.altura_secao_mm ?? null,
       medida_3_secao_mm: modelo.medida_3_secao_mm ?? null,
       medida_4_secao_mm: modelo.medida_4_secao_mm ?? null,
+      revisado: modelo.revisado ?? false,
     })
     setErro(null)
     setAberto(true)
@@ -283,6 +291,16 @@ export default function ModelosPerfil() {
                 className="border-borda bg-superficie min-h-12 w-full rounded-xl border-2 pr-4 pl-12"
               />
             </div>
+
+            <select
+              value={filtroRevisao}
+              onChange={(e) => setFiltroRevisao(e.target.value as any)}
+              className="border-borda bg-superficie hover:bg-superficie-2 text-sm font-medium min-h-12 shrink-0 rounded-xl border-2 px-3 outline-none"
+            >
+              <option value="todos">Todos</option>
+              <option value="revisados">Revisados</option>
+              <option value="pendentes">Pendentes</option>
+            </select>
 
             <Link
               to="/identificar"
@@ -363,11 +381,11 @@ export default function ModelosPerfil() {
         </ul>
       )}
 
-      {!isPending && !mostrandoLinhas && visiveis.length === 0 && (
+      {!isPending && !mostrandoLinhas && visiveisComFiltro.length === 0 && (
         <p className="bg-superficie-2 text-texto-suave rounded-xl p-6 text-center">
           {busca
             ? 'Nenhum perfil encontrado com esse termo.'
-            : 'Nenhum perfil nesta linha.'}
+            : 'Nenhum perfil encontrado com os filtros atuais.'}
         </p>
       )}
 
@@ -383,33 +401,39 @@ export default function ModelosPerfil() {
             key={modelo.id}
             className="bg-superficie flex items-center gap-3 rounded-xl p-3 shadow-sm"
           >
-            {capas?.get(modelo.id) ? (
-              <button
-                type="button"
-                onClick={() => setAmpliado(modelo)}
-                aria-label={`Ampliar desenho técnico de ${modelo.descricao}`}
-                className="shrink-0"
-              >
+            <div className="flex flex-col items-center gap-1.5 shrink-0">
+              {modelo.revisado && (
+                <div className="flex flex-col items-center -mt-1.5 mb-1">
+                  <span className="text-xl leading-none" title="Revisado">✅</span>
+                  <span className="text-[10px] font-bold text-sucesso-700 uppercase mt-0.5">Revisado</span>
+                </div>
+              )}
+              {capas?.get(modelo.id) ? (
+                <button
+                  type="button"
+                  onClick={() => setAmpliado(modelo)}
+                  aria-label={`Ampliar desenho técnico de ${modelo.descricao}`}
+                >
+                  <MiniaturaPerfil
+                    link={capas.get(modelo.id)}
+                    codigo={modelo.codigo}
+                  />
+                </button>
+              ) : (
                 <MiniaturaPerfil
-                  link={capas.get(modelo.id)}
+                  link={null}
                   codigo={modelo.codigo}
                 />
-              </button>
-            ) : (
-              <MiniaturaPerfil
-                link={null}
-                codigo={modelo.codigo}
-                className="shrink-0"
-              />
-            )}
+              )}
+            </div>
 
             <div className="flex min-w-0 flex-1 flex-col justify-center">
               <Link
                 to={`/perfis/${modelo.id}`}
                 className="flex min-w-0 flex-col"
               >
-                <span className="flex items-center gap-1 font-medium text-base leading-tight">
-                  <span className="truncate">{modelo.descricao}</span>
+                <span className="flex items-start gap-1.5 font-medium text-base leading-tight">
+                  <span className="line-clamp-2">{modelo.descricao}</span>
                   {!modelo.ativo && (
                     <span className="bg-superficie-2 text-texto-suave shrink-0 rounded px-2 py-0.5 text-xs">
                       inativo

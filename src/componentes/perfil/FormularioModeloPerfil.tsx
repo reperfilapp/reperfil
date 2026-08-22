@@ -315,6 +315,23 @@ export function FormularioModeloPerfil({
         </div>
       )}
 
+      {modelo && (
+        <label className="flex items-center gap-3 bg-superficie-2 rounded-xl p-4 cursor-pointer hover:bg-superficie-3 transition-colors mt-2">
+          <input
+            type="checkbox"
+            className="size-5 shrink-0"
+            checked={form.revisado}
+            onChange={(e) => aoMudar({ ...form, revisado: e.target.checked })}
+          />
+          <div className="flex flex-col">
+            <span className="font-semibold text-texto-forte">Perfil verificado e revisado</span>
+            <span className="text-sm text-texto-suave">
+              As informações estão validadas, medidas corretas e o desenho corresponde.
+            </span>
+          </div>
+        </label>
+      )}
+
       {erro && (
         <p
           role="alert"

@@ -18,13 +18,33 @@ export interface DadosModeloPerfil {
   observacoes: string | null
   /**
    * Medidas da seção, em mm. As duas primeiras vêm calculadas do peso e do
-   * desenho (`scripts/calcular-secao.mjs`) e podem ser corrigidas à mão; as
+   * desenho (`scripts/calcular-secao.mjs`) and podem ser corrigidas à mão; as
    * outras duas são cotas internas, que só saem medindo a peça.
    */
   largura_secao_mm: number | null
   altura_secao_mm: number | null
   medida_3_secao_mm: number | null
   medida_4_secao_mm: number | null
+  revisado: boolean
+}
+
+export const VAZIO: DadosModeloPerfil = {
+  codigo: '',
+  descricao: '',
+  fabricante: null,
+  linha: null,
+  categoria: null,
+  aplicacao: null,
+  comprimento_barra_mm: 6000,
+  peso_por_metro_g: null,
+  preco_por_metro_centavos: null,
+  codigo_barras: null,
+  observacoes: null,
+  largura_secao_mm: null,
+  altura_secao_mm: null,
+  medida_3_secao_mm: null,
+  medida_4_secao_mm: null,
+  revisado: false,
 }
 
 export function useModelosPerfil(incluirInativos = false) {
@@ -213,6 +233,13 @@ function traduzirErro(mensagem: string): string {
       'organização. Peça para aplicar a migração ' +
       '20260817220000_medidas_extras_da_secao.sql. Até lá, o perfil grava ' +
       'normalmente com as outras informações — deixe esses dois campos em branco.'
+    )
+  }
+
+  if (/column "revisado" of relation "modelos_perfil" does not exist/.test(mensagem) || /revisado/.test(mensagem)) {
+    return (
+      'O campo de Revisão ainda não existe no banco desta organização. ' +
+      'Peça para aplicar a migração 20260822134000_perfil_revisado.sql.'
     )
   }
 
