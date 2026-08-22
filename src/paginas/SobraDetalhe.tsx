@@ -61,6 +61,7 @@ const COR_STATUS: Record<StatusLote, string> = {
 }
 
 const ROTULO_ESTADO: Record<EstadoConservacao, string> = {
+  novo_embalado: 'Novo/Embalado',
   excelente: 'Excelente',
   bom: 'Bom',
   pequenos_arranhoes: 'Pequenos arranhões',

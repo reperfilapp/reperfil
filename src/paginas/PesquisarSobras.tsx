@@ -31,7 +31,6 @@ import {
 import { CONFIGURACAO_CORTE_PADRAO } from '@/dominio/corte'
 import { cn } from '@/lib/utilitarios'
 import type { UnidadeMedida } from '@/config/aplicacao'
-import type { ModeloPerfil } from '@/tipos/banco'
 import { formatarMedidasSecao } from '@/dominio/secao'
 
 /**
@@ -56,14 +55,14 @@ interface CandidataComDados extends CandidataSobra {
   modeloCodigo: string
   modeloDescricao: string
   modeloLinha: string | null
-  modeloObj: ModeloPerfil | null
+  modeloObj: any // Tipo flexível para aceitar as junções do Supabase
   acabamentoNome: string
   acabamentoCor: string | null
   quantidadeTotal: number
 }
 
 export default function PesquisarSobras() {
-  const { data: sobras } = useSobras()
+  const { data: sobras, isPending } = useSobras()
   const { data: acabamentos } = useAcabamentos()
   const { data: config } = useConfiguracoes()
   const reservar = useReservarSobra()
@@ -206,7 +205,7 @@ export default function PesquisarSobras() {
             <p className="text-texto-suave text-xs">
               Selecione uma ou mais linhas. Deixe em branco para procurar em todas.
             </p>
-            {isPending && sobras?.length === 0 ? (
+            {isPending && (!sobras || (sobras as any[]).length === 0) ? (
               <p className="text-texto-suave text-sm mt-2">Carregando estoque...</p>
             ) : linhasDisponiveis.length === 0 ? (
               <p className="text-texto-suave text-sm mt-2">Nenhum material disponível no estoque.</p>
