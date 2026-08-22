@@ -142,6 +142,26 @@ export default function SobraDetalhe() {
 
   const corteMmUsar = interpretarMedidaDigitada(textoMedidaUsar, unidadeUsar)
 
+  let erroUsarCalculado: string | null = null
+  let pecasNecessariasCalculadas = 0
+
+  if (usando && corteMmUsar && corteMmUsar > 0) {
+    const cortesPorPeca = cortesQueUmLoteComporta(
+      sobra.comprimento_mm,
+      corteMmUsar,
+      configCorte,
+    )
+
+    if (cortesPorPeca <= 0) {
+      erroUsarCalculado = 'Este corte não cabe nesta peça.'
+    } else {
+      pecasNecessariasCalculadas = Math.ceil(quantidadeCortes / cortesPorPeca)
+      if (pecasNecessariasCalculadas > livres) {
+        erroUsarCalculado = `São necessárias ${pecasNecessariasCalculadas} peças, mas só ${livres} ${livres === 1 ? 'está livre' : 'estão livres'}.`
+      }
+    }
+  }
+
   function abrirUsar() {
     setTextoMedidaUsar('')
     setUnidadeUsar('mm')
@@ -158,30 +178,14 @@ export default function SobraDetalhe() {
       return
     }
 
-    const cortesPorPeca = cortesQueUmLoteComporta(
-      sobra!.comprimento_mm,
-      corteMmUsar,
-      configCorte,
-    )
-
-    if (cortesPorPeca <= 0) {
-      setErroUsar('Este corte não cabe nesta peça.')
-      return
-    }
-
-    const pecasNecessarias = Math.ceil(quantidadeCortes / cortesPorPeca)
-
-    if (pecasNecessarias > livres) {
-      setErroUsar(
-        `São necessárias ${pecasNecessarias} peças, mas só ${livres} ${livres === 1 ? 'está livre' : 'estão livres'}.`,
-      )
+    if (erroUsarCalculado) {
       return
     }
 
     try {
       await reservar.mutateAsync({
-        loteId: sobra!.id,
-        quantidade: pecasNecessarias,
+        loteId: sobra.id,
+        quantidade: pecasNecessariasCalculadas,
         comprimentoCorteMm: corteMmUsar,
         quantidadeCortes,
       })
@@ -514,9 +518,9 @@ export default function SobraDetalhe() {
             </div>
           </div>
 
-          {erroUsar && (
-            <p role="alert" className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm">
-              {erroUsar}
+          {(erroUsar || erroUsarCalculado) && (
+            <p role="alert" className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm font-medium">
+              {erroUsar || erroUsarCalculado}
             </p>
           )}
 
@@ -527,6 +531,7 @@ export default function SobraDetalhe() {
             <Botao
               onClick={() => void confirmarUso()}
               carregando={reservar.isPending}
+              disabled={!!erroUsarCalculado || !corteMmUsar}
               className="flex-1"
             >
               <PackageCheck aria-hidden="true" className="size-4" />
