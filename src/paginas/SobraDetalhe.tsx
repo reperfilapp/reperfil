@@ -184,7 +184,7 @@ export default function SobraDetalhe() {
 
     try {
       await reservar.mutateAsync({
-        loteId: sobra.id,
+        loteId: sobra!.id,
         quantidade: pecasNecessariasCalculadas,
         comprimentoCorteMm: corteMmUsar,
         quantidadeCortes,
