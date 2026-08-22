@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { PackagePlus, Package, Clock, Ruler, Layers, Boxes } from 'lucide-react'
+import { PackagePlus, Package, Clock, Ruler, Layers, Boxes, Scissors } from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { useResumoEstoque } from '@/dados/sobras'
@@ -122,8 +122,8 @@ export default function Inicio() {
 
         <Atalho
           para="/sobras"
-          Icone={Package}
-          rotulo="Estoque de sobras"
+          Icone={Scissors}
+          rotulo="Utilizar sobras"
           cor="bg-acao-700 hover:bg-acao-800"
         />
 
