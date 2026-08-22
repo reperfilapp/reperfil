@@ -2,8 +2,6 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Search,
-  MapPin,
-  ChevronRight,
   CheckCircle2,
   AlertTriangle,
   PackageCheck,
