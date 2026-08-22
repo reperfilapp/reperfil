@@ -84,16 +84,19 @@ export default function Inicio() {
           Icone={Package}
           rotulo="Disponíveis"
           valor={isPending ? '—' : String(resumo?.pecasDisponiveis ?? 0)}
+          para="/sobras"
         />
         <Indicador
           Icone={Ruler}
           rotulo="Metros"
           valor={isPending ? '—' : (metros ?? '0')}
+          para="/sobras"
         />
         <Indicador
           Icone={Clock}
           rotulo="Reservadas"
           valor={isPending ? '—' : String(resumo?.pecasReservadas ?? 0)}
+          para="/reservas"
         />
       </section>
 
@@ -124,6 +127,7 @@ export default function Inicio() {
           para="/sobras"
           Icone={Scissors}
           rotulo="Utilizar sobras"
+          subrotulo="(estoque de sobras)"
           cor="bg-acao-700 hover:bg-acao-800"
         />
 
@@ -157,11 +161,13 @@ function Atalho({
   para,
   Icone,
   rotulo,
+  subrotulo,
   cor,
 }: {
   para: string
   Icone: typeof Package
   rotulo: string
+  subrotulo?: string
   /** Classes de fundo. Texto sempre branco — todos os tons são escuros. */
   cor: string
 }) {
@@ -175,7 +181,14 @@ function Atalho({
       )}
     >
       <Icone aria-hidden="true" className="size-7 shrink-0" />
-      {rotulo}
+      <span className="flex flex-col items-center">
+        <span>{rotulo}</span>
+        {subrotulo && (
+          <span className="text-[0.65rem] font-medium opacity-75 leading-tight mt-0.5">
+            {subrotulo}
+          </span>
+        )}
+      </span>
     </Link>
   )
 }
@@ -184,16 +197,34 @@ function Indicador({
   Icone,
   rotulo,
   valor,
+  para,
 }: {
   Icone: typeof Package
   rotulo: string
   valor: string
+  para?: string
 }) {
-  return (
-    <div className="bg-superficie rounded-xl p-4 text-center shadow-sm">
+  const conteudo = (
+    <>
       <Icone aria-hidden="true" className="text-acao-600 mx-auto mb-1 size-5" />
       <p className="text-2xl font-bold tabular-nums">{valor}</p>
       <p className="text-texto-suave text-xs">{rotulo}</p>
+    </>
+  )
+
+  const classes = "bg-superficie rounded-xl p-4 text-center shadow-sm block transition-colors"
+
+  if (para) {
+    return (
+      <Link to={para} className={`${classes} hover:bg-superficie-2`}>
+        {conteudo}
+      </Link>
+    )
+  }
+
+  return (
+    <div className={classes}>
+      {conteudo}
     </div>
   )
 }

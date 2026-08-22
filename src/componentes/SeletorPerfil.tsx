@@ -187,7 +187,7 @@ export function SeletorPerfil({
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
             <p className="text-[0.8rem] leading-snug line-clamp-2">
               <strong className="text-acao-600 font-bold">{selecionado.codigo}</strong>
-              <span className="text-grafite-900 font-bold"> — {selecionado.descricao}</span>
+              <span className="font-bold"> — {selecionado.descricao}</span>
             </p>
             {selecionado.linha && (
               <p className="text-xs text-texto-suave">{selecionado.linha}</p>

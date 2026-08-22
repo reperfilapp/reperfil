@@ -12,6 +12,7 @@ import {
   Sun,
   Moon,
   SunMoon,
+  Search,
   Building2,
   Ruler,
   UsersRound,
@@ -58,6 +59,13 @@ export default function Mais() {
    * usam juntas.
    */
   const producao = [
+    {
+      para: '/procurar',
+      rotulo: 'Procurar sobra',
+      descricao: 'Encontrar peças específicas no estoque',
+      Icone: Search,
+      visivel: true,
+    },
     {
       para: '/sobras',
       rotulo: 'Estoque de sobras',

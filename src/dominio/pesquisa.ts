@@ -130,7 +130,12 @@ export function pesquisarSobras<T extends CandidataSobra>(
   const resultados: ResultadoPesquisa<T>[] = []
 
   for (const sobra of candidatas) {
-    if (!acabamentosAceitos.has(sobra.acabamentoId)) continue
+    if (
+      filtro.acabamentoId !== '' &&
+      !acabamentosAceitos.has(sobra.acabamentoId)
+    ) {
+      continue
+    }
 
     if (
       filtro.localizacaoCodigo != null &&

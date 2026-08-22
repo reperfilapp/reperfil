@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import {
   Home,
-  Search,
+  Scissors,
   PackagePlus,
   Clock,
   Menu as MenuIcone,
@@ -23,7 +23,7 @@ import { cn } from '@/lib/utilitarios'
 // Fase 3, quando houver orçamento.
 const ITENS_NAVEGACAO = [
   { para: '/', rotulo: 'Início', Icone: Home, exato: true },
-  { para: '/procurar', rotulo: 'Procurar', Icone: Search, exato: false },
+  { para: '/sobras', rotulo: 'Utilizar', Icone: Scissors, exato: false },
   { para: '/cadastrar', rotulo: 'Cadastrar', Icone: PackagePlus, exato: false },
   { para: '/reservas', rotulo: 'Reservas', Icone: Clock, exato: false },
   { para: '/mais', rotulo: 'Mais', Icone: MenuIcone, exato: false },
@@ -91,7 +91,7 @@ export function LayoutApp() {
               end={exato}
               className={({ isActive }) =>
                 cn(
-                  'flex min-h-16 flex-col items-center justify-center gap-1 text-xs',
+                  'flex min-h-16 flex-col items-center justify-start pt-2.5 pb-1 gap-0.5 text-[0.65rem] sm:text-xs text-center leading-tight px-0.5',
                   destacado
                     ? 'text-acao-600'
                     : isActive

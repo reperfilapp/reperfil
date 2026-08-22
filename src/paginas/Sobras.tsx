@@ -483,13 +483,13 @@ export default function Sobras() {
               >
                 <p className="text-[0.8rem] leading-snug">
                   <strong className="text-acao-600 font-bold">{sobra.modelo?.codigo}</strong>
-                  <span className="text-grafite-900 font-bold"> — {sobra.modelo?.descricao}</span>
+                  <span className="font-bold"> — {sobra.modelo?.descricao}</span>
                 </p>
                 <p className="text-xs text-texto-suave">
                   Lote: {sobra.codigo}
                 </p>
                 <hr className="border-borda my-1" />
-                <div className="flex items-center gap-x-3 text-xs text-grafite-900 mt-0.5">
+                <div className="flex items-center gap-x-3 text-xs mt-0.5">
                   <span>
                     Qt. Peças:{' '}
                     <strong className="text-acao-600 font-bold">
@@ -504,7 +504,7 @@ export default function Sobras() {
                   </span>
                 </div>
                 {sobra.acabamento && (
-                  <div className="flex items-center gap-1 text-xs text-grafite-900 min-w-0">
+                  <div className="flex items-center gap-1 text-xs min-w-0">
                     <span className="shrink-0">Acab.:</span>
                     <AmostraCor corHex={sobra.acabamento.cor_hex} tamanho="pequeno" />
                     <strong className="text-acao-600 font-bold truncate">

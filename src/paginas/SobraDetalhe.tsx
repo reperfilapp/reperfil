@@ -215,12 +215,6 @@ export default function SobraDetalhe() {
               Editar sobra
             </Botao>
           )}
-          {podeMovimentar && livres > 0 && (
-            <Botao onClick={abrirUsar} className="flex-1 sm:flex-none">
-              <PackageMinus aria-hidden="true" className="size-4" />
-              Usar peça
-            </Botao>
-          )}
           <Botao
             variante="contorno"
             onClick={() => setEtiqueta(true)}
@@ -229,6 +223,12 @@ export default function SobraDetalhe() {
             <Tag aria-hidden="true" className="size-4" />
             Ver etiqueta
           </Botao>
+          {podeMovimentar && livres > 0 && (
+            <Botao onClick={abrirUsar} className="w-full">
+              <PackageMinus aria-hidden="true" className="size-4" />
+              Usar peça
+            </Botao>
+          )}
         </>
       }
     >
@@ -237,25 +237,46 @@ export default function SobraDetalhe() {
         <h2 className="mb-2 font-semibold">Perfil</h2>
         <Link
           to={`/perfis/${sobra.modelo_perfil_id}`}
-          className="bg-superficie hover:bg-superficie-2 flex items-center gap-3 rounded-xl p-3"
+          className="bg-superficie shadow-sm hover:bg-superficie-2 flex items-center gap-3 rounded-xl p-3"
         >
-          <MiniaturaPerfil
-            link={capas?.get(sobra.modelo_perfil_id)}
-            codigo={sobra.modelo?.codigo ?? ''}
-          />
-          <span className="min-w-0 flex-1">
-            <span className="block truncate font-medium">
-              <span className="text-acao-600 font-mono">
-                {sobra.modelo?.codigo}
-              </span>{' '}
-              {sobra.modelo?.descricao}
-            </span>
-            {sobra.modelo?.linha && (
-              <span className="text-texto-suave block truncate text-sm">
-                {sobra.modelo.linha}
-              </span>
+          <div className="shrink-0 flex flex-col items-center gap-1.5 w-[4.5rem]">
+            {capas?.get(sobra.modelo_perfil_id) ? (
+              <div className="w-[4.5rem] h-[4.5rem] flex items-center justify-center border border-borda rounded-lg bg-white">
+                <img
+                  src={capas.get(sobra.modelo_perfil_id)!}
+                  alt={sobra.modelo?.codigo ?? ''}
+                  className="max-w-[3.5rem] max-h-[3.5rem] object-contain"
+                />
+              </div>
+            ) : (
+              <div className="w-[4.5rem] h-[4.5rem] flex items-center justify-center border border-borda rounded-lg bg-white">
+                <MiniaturaPerfil
+                  link={null}
+                  codigo={sobra.modelo?.codigo ?? ''}
+                />
+              </div>
             )}
-          </span>
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col justify-center">
+            <p className="text-[0.8rem] leading-snug">
+              <strong className="text-acao-600 font-bold">{sobra.modelo?.codigo}</strong>
+              <span className="font-bold"> — {sobra.modelo?.descricao}</span>
+            </p>
+            {sobra.modelo?.linha && (
+              <p className="text-xs text-texto-suave mt-0.5">
+                {sobra.modelo.linha}
+              </p>
+            )}
+            {sobra.acabamento && (
+              <div className="flex items-center gap-1 text-xs min-w-0 mt-1">
+                <span className="text-texto-suave shrink-0">Acab.:</span>
+                <AmostraCor corHex={sobra.acabamento.cor_hex} tamanho="pequeno" />
+                <strong className="text-acao-600 font-bold truncate">
+                  {sobra.acabamento.nome}
+                </strong>
+              </div>
+            )}
+          </div>
           <ChevronRight
             aria-hidden="true"
             className="text-texto-suave size-5 shrink-0"
@@ -276,45 +297,32 @@ export default function SobraDetalhe() {
         </section>
       )}
 
-      <section className="bg-destaque border-destaque-borda grid grid-cols-3 gap-3 rounded-xl border p-4">
-        <div>
-          <p className="text-destaque-texto text-sm font-medium opacity-80">
-            Comprimento
-          </p>
-          <p className="text-destaque-texto text-2xl sm:text-3xl font-bold tabular-nums">
-            {formatarComprimento(sobra.comprimento_mm)}
-          </p>
-        </div>
-        <div>
-          <p className="text-destaque-texto text-sm font-medium opacity-80">
+      <section className="bg-destaque border-destaque-borda flex items-stretch justify-center rounded-xl border py-4">
+        <div className="flex flex-1 flex-col items-center justify-end px-2">
+          <span className="text-destaque-texto text-sm font-medium opacity-80 mb-1">
             Quantidade
-          </p>
-          <p className="text-destaque-texto text-2xl sm:text-3xl font-bold tabular-nums">
+          </span>
+          <span className="text-destaque-texto text-2xl sm:text-3xl font-bold tabular-nums text-center leading-none">
             {sobra.quantidade}
             <span className="ml-1 text-sm sm:text-base font-medium">
               {sobra.quantidade === 1 ? 'peça' : 'peças'}
             </span>
-          </p>
+          </span>
         </div>
-        <div>
-          <p className="text-destaque-texto text-sm font-medium opacity-80 mb-1">
-            Acabamento
-          </p>
-          <div className="flex items-center gap-1.5 min-w-0">
-            {sobra.acabamento ? (
-              <>
-                <AmostraCor
-                  corHex={sobra.acabamento.cor_hex}
-                  tamanho="pequeno"
-                />
-                <span className="text-destaque-texto text-lg font-bold truncate">
-                  {sobra.acabamento.nome}
-                </span>
-              </>
-            ) : (
-              <span className="text-destaque-texto text-lg font-bold opacity-70">Nenhum</span>
-            )}
-          </div>
+        
+        <div className="border-l border-r border-destaque-borda/40 px-3 sm:px-4 flex items-center justify-center">
+          <span className="text-destaque-texto text-lg font-medium opacity-80">
+            de
+          </span>
+        </div>
+
+        <div className="flex flex-1 flex-col items-center justify-end px-2">
+          <span className="text-destaque-texto text-sm font-medium opacity-80 mb-1">
+            Comprimento
+          </span>
+          <span className="text-destaque-texto text-2xl sm:text-3xl font-bold tabular-nums text-center leading-none">
+            {formatarComprimento(sobra.comprimento_mm)}
+          </span>
         </div>
       </section>
  

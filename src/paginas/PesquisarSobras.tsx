@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Search,
@@ -13,8 +13,9 @@ import { useSobras } from '@/dados/sobras'
 import { useAcabamentos } from '@/dados/acabamentos'
 import { useConfiguracoes, paraConfiguracaoCorte } from '@/dados/configuracoes'
 import { useReservarSobra } from '@/dados/reservas'
-import { SeletorPerfil } from '@/componentes/SeletorPerfil'
-import { usePerfilIndicado } from '@/componentes/usePerfilIndicado'
+import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
+import { SEM_LINHA } from '@/dados/modelosPerfil'
+import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { CampoMedida } from '@/componentes/ui/CampoMedida'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { Botao } from '@/componentes/ui/Botao'
@@ -32,7 +33,6 @@ import {
 import { CONFIGURACAO_CORTE_PADRAO } from '@/dominio/corte'
 import { cn } from '@/lib/utilitarios'
 import type { UnidadeMedida } from '@/config/aplicacao'
-import type { ModeloPerfil } from '@/tipos/banco'
 
 /**
  * Pesquisa de sobras para um corte.
@@ -52,8 +52,10 @@ import type { ModeloPerfil } from '@/tipos/banco'
  */
 
 interface CandidataComDados extends CandidataSobra {
+  modeloId: string
   modeloCodigo: string
   modeloDescricao: string
+  modeloLinha: string | null
   acabamentoNome: string
   acabamentoCor: string | null
   quantidadeTotal: number
@@ -64,10 +66,11 @@ export default function PesquisarSobras() {
   const { data: acabamentos } = useAcabamentos()
   const { data: config } = useConfiguracoes()
   const reservar = useReservarSobra()
+  const { data: capas } = useCapasDesenhos('imagem')
 
-  const [modelo, setModelo] = useState<ModeloPerfil | null>(null)
-  // Volta da tela de identificação já com o perfil escolhido.
-  usePerfilIndicado(setModelo)
+  const [linhasSelecionadas, setLinhasSelecionadas] = useState<string[]>([])
+  const [buscaExecutada, setBuscaExecutada] = useState(false)
+  
   const [acabamentoId, setAcabamentoId] = useState('')
   const [textoMedida, setTextoMedida] = useState('')
   const [unidade, setUnidade] = useState<UnidadeMedida>('mm')
@@ -82,16 +85,34 @@ export default function PesquisarSobras() {
     : CONFIGURACAO_CORTE_PADRAO
 
   const podePesquisar =
-    modelo !== null && acabamentoId !== '' && corteMm !== null && corteMm > 0
+    corteMm !== null && corteMm > 0
 
-  // Só peças do modelo escolhido, disponíveis, com unidade livre.
-  const candidatas: CandidataComDados[] = (sobras ?? [])
-    .filter(
-      (s) =>
-        s.modelo_perfil_id === modelo?.id &&
-        s.status === 'disponivel' &&
-        s.quantidade - s.quantidade_reservada > 0,
-    )
+  const linhasDisponiveis = useMemo(() => {
+    if (!sobras) return []
+    const linhas = new Set<string>()
+    for (const s of sobras) {
+      if (s.status === 'disponivel' && s.quantidade - s.quantidade_reservada > 0) {
+        linhas.add(s.modelo?.linha?.trim() || SEM_LINHA)
+      }
+    }
+    return Array.from(linhas).sort((a, b) => {
+      if (a === SEM_LINHA) return 1
+      if (b === SEM_LINHA) return -1
+      return a.localeCompare(b, 'pt-BR')
+    })
+  }, [sobras])
+
+  const candidatasSemFiltroAcabamento = useMemo(() => {
+    return (sobras ?? []).filter((s) => {
+      const disponivel = s.status === 'disponivel' && s.quantidade - s.quantidade_reservada > 0
+      if (!disponivel) return false
+      const linha = s.modelo?.linha?.trim() || SEM_LINHA
+      return linhasSelecionadas.length === 0 || linhasSelecionadas.includes(linha)
+    })
+  }, [sobras, linhasSelecionadas])
+
+  const candidatas: CandidataComDados[] = candidatasSemFiltroAcabamento
+    .filter((s) => acabamentoId === '' || s.acabamento_id === acabamentoId)
     .map((s) => ({
       id: s.id,
       codigo: s.codigo,
@@ -101,23 +122,23 @@ export default function PesquisarSobras() {
       acabamentoId: s.acabamento_id,
       localizacaoCodigo: s.localizacao?.codigo ?? null,
       criadoEm: s.criado_em,
+      modeloId: s.modelo_perfil_id,
       modeloCodigo: s.modelo?.codigo ?? '',
       modeloDescricao: s.modelo?.descricao ?? '',
+      modeloLinha: s.modelo?.linha ?? null,
       acabamentoNome: s.acabamento?.nome ?? '',
       acabamentoCor: s.acabamento?.cor_hex ?? null,
     }))
 
   const acabamentosDisponiveisIds = new Set(
-    candidatas.map((s) => s.acabamentoId)
+    candidatasSemFiltroAcabamento.map((s) => s.acabamento_id)
   )
 
-  const opcoesAcabamento = modelo
-    ? acabamentos?.filter((a) => acabamentosDisponiveisIds.has(a.id))
-    : acabamentos
+  const opcoesAcabamento = acabamentos?.filter((a) => acabamentosDisponiveisIds.has(a.id))
 
   // Só pesquisa quando não há reserva confirmada (evita mensagem contraditória).
   const achados =
-    podePesquisar && !reservadaCodigo
+    podePesquisar && buscaExecutada && !reservadaCodigo
       ? pesquisarSobras(
           candidatas,
           { corteMm, acabamentoId, quantidadeCortes },
@@ -154,6 +175,7 @@ export default function PesquisarSobras() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
+      <BotaoVoltar para="/" rotulo="Início" className="mb-4" />
       <header className="mb-5 flex items-center gap-3">
         <Search aria-hidden="true" className="text-acao-600 size-7" />
         <h1 className="text-2xl font-bold">Procurar sobra</h1>
@@ -168,40 +190,50 @@ export default function PesquisarSobras() {
 
       <div className="mb-6 flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
-          <div className="flex items-center justify-between gap-3">
-            <label className="font-medium">Perfil</label>
-            {modelo && (
-              <BotaoVoltar
-                onClick={() => {
-                  setModelo(null)
-                  setAcabamentoId('')
-                }}
-                rotulo="Trocar perfil"
-              />
-            )}
-          </div>
-          {/* Mesmo campo de busca da tela "Cadastrar sobra": digitar em
-              vez de rolar um menu comprido, com desenho e foto para
-              conferir antes de escolher. A altura fixa só se aplica
-              enquanto a lista está aberta — com o perfil escolhido, o
-              cartão de confirmação assume a altura natural dele. */}
-          <div className={cn(!modelo && 'flex h-96 flex-col')}>
-            <SeletorPerfil
-              selecionado={modelo}
-              aoSelecionar={(m) => {
-                setModelo(m)
-                setAcabamentoId('')
-              }}
-            />
-          </div>
+          <label className="font-medium">Linhas (opcional)</label>
+          <p className="text-texto-suave text-xs">
+            Selecione uma ou mais linhas. Deixe em branco para procurar em todas.
+          </p>
+          {linhasDisponiveis.length === 0 ? (
+            <p className="text-texto-suave text-sm mt-2">Nenhuma sobra disponível no estoque.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {linhasDisponiveis.map(linha => {
+                const selecionada = linhasSelecionadas.includes(linha)
+                return (
+                  <button
+                    key={linha}
+                    type="button"
+                    onClick={() => {
+                      setBuscaExecutada(false)
+                      setLinhasSelecionadas(prev => 
+                        selecionada ? prev.filter(l => l !== linha) : [...prev, linha]
+                      )
+                    }}
+                    className={cn(
+                      "rounded-full px-3 py-1.5 text-sm font-medium border-2 transition-colors",
+                      selecionada 
+                        ? "bg-acao-600 border-acao-600 text-white" 
+                        : "bg-superficie border-borda text-texto-suave hover:bg-superficie-2"
+                    )}
+                  >
+                    {linha === SEM_LINHA ? 'Sem linha' : linha}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         <CampoSelecao
-          rotulo="Cor ou acabamento"
+          rotulo="Cor ou acabamento (opcional)"
           value={acabamentoId}
-          onChange={(e) => setAcabamentoId(e.target.value)}
+          onChange={(e) => {
+            setAcabamentoId(e.target.value)
+            setBuscaExecutada(false)
+          }}
         >
-          <option value="">Selecione o acabamento…</option>
+          <option value="">Todas as cores e acabamentos</option>
           {opcoesAcabamento?.map((a) => (
             <option key={a.id} value={a.id}>
               {a.nome}
@@ -213,8 +245,14 @@ export default function PesquisarSobras() {
           rotulo="Comprimento de cada corte"
           texto={textoMedida}
           unidade={unidade}
-          aoMudarTexto={setTextoMedida}
-          aoMudarUnidade={setUnidade}
+          aoMudarTexto={(t) => {
+            setTextoMedida(t)
+            setBuscaExecutada(false)
+          }}
+          aoMudarUnidade={(u) => {
+            setUnidade(u)
+            setBuscaExecutada(false)
+          }}
         />
 
         <div>
@@ -225,7 +263,10 @@ export default function PesquisarSobras() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setQuantidadeCortes((q) => Math.max(1, q - 1))}
+              onClick={() => {
+                setQuantidadeCortes((q) => Math.max(1, q - 1))
+                setBuscaExecutada(false)
+              }}
               aria-label="Diminuir quantidade de cortes"
               className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-16 w-16 shrink-0 rounded-xl border-2 text-2xl font-bold"
             >
@@ -238,13 +279,17 @@ export default function PesquisarSobras() {
               onChange={(e) => {
                 const n = Number(e.target.value.replace(/\D/g, ''))
                 setQuantidadeCortes(Number.isFinite(n) && n >= 1 ? n : 1)
+                setBuscaExecutada(false)
               }}
               aria-label="Quantidade de cortes"
               className="border-borda bg-superficie min-h-16 min-w-0 flex-1 rounded-xl border-2 text-center text-2xl font-semibold tabular-nums"
             />
             <button
               type="button"
-              onClick={() => setQuantidadeCortes((q) => Math.min(999, q + 1))}
+              onClick={() => {
+                setQuantidadeCortes((q) => Math.min(999, q + 1))
+                setBuscaExecutada(false)
+              }}
               aria-label="Aumentar quantidade de cortes"
               className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-16 w-16 shrink-0 rounded-xl border-2 text-2xl font-bold"
             >
@@ -253,6 +298,15 @@ export default function PesquisarSobras() {
           </div>
         </div>
       </div>
+
+      <Botao
+        tamanho="largura_total"
+        disabled={!podePesquisar}
+        onClick={() => setBuscaExecutada(true)}
+        className="mb-6"
+      >
+        Buscar sobras
+      </Botao>
 
       {reservadaCodigo && (
         <div
@@ -279,7 +333,7 @@ export default function PesquisarSobras() {
         </p>
       )}
 
-      {podePesquisar && !reservadaCodigo && (
+      {podePesquisar && buscaExecutada && !reservadaCodigo && (
         <section aria-live="polite">
           <h2 className="mb-3 font-semibold">
             {achados.length === 0
@@ -290,7 +344,7 @@ export default function PesquisarSobras() {
           {achados.length === 0 && (
             <div className="bg-superficie-2 text-texto-suave rounded-xl p-5 text-sm">
               <p className="mb-2">
-                Nenhuma peça deste perfil e acabamento comporta{' '}
+                Nenhuma peça de perfil compatível comporta{' '}
                 {quantidadeCortes > 1
                   ? `${quantidadeCortes} cortes de ${formatarComprimento(corteMm)}`
                   : `1 corte de ${formatarComprimento(corteMm)}`}
@@ -314,45 +368,62 @@ export default function PesquisarSobras() {
                   key={s.id}
                   className="bg-superficie rounded-xl p-4 shadow-sm"
                 >
-                  <div className="mb-3 flex items-start justify-between gap-3">
+                  <div className="mb-3 flex items-start gap-3">
+                    <div className="shrink-0 flex flex-col items-center gap-1.5 w-[4.5rem]">
+                      <div className="w-[4.5rem] h-[4.5rem] flex items-center justify-center border border-borda rounded-lg bg-white">
+                        {capas?.get(s.modeloId) ? (
+                          <img
+                            src={capas.get(s.modeloId)!}
+                            alt={s.modeloCodigo}
+                            className="max-w-[3.5rem] max-h-[3.5rem] object-contain"
+                          />
+                        ) : (
+                          <MiniaturaPerfil
+                            link={null}
+                            codigo={s.modeloCodigo}
+                          />
+                        )}
+                      </div>
+                      <span className="bg-aluminio-200 text-grafite-900 rounded-md px-1.5 py-0.5 text-[0.65rem] font-semibold leading-tight">
+                        disponível
+                      </span>
+                    </div>
+
                     <Link
                       to={`/sobras/${s.id}`}
-                      className="flex min-w-0 items-center gap-2"
+                      className="flex min-w-0 flex-1 flex-col gap-0.5"
                       aria-label={`Ver detalhes da sobra ${s.codigo}`}
                     >
-                      <span className="min-w-0">
-                        <span className="block font-mono font-bold">
-                          {s.codigo}
+                      <p className="text-[0.8rem] leading-snug">
+                        <strong className="text-acao-600 font-bold">{s.modeloCodigo}</strong>
+                        <span className="font-bold"> — {s.modeloDescricao}</span>
+                      </p>
+                      <p className="text-xs text-texto-suave">
+                        Lote: {s.codigo}
+                      </p>
+                      <hr className="border-borda my-1" />
+                      <div className="flex items-center gap-x-3 text-xs mt-0.5">
+                        <span>
+                          Qt. Peças:{' '}
+                          <strong className="text-acao-600 font-bold">
+                            {String(s.quantidadeDisponivel).padStart(2, '0')}
+                          </strong>
                         </span>
-                        <span className="block truncate text-sm flex items-center gap-1">
-                          {s.modeloCodigo} ·{' '}
-                          <AmostraCor
-                            corHex={s.acabamentoCor}
-                            nome={s.acabamentoNome}
-                          />
+                        <span>
+                          Med.:{' '}
+                          <strong className="text-acao-600 font-bold">
+                            {formatarComprimento(s.comprimentoMm)}
+                          </strong>
                         </span>
-                        {s.localizacaoCodigo && (
-                          <span className="text-texto-suave flex items-center gap-1 text-sm">
-                            <MapPin aria-hidden="true" className="size-3.5" />
-                            {s.localizacaoCodigo}
-                          </span>
-                        )}
-                      </span>
-                      <ChevronRight
-                        aria-hidden="true"
-                        className="text-texto-suave size-4 shrink-0"
-                      />
+                      </div>
+                      <div className="flex items-center gap-1 text-xs min-w-0 mt-0.5">
+                        <span className="shrink-0">Acab.:</span>
+                        <AmostraCor corHex={s.acabamentoCor} tamanho="pequeno" />
+                        <strong className="text-acao-600 font-bold truncate">
+                          {s.acabamentoNome}
+                        </strong>
+                      </div>
                     </Link>
-
-                    <p className="shrink-0 text-right">
-                      <span className="block text-xl font-bold tabular-nums">
-                        {formatarComprimento(s.comprimentoMm)}
-                      </span>
-                      <span className="text-texto-suave text-xs">
-                        {s.quantidadeDisponivel} de {s.quantidadeTotal}{' '}
-                        {s.quantidadeTotal === 1 ? 'livre' : 'livres'}
-                      </span>
-                    </p>
                   </div>
 
                   {/* Resumo do plano de corte */}
@@ -406,9 +477,11 @@ export default function PesquisarSobras() {
         </section>
       )}
 
-      {!podePesquisar && !reservadaCodigo && (
+      {(!podePesquisar || !buscaExecutada) && !reservadaCodigo && (
         <p className="bg-superficie-2 text-texto-suave rounded-xl p-5 text-center text-sm">
-          Escolha o perfil, o acabamento e o comprimento do corte.
+          {podePesquisar
+            ? 'Clique em "Buscar sobras" para ver as peças disponíveis.'
+            : 'Informe o comprimento do corte para buscar.'}
         </p>
       )}
     </div>
