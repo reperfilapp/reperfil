@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckCircle2, Copy, PackagePlus } from 'lucide-react'
+import { CheckCircle2, Copy, PackagePlus, Package, Scissors } from 'lucide-react'
 import {
   useCadastrarSobra,
   useSomarAoLote,
@@ -10,6 +10,7 @@ import { loteEquivalente } from '@/dominio/duplicidade'
 import { useAcabamentos } from '@/dados/acabamentos'
 import { PontoCor } from '@/componentes/ui/PontoCor'
 import { useLocalizacoes, descreverLocalizacao } from '@/dados/localizacoes'
+import { useClientes } from '@/dados/clientes'
 import { SeletorPerfil } from '@/componentes/SeletorPerfil'
 import { usePerfilIndicado } from '@/componentes/usePerfilIndicado'
 import { CampoMedida } from '@/componentes/ui/CampoMedida'
@@ -31,7 +32,7 @@ import type { UnidadeMedida } from '@/config/aplicacao'
 import type { EstadoConservacao, ModeloPerfil } from '@/tipos/banco'
 
 /**
- * Cadastro rápido de sobras — a função mais usada do sistema.
+ * Cadastro rápido de estoque — a função mais usada do sistema.
  *
  * O cenário real: pessoa de pé no depósito, peça numa mão, celular na outra,
  * às vezes de luva, com dez pontas para lançar. Cada toque a mais multiplica
@@ -56,12 +57,21 @@ interface UltimoLancamento {
   codigoGerado: string
 }
 
+const ROTULO_ESTADO: Record<EstadoConservacao, string> = {
+  novo_embalado: 'Novo/Embalado',
+  excelente: 'Excelente',
+  bom: 'Bom',
+  pequenos_arranhoes: 'Pequenos arranhões',
+  muito_avariado: 'Muito avariado',
+}
+
 export default function CadastrarSobra() {
   const cadastrar = useCadastrarSobra()
   const somar = useSomarAoLote()
   const { data: sobras } = useSobras()
   const { data: acabamentos } = useAcabamentos()
   const { data: locais } = useLocalizacoes()
+  const { data: clientes } = useClientes()
 
   const [modelo, setModelo] = useState<ModeloPerfil | null>(null)
   // Volta da tela de identificação já com o perfil escolhido.
@@ -75,7 +85,13 @@ export default function CadastrarSobra() {
   const [unidade, setUnidade] = useState<UnidadeMedida>('mm')
   const comprimentoMm = interpretarMedidaDigitada(textoMedida, unidade)
   const [quantidade, setQuantidade] = useState(1)
-  const [estado, setEstado] = useState<EstadoConservacao>('bom')
+  // Tipo: 'novo' (vem do fornecedor) ou 'sobra' (saiu de corte/obra)
+  const [tipoMaterial, setTipoMaterial] = useState<'novo' | 'sobra'>('sobra')
+  // Quando tipo = 'novo', o estado é fixado em 'novo_embalado'
+  const [estadoManual, setEstadoManual] = useState<EstadoConservacao>('bom')
+  const estado: EstadoConservacao = tipoMaterial === 'novo' ? 'novo_embalado' : estadoManual
+  const [clienteObra, setClienteObra] = useState('')
+  const [observacoes, setObservacoes] = useState('')
   const [origem, setOrigem] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [ultimo, setUltimo] = useState<UltimoLancamento | null>(null)
@@ -125,8 +141,10 @@ export default function CadastrarSobra() {
       localizacao_id: localizacaoId === '' ? null : localizacaoId,
       estado,
       origem: origem.trim() === '' ? null : origem.trim(),
-      observacoes: null,
+      observacoes: observacoes.trim() === '' ? null : observacoes.trim(),
       foto_url: fotoCaminho,
+      tipo_material: tipoMaterial,
+      cliente_obra: clienteObra.trim() === '' ? null : clienteObra.trim(),
     }
 
     try {
@@ -135,10 +153,11 @@ export default function CadastrarSobra() {
       setUltimo({ modelo, dados, codigoGerado: criado.codigo })
 
       if (continuarCadastrando) {
-        // Mantém acabamento, localização, estado e origem: quem lança as
-        // sobras de uma obra repete esses campos peça após peça.
+        // Mantém acabamento, localização, estado, tipo, cliente/obra e origem:
+        // quem lança as peças de uma mesma remessa repete esses campos.
         setTextoMedida('')
         setQuantidade(1)
+        setObservacoes('')
         // A foto é da peça, não do lote: nunca deve ser reaproveitada.
         setFotoCaminho(null)
         setFotoPrevia(null)
@@ -146,6 +165,7 @@ export default function CadastrarSobra() {
         setModelo(null)
         setTextoMedida('')
         setQuantidade(1)
+        setObservacoes('')
         setFotoCaminho(null)
         setFotoPrevia(null)
       }
@@ -176,14 +196,17 @@ export default function CadastrarSobra() {
           localizacao_id: localizacaoId === '' ? null : localizacaoId,
           estado,
           origem: origem.trim() === '' ? null : origem.trim(),
-          observacoes: null,
+          observacoes: observacoes.trim() === '' ? null : observacoes.trim(),
           foto_url: fotoCaminho,
+          tipo_material: tipoMaterial,
+          cliente_obra: clienteObra.trim() === '' ? null : clienteObra.trim(),
         },
         codigoGerado: jaExiste.codigo,
       })
 
       setTextoMedida('')
       setQuantidade(1)
+      setObservacoes('')
       setFotoCaminho(null)
       setFotoPrevia(null)
 
@@ -202,13 +225,21 @@ export default function CadastrarSobra() {
     setUnidade('mm')
     setTextoMedida(String(ultimo.dados.comprimento_mm))
     setQuantidade(ultimo.dados.quantidade)
-    setEstado(ultimo.dados.estado)
+    setTipoMaterial(ultimo.dados.tipo_material)
+    if (ultimo.dados.tipo_material !== 'novo') {
+      setEstadoManual(ultimo.dados.estado)
+    }
+    setClienteObra(ultimo.dados.cliente_obra ?? '')
+    setObservacoes(ultimo.dados.observacoes ?? '')
     setOrigem(ultimo.dados.origem ?? '')
     setErro(null)
   }
 
   const acabamentoEscolhido = acabamentos?.find((a) => a.id === acabamentoId)
   const localEscolhido = locais?.find((l) => l.id === localizacaoId)
+
+  // ID do <datalist> de clientes para o campo cliente/obra
+  const datalistId = 'clientes-datalist'
 
   return (
     <div
@@ -234,7 +265,7 @@ export default function CadastrarSobra() {
     >
       <header className="mb-6 flex shrink-0 items-center gap-3">
         <PackagePlus aria-hidden="true" className="text-acao-600 size-7" />
-        <h1 className="text-2xl font-bold">Cadastrar sobra</h1>
+        <h1 className="text-2xl font-bold">Cadastrar estoque</h1>
       </header>
 
       {ultimo && (
@@ -244,7 +275,7 @@ export default function CadastrarSobra() {
         >
           <CheckCircle2 aria-hidden="true" className="size-5 shrink-0" />
           <p className="flex-1 text-sm">
-            <strong>{ultimo.codigoGerado}</strong> cadastrada —{' '}
+            <strong>{ultimo.codigoGerado}</strong> cadastrado —{' '}
             {formatarComprimento(ultimo.dados.comprimento_mm)}
             {ultimo.dados.quantidade > 1 && ` × ${ultimo.dados.quantidade}`}
           </p>
@@ -312,7 +343,7 @@ export default function CadastrarSobra() {
               <h2 className="mb-2 font-semibold">3. Quanto mede?</h2>
               <CampoMedida
                 rotulo="Comprimento da peça"
-                // A barra do perfil escolhido é o teto: não existe sobra
+                // A barra do perfil escolhido é o teto: não existe material
                 // maior do que a peça de onde ela saiu.
                 maximoMm={modelo.comprimento_barra_mm}
                 texto={textoMedida}
@@ -356,24 +387,90 @@ export default function CadastrarSobra() {
               </div>
             </section>
 
-            {/* 5 — Estado de conservação */}
+            {/* 5 — Tipo de material */}
             <section>
-              <h2 className="mb-2 font-semibold">5. Estado da peça</h2>
-              <CampoSelecao
-                rotulo="Condição visual"
-                value={estado}
-                onChange={(e) => setEstado(e.target.value as EstadoConservacao)}
-              >
-                <option value="excelente">Excelente</option>
-                <option value="bom">Bom</option>
-                <option value="pequenos_arranhoes">Pequenos arranhões</option>
-                <option value="muito_avariado">Muito avariado</option>
-              </CampoSelecao>
+              <h2 className="mb-2 font-semibold">5. Tipo de material</h2>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  id="tipo-sobra"
+                  onClick={() => {
+                    setTipoMaterial('sobra')
+                    // Restaura estado padrão quando volta para sobra
+                    if (estadoManual === 'novo_embalado') {
+                      setEstadoManual('bom')
+                    }
+                  }}
+                  aria-pressed={tipoMaterial === 'sobra'}
+                  className={cn(
+                    'flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border-2 font-semibold transition-colors',
+                    tipoMaterial === 'sobra'
+                      ? 'border-acao-600 bg-acao-600 text-white'
+                      : 'border-borda bg-superficie text-texto hover:bg-superficie-2',
+                  )}
+                >
+                  <Scissors aria-hidden="true" className="size-6" />
+                  <span>SOBRA</span>
+                  <span className={cn('text-[0.65rem] font-normal leading-tight', tipoMaterial === 'sobra' ? 'text-white/75' : 'text-texto-suave')}>
+                    saiu de um corte/obra
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  id="tipo-novo"
+                  onClick={() => {
+                    setTipoMaterial('novo')
+                    // Quando novo, condição visual vira novo_embalado automaticamente
+                  }}
+                  aria-pressed={tipoMaterial === 'novo'}
+                  className={cn(
+                    'flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border-2 font-semibold transition-colors',
+                    tipoMaterial === 'novo'
+                      ? 'border-economia-600 bg-economia-600 text-white'
+                      : 'border-borda bg-superficie text-texto hover:bg-superficie-2',
+                  )}
+                >
+                  <Package aria-hidden="true" className="size-6" />
+                  <span>NOVO</span>
+                  <span className={cn('text-[0.65rem] font-normal leading-tight', tipoMaterial === 'novo' ? 'text-white/75' : 'text-texto-suave')}>
+                    direto do fornecedor
+                  </span>
+                </button>
+              </div>
+
+              {/* Quando é novo, exibe o estado fixado como informação */}
+              {tipoMaterial === 'novo' && (
+                <p className="text-economia-700 bg-economia-50 mt-2 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium">
+                  <CheckCircle2 aria-hidden="true" className="size-4 shrink-0" />
+                  Condição visual definida automaticamente como <strong>Novo/Embalado</strong>
+                </p>
+              )}
             </section>
 
-            {/* 6 — Localização */}
+            {/* 6 — Estado de conservação (somente para sobras) */}
+            {tipoMaterial === 'sobra' && (
+              <section>
+                <h2 className="mb-2 font-semibold">6. Estado da peça</h2>
+                <CampoSelecao
+                  rotulo="Condição visual"
+                  value={estadoManual}
+                  onChange={(e) => setEstadoManual(e.target.value as EstadoConservacao)}
+                >
+                  <option value="novo_embalado">Novo/Embalado</option>
+                  <option value="excelente">Excelente</option>
+                  <option value="bom">Bom</option>
+                  <option value="pequenos_arranhoes">Pequenos arranhões</option>
+                  <option value="muito_avariado">Muito avariado</option>
+                </CampoSelecao>
+              </section>
+            )}
+
+            {/* 7 — Localização */}
             <section>
-              <h2 className="mb-2 font-semibold">6. Onde vai guardar?</h2>
+              <h2 className="mb-2 font-semibold">
+                {tipoMaterial === 'sobra' ? '7' : '6'}. Onde vai guardar?
+              </h2>
               <CampoSelecao
                 rotulo="Localização"
                 value={localizacaoId}
@@ -388,10 +485,56 @@ export default function CadastrarSobra() {
               </CampoSelecao>
             </section>
 
-            {/* 7 — Foto, opcional */}
+            {/* 8 — Cliente / Obra */}
             <section>
               <h2 className="mb-2 font-semibold">
-                7. Foto da peça{' '}
+                {tipoMaterial === 'sobra' ? '8' : '7'}. Cliente / Obra{' '}
+                <span className="text-texto-suave font-normal">(opcional)</span>
+              </h2>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="campo-cliente-obra"
+                  list={datalistId}
+                  value={clienteObra}
+                  onChange={(e) => setClienteObra(e.target.value)}
+                  placeholder="Nome do cliente ou da obra…"
+                  autoComplete="off"
+                  className="border-borda bg-superficie focus:border-acao-500 focus:ring-acao-500 w-full rounded-xl border-2 px-4 py-3 outline-none focus:ring-1"
+                />
+                <datalist id={datalistId}>
+                  {clientes?.map((c) => (
+                    <option key={c.id} value={c.nome}>
+                      {c.nome_fantasia ? `${c.nome} (${c.nome_fantasia})` : c.nome}
+                    </option>
+                  ))}
+                </datalist>
+              </div>
+              <p className="text-texto-suave mt-1.5 text-xs">
+                Digite para buscar na lista de clientes ou escreva livremente.
+              </p>
+            </section>
+
+            {/* 9 — Observação */}
+            <section>
+              <h2 className="mb-2 font-semibold">
+                {tipoMaterial === 'sobra' ? '9' : '8'}. Observação{' '}
+                <span className="text-texto-suave font-normal">(opcional)</span>
+              </h2>
+              <textarea
+                id="campo-observacao"
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
+                placeholder="Anotações sobre esta peça, condição específica, referência interna…"
+                rows={3}
+                className="border-borda bg-superficie focus:border-acao-500 focus:ring-acao-500 w-full resize-none rounded-xl border-2 px-4 py-3 text-sm outline-none focus:ring-1"
+              />
+            </section>
+
+            {/* 10 — Foto, opcional */}
+            <section>
+              <h2 className="mb-2 font-semibold">
+                {tipoMaterial === 'sobra' ? '10' : '9'}. Foto da peça{' '}
                 <span className="text-texto-suave font-normal">(opcional)</span>
               </h2>
               <CampoFoto
@@ -438,12 +581,34 @@ export default function CadastrarSobra() {
                     {quantidade} {quantidade === 1 ? 'peça' : 'peças'}
                   </dd>
 
+                  <dt className="text-grafite-600">Tipo</dt>
+                  <dd className="font-medium">
+                    {tipoMaterial === 'novo' ? 'Novo' : 'Sobra'}
+                  </dd>
+
+                  <dt className="text-grafite-600">Condição</dt>
+                  <dd className="font-medium">{ROTULO_ESTADO[estado]}</dd>
+
                   <dt className="text-grafite-600">Local</dt>
                   <dd className="font-medium">
                     {localEscolhido
                       ? descreverLocalizacao(localEscolhido)
                       : 'não definido'}
                   </dd>
+
+                  {clienteObra.trim() && (
+                    <>
+                      <dt className="text-grafite-600">Cliente/Obra</dt>
+                      <dd className="font-medium">{clienteObra.trim()}</dd>
+                    </>
+                  )}
+
+                  {observacoes.trim() && (
+                    <>
+                      <dt className="text-grafite-600">Observação</dt>
+                      <dd className="font-medium">{observacoes.trim()}</dd>
+                    </>
+                  )}
                 </dl>
               </section>
             )}

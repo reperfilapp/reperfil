@@ -233,7 +233,7 @@ export default function Reservas() {
               <Link
                 to={`/sobras/${reserva.lote_id}`}
                 className="flex min-w-0 items-center gap-2"
-                aria-label={`Ver detalhes da sobra ${reserva.lote?.codigo}`}
+                aria-label={`Ver detalhes do material ${reserva.lote?.codigo}`}
               >
                 <span className="min-w-0">
                   <span className="block font-mono font-bold">
@@ -398,7 +398,7 @@ export default function Reservas() {
                   <p>
                     Sobram{' '}
                     <strong>{formatarComprimento(previa.restoMm)}</strong>, que
-                    voltam ao estoque como uma sobra nova, com código próprio.
+                    voltam ao estoque como um material novo, com código próprio.
                   </p>
                 )}
                 {previa.destinoResto === 'descarte' && (

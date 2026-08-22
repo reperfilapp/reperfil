@@ -10,6 +10,10 @@ export interface SobraDetalhada extends LoteSobra {
     descricao: string
     linha: string | null
     aplicacao: string | null
+    largura_secao_mm?: number | null
+    altura_secao_mm?: number | null
+    medida_3_secao_mm?: number | null
+    medida_4_secao_mm?: number | null
   } | null
   acabamento: { codigo: string; nome: string; cor_hex: string | null } | null
   localizacao: { codigo: string } | null
@@ -53,6 +57,10 @@ export interface DadosNovaSobra {
   observacoes: string | null
   /** Caminho no Storage, não endereço público: o balde é privado. */
   foto_url: string | null
+  /** 'novo' = direto do fornecedor, 'sobra' = saiu de um corte/obra. */
+  tipo_material: 'novo' | 'sobra'
+  /** Nome do cliente ou da obra de onde veio o material. */
+  cliente_obra: string | null
 }
 
 /**
@@ -70,7 +78,7 @@ export function useSobras() {
         .from('lotes_sobras')
         .select(
           `*,
-           modelo:modelos_perfil (codigo, descricao, linha, aplicacao),
+           modelo:modelos_perfil (codigo, descricao, linha, aplicacao, largura_secao_mm, altura_secao_mm, medida_3_secao_mm, medida_4_secao_mm),
            acabamento:acabamentos (codigo, nome, cor_hex),
            localizacao:localizacoes (codigo)`,
         )
@@ -107,6 +115,8 @@ export function useCadastrarSobra() {
         p_origem: dados.origem,
         p_observacoes: dados.observacoes,
         p_foto_url: dados.foto_url,
+        p_tipo_material: dados.tipo_material,
+        p_cliente_obra: dados.cliente_obra,
       })
 
       if (error) throw new Error(error.message)

@@ -31,6 +31,8 @@ import {
 import { CONFIGURACAO_CORTE_PADRAO } from '@/dominio/corte'
 import { cn } from '@/lib/utilitarios'
 import type { UnidadeMedida } from '@/config/aplicacao'
+import type { ModeloPerfil } from '@/tipos/banco'
+import { formatarMedidasSecao } from '@/dominio/secao'
 
 /**
  * Pesquisa de sobras para um corte.
@@ -54,6 +56,7 @@ interface CandidataComDados extends CandidataSobra {
   modeloCodigo: string
   modeloDescricao: string
   modeloLinha: string | null
+  modeloObj: ModeloPerfil | null
   acabamentoNome: string
   acabamentoCor: string | null
   quantidadeTotal: number
@@ -124,6 +127,7 @@ export default function PesquisarSobras() {
       modeloCodigo: s.modelo?.codigo ?? '',
       modeloDescricao: s.modelo?.descricao ?? '',
       modeloLinha: s.modelo?.linha ?? null,
+      modeloObj: s.modelo ?? null,
       acabamentoNome: s.acabamento?.nome ?? '',
       acabamentoCor: s.acabamento?.cor_hex ?? null,
     }))
@@ -171,12 +175,21 @@ export default function PesquisarSobras() {
     }
   }
 
+  function aoCancelar() {
+    setBuscaExecutada(false)
+    setReservadaCodigo(null)
+    setReservadaInfo(null)
+  }
+
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
-      <BotaoVoltar para="/" rotulo="Início" className="mb-4" />
       <header className="mb-5 flex items-center gap-3">
-        <Search aria-hidden="true" className="text-acao-600 size-7" />
-        <h1 className="text-2xl font-bold">Procurar sobra</h1>
+        {buscaExecutada ? (
+          <BotaoVoltar rotulo="Nova reserva" onClick={aoCancelar} />
+        ) : (
+          <BotaoVoltar para="/" rotulo="Início" />
+        )}
+        <h1 className="text-2xl font-bold">Procurar material</h1>
       </header>
 
       {config && !config.confirmado_pelo_administrador && (
@@ -186,125 +199,129 @@ export default function PesquisarSobras() {
         </p>
       )}
 
-      <div className="mb-6 flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label className="font-medium">Linhas (opcional)</label>
-          <p className="text-texto-suave text-xs">
-            Selecione uma ou mais linhas. Deixe em branco para procurar em todas.
-          </p>
-          {linhasDisponiveis.length === 0 ? (
-            <p className="text-texto-suave text-sm mt-2">Nenhuma sobra disponível no estoque.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {linhasDisponiveis.map(linha => {
-                const selecionada = linhasSelecionadas.includes(linha)
-                return (
-                  <button
-                    key={linha}
-                    type="button"
-                    onClick={() => {
-                      setBuscaExecutada(false)
-                      setLinhasSelecionadas(prev => 
-                        selecionada ? prev.filter(l => l !== linha) : [...prev, linha]
-                      )
-                    }}
-                    className={cn(
-                      "rounded-full px-3 py-1.5 text-sm font-medium border-2 transition-colors",
-                      selecionada 
-                        ? "bg-acao-600 border-acao-600 text-white" 
-                        : "bg-superficie border-borda text-texto-suave hover:bg-superficie-2"
-                    )}
-                  >
-                    {linha === SEM_LINHA ? 'Sem linha' : linha}
-                  </button>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        <CampoSelecao
-          rotulo="Cor ou acabamento (opcional)"
-          value={acabamentoId}
-          onChange={(e) => {
-            setAcabamentoId(e.target.value)
-            setBuscaExecutada(false)
-          }}
-        >
-          <option value="">Todas as cores e acabamentos</option>
-          {opcoesAcabamento?.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.nome}
-            </option>
-          ))}
-        </CampoSelecao>
-
-        <CampoMedida
-          rotulo="Comprimento de cada corte"
-          texto={textoMedida}
-          unidade={unidade}
-          aoMudarTexto={(t) => {
-            setTextoMedida(t)
-            setBuscaExecutada(false)
-          }}
-          aoMudarUnidade={(u) => {
-            setUnidade(u)
-            setBuscaExecutada(false)
-          }}
-        />
-
-        <div>
-          <p className="mb-1 font-medium">Quantos cortes?</p>
-          <p className="text-texto-suave mb-2 text-xs">
-            Número de peças do tamanho acima que você precisa produzir.
-          </p>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                setQuantidadeCortes((q) => Math.max(1, q - 1))
-                setBuscaExecutada(false)
-              }}
-              aria-label="Diminuir quantidade de cortes"
-              className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-16 w-16 shrink-0 rounded-xl border-2 text-2xl font-bold"
-            >
-              −
-            </button>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={quantidadeCortes}
-              onChange={(e) => {
-                const n = Number(e.target.value.replace(/\D/g, ''))
-                setQuantidadeCortes(Number.isFinite(n) && n >= 1 ? n : 1)
-                setBuscaExecutada(false)
-              }}
-              aria-label="Quantidade de cortes"
-              className="border-borda bg-superficie min-h-16 min-w-0 flex-1 rounded-xl border-2 text-center text-2xl font-semibold tabular-nums"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setQuantidadeCortes((q) => Math.min(999, q + 1))
-                setBuscaExecutada(false)
-              }}
-              aria-label="Aumentar quantidade de cortes"
-              className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-16 w-16 shrink-0 rounded-xl border-2 text-2xl font-bold"
-            >
-              +
-            </button>
+      {!buscaExecutada && (
+        <div className="mb-6 flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="font-medium">Linhas (opcional)</label>
+            <p className="text-texto-suave text-xs">
+              Selecione uma ou mais linhas. Deixe em branco para procurar em todas.
+            </p>
+            {isPending && sobras?.length === 0 ? (
+              <p className="text-texto-suave text-sm mt-2">Carregando estoque...</p>
+            ) : linhasDisponiveis.length === 0 ? (
+              <p className="text-texto-suave text-sm mt-2">Nenhum material disponível no estoque.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {linhasDisponiveis.map(linha => {
+                  const selecionada = linhasSelecionadas.includes(linha)
+                  return (
+                    <button
+                      key={linha}
+                      type="button"
+                      onClick={() => {
+                        setBuscaExecutada(false)
+                        setLinhasSelecionadas(prev => 
+                          selecionada ? prev.filter(l => l !== linha) : [...prev, linha]
+                        )
+                      }}
+                      className={cn(
+                        "rounded-full px-3 py-1.5 text-sm font-medium border-2 transition-colors",
+                        selecionada 
+                          ? "bg-acao-600 border-acao-600 text-white" 
+                          : "bg-superficie border-borda text-texto-suave hover:bg-superficie-2"
+                      )}
+                    >
+                      {linha === SEM_LINHA ? 'Sem linha' : linha}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
-        </div>
-      </div>
 
-      <Botao
-        tamanho="largura_total"
-        disabled={!podePesquisar}
-        onClick={() => setBuscaExecutada(true)}
-        className="mb-6"
-      >
-        Buscar sobras
-      </Botao>
+          <CampoSelecao
+            rotulo="Cor ou acabamento (opcional)"
+            value={acabamentoId}
+            onChange={(e) => {
+              setAcabamentoId(e.target.value)
+              setBuscaExecutada(false)
+            }}
+          >
+            <option value="">Todas as cores e acabamentos</option>
+            {opcoesAcabamento?.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.nome}
+              </option>
+            ))}
+          </CampoSelecao>
+
+          <CampoMedida
+            rotulo="Comprimento de cada corte"
+            texto={textoMedida}
+            unidade={unidade}
+            aoMudarTexto={(t) => {
+              setTextoMedida(t)
+              setBuscaExecutada(false)
+            }}
+            aoMudarUnidade={(u) => {
+              setUnidade(u)
+              setBuscaExecutada(false)
+            }}
+          />
+
+          <div>
+            <p className="mb-1 font-medium">Quantos cortes?</p>
+            <p className="text-texto-suave mb-2 text-xs">
+              Número de peças do tamanho acima que você precisa produzir.
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setQuantidadeCortes((q) => Math.max(1, q - 1))
+                  setBuscaExecutada(false)
+                }}
+                aria-label="Diminuir quantidade de cortes"
+                className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-16 w-16 shrink-0 rounded-xl border-2 text-2xl font-bold"
+              >
+                −
+              </button>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={quantidadeCortes}
+                onChange={(e) => {
+                  const n = Number(e.target.value.replace(/\D/g, ''))
+                  setQuantidadeCortes(Number.isFinite(n) && n >= 1 ? n : 1)
+                  setBuscaExecutada(false)
+                }}
+                aria-label="Quantidade de cortes"
+                className="border-borda bg-superficie min-h-16 min-w-0 flex-1 rounded-xl border-2 text-center text-2xl font-semibold tabular-nums"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setQuantidadeCortes((q) => Math.min(999, q + 1))
+                  setBuscaExecutada(false)
+                }}
+                aria-label="Aumentar quantidade de cortes"
+                className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-16 w-16 shrink-0 rounded-xl border-2 text-2xl font-bold"
+              >
+                +
+              </button>
+            </div>
+          </div>
+          
+          <Botao
+            className="w-full h-12 text-base font-semibold"
+            disabled={!podePesquisar || isPending}
+            onClick={() => setBuscaExecutada(true)}
+          >
+            <Search aria-hidden="true" className="size-5" />
+            Buscar materiais
+          </Botao>
+        </div>
+      )}
 
       {reservadaCodigo && (
         <div
@@ -333,11 +350,14 @@ export default function PesquisarSobras() {
 
       {podePesquisar && buscaExecutada && !reservadaCodigo && (
         <section aria-live="polite">
-          <h2 className="mb-3 font-semibold">
-            {achados.length === 0
-              ? 'Nenhuma sobra serve'
-              : `${achados.length} ${achados.length === 1 ? 'sobra serve' : 'sobras servem'}`}
-          </h2>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-semibold">Resultados</h2>
+            <span className="bg-superficie-2 text-texto-suave min-w-8 rounded-full px-2.5 py-0.5 text-center text-sm font-semibold tabular-nums">
+              {achados.length === 0
+                ? 'Nenhum material serve'
+                : `${achados.length} ${achados.length === 1 ? 'material serve' : 'materiais servem'}`}
+            </span>
+          </div>
 
           {achados.length === 0 && (
             <div className="bg-superficie-2 text-texto-suave rounded-xl p-5 text-sm">
@@ -349,7 +369,7 @@ export default function PesquisarSobras() {
                 .
               </p>
               <p>
-                O sistema não sugere sobra de acabamento diferente — duas peças
+                O sistema não sugere material de acabamento diferente — duas peças
                 da mesma cor, de lotes de pintura distintos, ficam visivelmente
                 diferentes na mesma esquadria.
               </p>
@@ -390,14 +410,16 @@ export default function PesquisarSobras() {
                     <Link
                       to={`/sobras/${s.id}`}
                       className="flex min-w-0 flex-1 flex-col gap-0.5"
-                      aria-label={`Ver detalhes da sobra ${s.codigo}`}
+                      aria-label={`Ver detalhes do material ${s.codigo}`}
                     >
-                      <p className="text-[0.8rem] leading-snug">
-                        <strong className="text-acao-600 font-bold">{s.modeloCodigo}</strong>
+                      <p className="text-[15px] leading-snug">
+                        <strong className="text-acao-600 font-mono text-lg font-bold">{s.modeloCodigo}</strong>
                         <span className="font-bold"> — {s.modeloDescricao}</span>
                       </p>
                       <p className="text-xs text-texto-suave">
-                        Lote: {s.codigo}
+                        {s.modeloObj && formatarMedidasSecao(s.modeloObj)
+                          ? `Medida: ${formatarMedidasSecao(s.modeloObj)}`
+                          : `Medida: ----`}
                       </p>
                       <hr className="border-borda my-1" />
                       <div className="flex items-center gap-x-3 text-xs mt-0.5">
@@ -424,7 +446,6 @@ export default function PesquisarSobras() {
                     </Link>
                   </div>
 
-                  {/* Resumo do plano de corte */}
                   <div className="bg-superficie-2 mb-3 flex items-center gap-2 rounded-lg px-3 py-2 text-sm">
                     <Scissors aria-hidden="true" className="text-texto-suave size-4 shrink-0" />
                     <span>
@@ -434,7 +455,6 @@ export default function PesquisarSobras() {
                     </span>
                   </div>
 
-                  {/* O que acontece com a peça se este corte for feito */}
                   <div
                     className={`mb-3 flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${
                       aproveitamento === 'gera-descarte'

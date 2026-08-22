@@ -72,7 +72,7 @@ export default function Inicio() {
           className="bg-atencao-50 text-atencao-700 hover:bg-atencao-100 mb-5 block rounded-xl p-4 text-sm"
         >
           <strong>Confirme os parâmetros de corte.</strong> A espessura da serra
-          e o mínimo de sobra ainda são valores presumidos.
+          e o mínimo de material ainda são valores presumidos.
         </Link>
       )}
 
@@ -118,7 +118,7 @@ export default function Inicio() {
           <Atalho
             para="/cadastrar"
             Icone={PackagePlus}
-            rotulo="Cadastrar sobra"
+            rotulo="Cadastrar estoque"
             cor="bg-acao-600 hover:bg-acao-700"
           />
         )}
@@ -126,8 +126,8 @@ export default function Inicio() {
         <Atalho
           para="/sobras"
           Icone={Scissors}
-          rotulo="Utilizar sobras"
-          subrotulo="(estoque de sobras)"
+          rotulo="Utilizar material"
+          subrotulo="(estoque)"
           cor="bg-acao-700 hover:bg-acao-800"
         />
 

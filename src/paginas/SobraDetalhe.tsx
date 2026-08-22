@@ -196,7 +196,7 @@ export default function SobraDetalhe() {
   return (
     <PaginaDetalhe
       voltarPara="/sobras"
-      rotuloVoltar="Sobras"
+      rotuloVoltar="Estoque"
       codigo={sobra.codigo}
       titulo={formatarComprimento(sobra.comprimento_mm)}
       subtitulo={`${livres} de ${sobra.quantidade} ${sobra.quantidade === 1 ? 'peça livre' : 'peças livres'}`}
@@ -212,7 +212,7 @@ export default function SobraDetalhe() {
           {podeMovimentar && sobra.status !== 'consumida' && (
             <Botao variante="contorno" onClick={() => setEditando(true)} className="flex-1 sm:flex-none">
               <Pencil aria-hidden="true" className="size-4" />
-              Editar sobra
+              Editar material
             </Botao>
           )}
           <Botao
@@ -267,6 +267,11 @@ export default function SobraDetalhe() {
                 {sobra.modelo.linha}
               </p>
             )}
+            {sobra.modelo && formatarMedidasSecao(sobra.modelo) && (
+              <p className="text-xs text-texto-suave mt-0.5">
+                Medida: {formatarMedidasSecao(sobra.modelo)}
+              </p>
+            )}
             {sobra.acabamento && (
               <div className="flex items-center gap-1 text-xs min-w-0 mt-1">
                 <span className="text-texto-suave shrink-0">Acab.:</span>
@@ -290,7 +295,7 @@ export default function SobraDetalhe() {
           <div className="bg-superficie-2 h-72 w-full overflow-hidden rounded-xl">
             <img
               src={fotoPeca}
-              alt={`Foto da sobra ${sobra.codigo}`}
+              alt={`Foto do material ${sobra.codigo}`}
               className="h-full w-full object-contain"
             />
           </div>

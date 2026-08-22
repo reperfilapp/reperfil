@@ -21,6 +21,7 @@ import {
   formatarResumo,
   maiorPrimeiro,
 } from '@/dominio/estoqueResumo'
+import { formatarMedidasSecao } from '@/dominio/secao'
 import { MiniaturaPerfil } from './MiniaturaPerfil'
 import { VisualizadorImagem } from './ui/VisualizadorImagem'
 import { BotaoVoltar } from './ui/BotaoVoltar'
@@ -348,7 +349,7 @@ export function SeletorPerfil({
       {visiveisOrdenados.length > 0 && (
         <ul className="border-borda flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-xl border-2 p-2">
           {visiveisOrdenados.map((modelo) => (
-            <li key={modelo.id} className="border-borda flex min-h-16 w-full items-center rounded-xl border-2 bg-superficie focus-within:border-acao-500 focus-within:ring-1 focus-within:ring-acao-500 overflow-hidden">
+            <li key={modelo.id} className="border-borda flex min-h-28 w-full items-center rounded-xl border-2 bg-superficie focus-within:border-acao-500 focus-within:ring-1 focus-within:ring-acao-500 overflow-hidden">
                 {capas?.get(modelo.id) ? (
                   <button
                     type="button"
@@ -377,11 +378,11 @@ export function SeletorPerfil({
                 <button
                   type="button"
                   onClick={() => aoSelecionar(modelo)}
-                  className="flex min-w-0 flex-1 self-stretch items-center gap-3 pl-3 pr-2 py-2 text-left hover:bg-superficie-2 transition-colors focus-visible:outline-none"
+                  className="flex min-w-0 flex-1 self-stretch items-center gap-3 pl-3 pr-2 py-3 text-left hover:bg-superficie-2 transition-colors focus-visible:outline-none"
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold">
-                      <span className="text-acao-600 font-mono">
+                    <span className="block font-semibold text-sm leading-snug">
+                      <span className="text-acao-600 font-mono text-base font-bold">
                         {modelo.codigo}
                       </span>{' '}
                       {modelo.descricao}
@@ -397,6 +398,11 @@ export function SeletorPerfil({
                           : 'sem estoque'}
                       </span>
                     </span>
+                    {formatarMedidasSecao(modelo) && (
+                      <span className="text-texto-suave block truncate text-sm mt-0.5">
+                        {formatarMedidasSecao(modelo)}
+                      </span>
+                    )}
                   </span>
                 </button>
             </li>

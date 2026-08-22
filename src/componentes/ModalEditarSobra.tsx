@@ -65,7 +65,7 @@ export function ModalEditarSobra({ sobra, aberto, aoFechar }: ModalEditarSobraPr
   }
 
   return (
-    <Modal aberto={aberto} aoFechar={aoFechar} titulo="Editar sobra">
+    <Modal aberto={aberto} aoFechar={aoFechar} titulo="Editar material">
       <form onSubmit={(e) => void salvar(e)} className="flex flex-col gap-6">
         <CampoMedida
           rotulo="Comprimento"

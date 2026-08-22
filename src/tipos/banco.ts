@@ -36,6 +36,7 @@ export type EstadoConservacao =
   | 'bom'
   | 'pequenos_arranhoes'
   | 'muito_avariado'
+  | 'novo_embalado'
 
 export type TipoAcabamento = 'natural' | 'anodizado' | 'pintura' | 'outro'
 
@@ -200,6 +201,10 @@ export interface LoteSobra {
   obra_origem: string | null
   lote_origem_id: string | null
   observacoes: string | null
+  /** Tipo de entrada: 'novo' = direto do fornecedor, 'sobra' = saiu de um corte/obra. */
+  tipo_material: 'novo' | 'sobra'
+  /** Nome do cliente ou da obra de onde veio o material (texto livre). */
+  cliente_obra: string | null
   criado_em: string
   atualizado_em: string
   criado_por: string | null

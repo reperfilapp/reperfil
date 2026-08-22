@@ -24,6 +24,7 @@ import {
   formatarResumo,
   maiorPrimeiro,
 } from '@/dominio/estoqueResumo'
+import { formatarMedidasSecao } from '@/dominio/secao'
 
 import { AlternadorOrdenacao } from '@/componentes/ui/AlternadorOrdenacao'
 import { useNiveisNaUrl } from '@/componentes/useNiveisNaUrl'
@@ -89,7 +90,9 @@ function combina(sobra: SobraDetalhada, termo: string): boolean {
     (sobra.modelo?.codigo.toLowerCase().includes(busca) ?? false) ||
     (sobra.modelo?.descricao.toLowerCase().includes(busca) ?? false) ||
     (sobra.acabamento?.nome.toLowerCase().includes(busca) ?? false) ||
-    (sobra.localizacao?.codigo.toLowerCase().includes(busca) ?? false)
+    (sobra.localizacao?.codigo.toLowerCase().includes(busca) ?? false) ||
+    (sobra.cliente_obra?.toLowerCase().includes(busca) ?? false) ||
+    (sobra.observacoes?.toLowerCase().includes(busca) ?? false)
   )
 }
 
@@ -205,7 +208,7 @@ export default function Sobras() {
           <BotaoVoltar para="/" rotulo="Início" className="mb-4" />
 
           <header className="mb-4 flex items-center justify-between gap-4">
-            <h1 className="text-2xl font-bold">Sobras</h1>
+            <h1 className="text-2xl font-bold">Estoque</h1>
             {podeMovimentarEstoque(perfil) && (
               <Link
                 to="/cadastrar"
@@ -228,7 +231,7 @@ export default function Sobras() {
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 placeholder="Código, perfil, acabamento ou local"
-                aria-label="Buscar sobra"
+                aria-label="Buscar material"
                 className="border-borda bg-superficie min-h-12 w-full rounded-xl border-2 pr-4 pl-12"
               />
             </div>
@@ -243,32 +246,27 @@ export default function Sobras() {
             </button>
           </div>
 
-          {/* Dentro de uma linha: diz onde se está e como voltar. Fica no
-              cabeçalho, junto da busca, e não some ao rolar a lista. */}
           {!isPending && !buscando && linhaAberta !== null && (
             <div className="mb-3 flex items-center justify-between gap-2">
-              <p className="min-w-0 truncate font-semibold">
-                {perfilEmFoco
-                  ? `${perfilEmFoco.modelo?.codigo ?? ''} ${perfilEmFoco.modelo?.descricao ?? ''}`
-                  : linhaAberta === TODAS
-                    ? 'Todas as sobras'
-                    : linhaAberta}
-                <span className="text-texto-suave ml-2 font-normal">
+              <p className="min-w-0 truncate font-semibold flex items-baseline">
+                {perfilEmFoco ? (
+                  <span className="font-mono text-2xl font-bold text-acao-600">
+                    {perfilEmFoco.modelo?.codigo ?? ''}
+                  </span>
+                ) : linhaAberta === TODAS ?
+                  'Todos os materiais'
+                : (
+                  linhaAberta
+                )}
+                <span className="text-texto-suave ml-2 font-normal text-base">
                   ({perfilEmFoco ? visiveis.length : perfis.length})
                 </span>
               </p>
 
-              {/* Só na lista de perfis: dentro de um perfil já aberto, as
-                  sobras são a mesma peça em lotes diferentes — não há nome
-                  para ordenar por ele, só o comprimento de cada lote. */}
               {!perfilEmFoco && (
                 <AlternadorOrdenacao estado={ordenacao} aoMudar={setOrdenacao} />
               )}
 
-              {/* Volta um nível de cada vez: do perfil para os perfis da
-                  linha, e da linha para as linhas. Pular direto para o topo
-                  obrigaria a refazer a escolha da linha só para ver outro
-                  perfil dela. */}
               <BotaoVoltar
                 onClick={voltarNivel}
                 rotulo={perfilAberto !== null ? 'Perfis' : 'Linhas'}
@@ -289,8 +287,8 @@ export default function Sobras() {
             }
             mensagemVazio={
               busca
-                ? 'Nenhuma sobra encontrada com esse termo.'
-                : 'Nenhuma sobra nesta linha.'
+                ? 'Nenhum material encontrado com esse termo.'
+                : 'Nenhum material nesta linha.'
             }
             aoTentarNovamente={() => void refetch()}
           />
@@ -408,8 +406,8 @@ export default function Sobras() {
                 className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left pl-2 pr-3 py-3 hover:bg-superficie-2 transition-colors self-stretch"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block font-medium text-sm leading-snug line-clamp-2">
-                    <span className="text-acao-600 font-mono">
+                  <span className="block font-medium text-[15px] leading-snug line-clamp-2">
+                    <span className="text-acao-600 font-mono text-lg font-bold">
                       {modelo?.codigo}
                     </span>{' '}
                     {modelo?.descricao}
@@ -417,6 +415,11 @@ export default function Sobras() {
                   <span className="text-texto-suave block text-xs tabular-nums mt-0.5">
                     {formatarResumo(resumo)} · {qtdLotes} {qtdLotes === 1 ? 'lote' : 'lotes'}
                   </span>
+                  {modelo && formatarMedidasSecao(modelo) && (
+                    <span className="text-texto-suave block text-xs truncate mt-0.5">
+                      {formatarMedidasSecao(modelo)}
+                    </span>
+                  )}
                 </span>
 
                 <ChevronRight
@@ -443,8 +446,9 @@ export default function Sobras() {
           return (
             <li
               key={sobra.id}
-              className="bg-superficie rounded-xl px-3 py-3 shadow-sm flex items-start gap-3"
+              className="bg-superficie rounded-xl shadow-sm flex flex-col overflow-hidden mb-2"
             >
+              <div className="flex items-start gap-3 px-3 pt-3">
               {/* Esquerda: desenho técnico pequeno + selo de status */}
               <div className="shrink-0 flex flex-col items-center gap-1.5 w-[4.5rem]">
                 {capas?.get(sobra.modelo_perfil_id) ? (
@@ -479,14 +483,16 @@ export default function Sobras() {
               <Link
                 to={`/sobras/${sobra.id}`}
                 className="flex min-w-0 flex-1 flex-col gap-0.5"
-                aria-label={`Ver detalhes da sobra ${sobra.codigo}`}
+                aria-label={`Ver detalhes do material ${sobra.codigo}`}
               >
-                <p className="text-[0.8rem] leading-snug">
-                  <strong className="text-acao-600 font-bold">{sobra.modelo?.codigo}</strong>
+                <p className="text-[15px] leading-snug">
+                  <strong className="text-acao-600 font-mono text-lg font-bold">{sobra.modelo?.codigo}</strong>
                   <span className="font-bold"> — {sobra.modelo?.descricao}</span>
                 </p>
                 <p className="text-xs text-texto-suave">
-                  Lote: {sobra.codigo}
+                  {sobra.modelo && formatarMedidasSecao(sobra.modelo)
+                    ? `Medida: ${formatarMedidasSecao(sobra.modelo)}`
+                    : `Medida: ----`}
                 </p>
                 <hr className="border-borda my-1" />
                 <div className="flex items-center gap-x-3 text-xs mt-0.5">
@@ -510,6 +516,31 @@ export default function Sobras() {
                     <strong className="text-acao-600 font-bold truncate">
                       {sobra.acabamento.nome}
                     </strong>
+                  </div>
+                )}
+              </Link>
+              </div>
+
+              {/* Rodapé com as informações adicionais solicitadas */}
+              <Link 
+                to={`/sobras/${sobra.id}`}
+                className="mt-2 border-t border-borda flex items-center divide-x divide-borda text-[0.8rem] font-bold text-acao-700 py-2 hover:bg-superficie-2 transition-colors"
+              >
+                <div className={
+                  sobra.cliente_obra || sobra.localizacao 
+                    ? "shrink-0 text-center truncate px-3 uppercase" 
+                    : "flex-1 text-center truncate px-2 uppercase"
+                }>
+                  {sobra.tipo_material === 'novo' ? 'NOVO' : 'SOBRA'}
+                </div>
+                {sobra.cliente_obra && (
+                  <div className="flex-1 text-center truncate px-2">
+                    {sobra.cliente_obra}
+                  </div>
+                )}
+                {sobra.localizacao && (
+                  <div className="shrink-0 text-center truncate px-3">
+                    {sobra.localizacao.codigo}
                   </div>
                 )}
               </Link>

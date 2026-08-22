@@ -44,6 +44,7 @@ import {
   formatarResumo,
   maiorPrimeiro,
 } from '@/dominio/estoqueResumo'
+import { formatarMedidasSecao } from '@/dominio/secao'
 import type { ModeloPerfil } from '@/tipos/banco'
 
 /** Valor de `linhaAberta` que significa "ignorar o agrupamento". */
@@ -424,12 +425,17 @@ export default function ModelosPerfil() {
                   </span>
                   {modelo.aplicacao && ` · ${modelo.aplicacao}`}
                 </span>
+                {formatarMedidasSecao(modelo) && (
+                  <span className="text-texto-suave block truncate text-sm mt-0.5">
+                    {formatarMedidasSecao(modelo)}
+                  </span>
+                )}
               </Link>
 
-              <div className="flex items-center justify-between gap-2 mt-1">
+              <div className="flex items-center justify-between gap-2 mt-2">
                 <Link
                   to={`/perfis/${modelo.id}`}
-                  className="text-acao-600 font-mono font-medium whitespace-nowrap shrink-0 text-[15px]"
+                  className="text-acao-600 font-mono font-bold whitespace-nowrap shrink-0 text-lg"
                 >
                   {modelo.codigo}
                 </Link>
