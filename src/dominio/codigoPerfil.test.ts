@@ -23,6 +23,7 @@ function modelo(codigo: string, id = codigo): ModeloPerfil {
     medida_4_secao_mm: null,
     imagem_url: null,
     ativo: true,
+    revisado: false,
     criado_em: '2026-01-01T00:00:00Z',
   }
 }

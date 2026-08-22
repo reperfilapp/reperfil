@@ -67,6 +67,7 @@ const VAZIO: DadosModeloPerfil = {
   altura_secao_mm: null,
   medida_3_secao_mm: null,
   medida_4_secao_mm: null,
+  revisado: false,
 }
 
 export default function ModelosPerfil() {

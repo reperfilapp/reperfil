@@ -23,6 +23,7 @@ function perfil(
     preco_por_metro_centavos: null,
     observacoes: null,
     ativo: true,
+    revisado: false,
     criado_em: '2026-01-01T00:00:00Z',
   }
 }

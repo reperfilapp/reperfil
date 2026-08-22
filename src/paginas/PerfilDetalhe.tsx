@@ -139,6 +139,7 @@ export default function PerfilDetalhe() {
       altura_secao_mm: perfilAtual.altura_secao_mm ?? null,
       medida_3_secao_mm: perfilAtual.medida_3_secao_mm ?? null,
       medida_4_secao_mm: perfilAtual.medida_4_secao_mm ?? null,
+      revisado: perfilAtual.revisado ?? false,
     })
     setErroEdicao(null)
     setEditando(true)
