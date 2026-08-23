@@ -703,124 +703,101 @@ export default function ProdutoDetalhe() {
               const desenho = capas?.get(item.modelo_perfil_id)
               const estoque = resumoDe(estoquePorPerfil, item.modelo_perfil_id)
               const falta = atendidos.get(chaveDoCorte(item)) !== true
+              const modeloItem = modelos?.find((m) => m.id === item.modelo_perfil_id)
 
               return (
                 <li
                   key={item.id}
                   ref={ordenacao.registrar(item.id)}
                   className={cn(
-                    'flex items-center gap-3 rounded-xl border p-2',
-                    // Em movimento: levemente transparente e por cima das
-                    // outras, para a pessoa ver o que está carregando.
+                    'flex flex-col overflow-hidden rounded-xl border',
                     ordenacao.emMovimento === item.id &&
                       'relative z-10 opacity-70 shadow-lg',
-                    // Verde e vermelho claros, não fortes: a lista inteira
-                    // fica colorida, e cor forte em tudo cansa a vista e
-                    // deixa de significar alguma coisa.
-                    // Tokens do tema, e não tons fixos: no escuro eles
-                    // viram verde e vermelho ESCUROS, e o texto claro do
-                    // tema continua legível por cima. Com os tons fixos, o
-                    // card ficava claro e o texto sumia.
                     falta
                       ? 'border-falta-borda bg-falta'
                       : 'border-ok-borda bg-ok',
                   )}
                 >
-                  {/* A alça, e não a linha inteira: arrastar de qualquer
-                      ponto tornaria impossível tocar no desenho ou abrir a
-                      ficha sem mover a linha sem querer.
+                  {/* Linha superior: alça + miniatura + nome clicável */}
+                  <div className="flex items-center gap-2 px-2 pt-2">
+                    {podeEditar && (
+                      <button
+                        type="button"
+                        onPointerDown={ordenacao.comecar(indice)}
+                        onPointerMove={ordenacao.mover}
+                        onPointerUp={ordenacao.soltar}
+                        onPointerCancel={ordenacao.soltar}
+                        aria-label={`Mover ${nomeDoPerfil(item.modelo_perfil_id)} na sequência`}
+                        title="Arraste para reordenar"
+                        className="text-texto-suave hover:text-texto flex size-8 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
+                      >
+                        <GripVertical aria-hidden="true" className="size-5" />
+                      </button>
+                    )}
 
-                      `touch-none` desliga o gesto de rolagem do navegador
-                      sobre ela — sem isso, no celular, segurar e mover rola
-                      a página em vez de arrastar. */}
-                  {podeEditar && (
                     <button
                       type="button"
-                      onPointerDown={ordenacao.comecar(indice)}
-                      onPointerMove={ordenacao.mover}
-                      onPointerUp={ordenacao.soltar}
-                      onPointerCancel={ordenacao.soltar}
-                      aria-label={`Mover ${nomeDoPerfil(item.modelo_perfil_id)} na sequência`}
-                      title="Arraste para reordenar"
-                      className="text-texto-suave hover:text-texto flex size-8 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
+                      onClick={() => desenho && setAmpliado(desenho)}
+                      disabled={!desenho}
+                      aria-label={`Ampliar desenho de ${nomeDoPerfil(item.modelo_perfil_id)}`}
+                      className="shrink-0 disabled:cursor-default"
                     >
-                      <GripVertical aria-hidden="true" className="size-5" />
+                      <MiniaturaPerfil
+                        link={desenho ?? null}
+                        codigo={modeloItem?.codigo ?? ''}
+                      />
                     </button>
-                  )}
 
-                  {/* O desenho amplia; a linha abre a ficha. São dois
-                      destinos diferentes no mesmo item, então o desenho
-                      precisa ser um botão próprio e parar a propagação —
-                      senão "ver a seção de perto" viraria uma navegação
-                      para outra tela sem ninguém ter pedido. */}
-                  <button
-                    type="button"
-                    onClick={() => desenho && setAmpliado(desenho)}
-                    disabled={!desenho}
-                    aria-label={`Ampliar desenho de ${nomeDoPerfil(item.modelo_perfil_id)}`}
-                    className="shrink-0 disabled:cursor-default"
-                  >
-                    <MiniaturaPerfil
-                      link={desenho ?? null}
-                      codigo={
-                        modelos?.find((m) => m.id === item.modelo_perfil_id)
-                          ?.codigo ?? ''
-                      }
-                    />
-                  </button>
-
-                  <Link
-                    to={`/perfis/${item.modelo_perfil_id}?de=${encodeURIComponent(`/produtos/${produto.id}`)}&rotulo=${encodeURIComponent('Lista técnica')}`}
-                    className="flex min-w-0 flex-1 items-center gap-2"
-                    aria-label={`Ver ficha de ${nomeDoPerfil(item.modelo_perfil_id)}`}
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">
-                        {nomeDoPerfil(item.modelo_perfil_id)}
-                      </span>
-                      <span className="text-texto-suave block text-sm tabular-nums">
-                        {item.quantidade} ×{' '}
-                        {formatarComprimento(item.comprimento_mm)}{' '}
-                        {/* O estoque do PERFIL, somando comprimentos e
-                            acabamentos. É contexto: diz se há matéria-prima
-                            por perto, enquanto a cor da linha responde se ela
-                            serve para este corte nesta quantidade. */}
-                        <span className="whitespace-nowrap">
-                          ({estoque.pecas} pç /{' '}
-                          {(estoque.milimetros / 1000)
-                            .toFixed(1)
-                            .replace('.', ',')}{' '}
-                          m)
+                    <Link
+                      to={`/perfis/${item.modelo_perfil_id}?de=${encodeURIComponent(`/produtos/${produto.id}`)}&rotulo=${encodeURIComponent('Lista técnica')}`}
+                      className="flex min-w-0 flex-1 items-center gap-1 self-stretch"
+                      aria-label={`Ver ficha de ${nomeDoPerfil(item.modelo_perfil_id)}`}
+                    >
+                      <span className="line-clamp-2 flex-1 text-[15px] leading-snug font-medium">
+                        <span className="bg-acao-100 text-acao-700 me-1 inline-block rounded px-1.5 py-0.5 font-mono text-xs font-bold">
+                          {modeloItem?.codigo ?? ''}
                         </span>
+                        {modeloItem?.descricao ?? 'perfil removido'}
                       </span>
+                      <ChevronRight
+                        aria-hidden="true"
+                        className="text-texto-suave size-4 shrink-0"
+                      />
+                    </Link>
+                  </div>
+
+                  {/* Linha inferior: medidas/estoque + botões */}
+                  <div className="flex items-center justify-between gap-2 px-2 pb-2 pt-1">
+                    <span className="text-texto-suave pl-1 text-xs tabular-nums">
+                      {item.quantidade} ×{' '}
+                      {formatarComprimento(item.comprimento_mm)} · {estoque.pecas} pç /{' '}
+                      {(estoque.milimetros / 1000).toFixed(1).replace('.', ',')} m
                     </span>
-                    <ChevronRight
-                      aria-hidden="true"
-                      className="text-texto-suave size-4 shrink-0"
-                    />
-                  </Link>
 
-                  {podeEditar && (
-                    <>
-                      <Botao
-                        variante="secundaria"
-                        onClick={() => abrirCorte(item)}
-                        aria-label={`Alterar ${nomeDoPerfil(item.modelo_perfil_id)} na lista técnica`}
-                        title="Alterar quantidade ou medida"
-                      >
-                        <Pencil aria-hidden="true" className="size-4" />
-                      </Botao>
+                    {podeEditar && (
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <Botao
+                          tamanho="icone_pequeno"
+                          variante="secundaria"
+                          onClick={() => abrirCorte(item)}
+                          aria-label={`Alterar ${nomeDoPerfil(item.modelo_perfil_id)} na lista técnica`}
+                          title="Alterar quantidade ou medida"
+                        >
+                          <Pencil aria-hidden="true" className="size-4" />
+                        </Botao>
 
-                      <Botao
-                        variante="contorno"
-                        onClick={() => void remover.mutateAsync(item.id)}
-                        aria-label={`Remover ${nomeDoPerfil(item.modelo_perfil_id)} da lista técnica`}
-                        title="Remover"
-                      >
-                        <Trash2 aria-hidden="true" className="size-4" />
-                      </Botao>
-                    </>
-                  )}
+                        <Botao
+                          tamanho="icone_pequeno"
+                          variante="contorno"
+                          onClick={() => void remover.mutateAsync(item.id)}
+                          aria-label={`Remover ${nomeDoPerfil(item.modelo_perfil_id)} da lista técnica`}
+                          title="Remover"
+                        >
+                          <Trash2 aria-hidden="true" className="size-4" />
+                        </Botao>
+                      </div>
+                    )}
+                  </div>
                 </li>
               )
             })}
@@ -829,7 +806,6 @@ export default function ProdutoDetalhe() {
 
         {podeEditar && (
           <Botao
-            variante="secundaria"
             onClick={() => {
               setErro(null)
               setAberto(true)

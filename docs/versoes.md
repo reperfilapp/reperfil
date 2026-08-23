@@ -64,6 +64,27 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.6.71 — 22/08/2026
+
+**Card da lista técnica segue o mesmo padrão do card de estoque.**
+
+Código do perfil em azul negrito, descrição na mesma linha com quebra de até 2
+linhas (sem cortar), dados de corte e estoque numa linha abaixo. Também corrigido
+o código do produto na tela de Produtos que ficava cortando e escondendo os botões
+de editar e arquivar.
+
+---
+
+## 1.6.70 — 22/08/2026
+
+**Procurar e Produtos na barra de navegação inferior.**
+
+Dois atalhos novos na barra do celular: "Procurar" (ao lado de Utilizar) abre a
+busca de sobras por medida ou código; "Produtos" (ao lado de Reservas) abre a
+lista de produtos e listas técnicas. A barra passa de 5 para 7 botões.
+
+---
+
 ## 1.6.69 — 22/08/2026
 
 **Corrigido: sobra aproveitável sumia do estoque quando um pedido usava mais

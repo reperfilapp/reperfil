@@ -189,7 +189,7 @@ export default function Produtos() {
               <div className="mt-1 flex items-center justify-between gap-2">
                 <Link
                   to={`/produtos/${produto.id}`}
-                  className="text-acao-600 shrink-0 font-mono text-[15px] font-medium whitespace-nowrap"
+                  className="text-acao-600 min-w-0 truncate font-mono text-[15px] font-medium"
                 >
                   {produto.codigo}
                 </Link>

@@ -2,8 +2,10 @@ import { NavLink, Outlet } from 'react-router-dom'
 import {
   Home,
   Scissors,
+  Search,
   PackagePlus,
   Clock,
+  Box,
   Menu as MenuIcone,
 } from 'lucide-react'
 import { MarcaRePerfil } from './MarcaRePerfil'
@@ -24,8 +26,10 @@ import { cn } from '@/lib/utilitarios'
 const ITENS_NAVEGACAO = [
   { para: '/', rotulo: 'Início', Icone: Home, exato: true },
   { para: '/sobras', rotulo: 'Utilizar', Icone: Scissors, exato: false },
+  { para: '/procurar', rotulo: 'Procurar', Icone: Search, exato: false },
   { para: '/cadastrar', rotulo: 'Cadastrar', Icone: PackagePlus, exato: false },
   { para: '/reservas', rotulo: 'Reservas', Icone: Clock, exato: false },
+  { para: '/produtos', rotulo: 'Produtos', Icone: Box, exato: false },
   { para: '/mais', rotulo: 'Mais', Icone: MenuIcone, exato: false },
 ] as const
 
@@ -79,7 +83,7 @@ export function LayoutApp() {
       {/* Navegação inferior — apenas no celular */}
       <nav
         aria-label="Navegação principal"
-        className="border-borda bg-superficie fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 border-t md:hidden"
+        className="border-borda bg-superficie fixed inset-x-0 bottom-0 z-10 grid grid-cols-7 border-t md:hidden"
       >
         {ITENS_NAVEGACAO.map(({ para, rotulo, Icone, exato }) => {
           const destacado = para === ROTA_DESTACADA

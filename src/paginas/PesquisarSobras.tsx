@@ -241,7 +241,7 @@ export default function PesquisarSobras() {
                         'rounded-full border-2 px-3 py-1.5 text-sm font-medium transition-colors',
                         selecionada
                           ? 'bg-acao-600 border-acao-600 text-white'
-                          : 'bg-superficie border-borda text-texto-suave hover:bg-superficie-2',
+                          : 'bg-acao-50 border-acao-200 text-acao-700 hover:bg-acao-100',
                       )}
                     >
                       {linha === SEM_LINHA ? 'Sem linha' : linha}
