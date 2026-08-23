@@ -193,6 +193,33 @@ describe('quantidade de cortes — o caso central', () => {
     expect(achadosSuficiente[0]?.pecasNecessarias).toBe(3)
   })
 
+  it('o total que volta ao estoque conta TODAS as peças, não só a primeira', () => {
+    // 7 cortes de 1 m em peças de 6 m: a primeira leva 5 e sobra 985 mm, a
+    // segunda leva 2 e sobra 3.994 mm. Mostrar só a primeira subestimava em
+    // 3 metros o que de fato volta para a prateleira.
+    const achados = pesquisarSobras(
+      [sobra({ comprimentoMm: 6000, quantidadeDisponivel: 5 })],
+      filtro({ corteMm: 1000, quantidadeCortes: 7 }),
+      config,
+    )
+
+    expect(achados[0]?.pecasNecessarias).toBe(2)
+    expect(achados[0]?.grupos).toHaveLength(2)
+    expect(achados[0]?.totalRestanteMm).toBe(985 + 3994)
+  })
+
+  it('resto abaixo do mínimo não entra no total: vira descarte, não estoque', () => {
+    // Uma peça só, cujo resto é pequeno demais para valer a pena guardar.
+    const achados = pesquisarSobras(
+      [sobra({ comprimentoMm: 6000, quantidadeDisponivel: 2 })],
+      filtro({ corteMm: 5900, quantidadeCortes: 1 }),
+      config,
+    )
+
+    expect(achados[0]?.destinoResto).toBe('descarte')
+    expect(achados[0]?.totalRestanteMm).toBe(0)
+  })
+
   it('1 corte de 1 m → pecasNecessarias = 1 (padrão)', () => {
     const achados = pesquisarSobras(
       [sobra({ comprimentoMm: 6000 })],

@@ -26,7 +26,11 @@ import {
   formatarComprimento,
   interpretarMedidaDigitada,
 } from '@/dominio/medidas'
-import { planejarCorte, CONFIGURACAO_CORTE_PADRAO } from '@/dominio/corte'
+import {
+  planejarCorte,
+  distribuirCortes,
+  CONFIGURACAO_CORTE_PADRAO,
+} from '@/dominio/corte'
 import type { UnidadeMedida } from '@/config/aplicacao'
 
 /**
@@ -66,6 +70,43 @@ export default function Reservas() {
     cortando?.lote && usadoMm !== null && usadoMm > 0
       ? planejarCorte(cortando.lote.comprimento_mm, [usadoMm], configCorte)
       : null
+
+  /*
+   * O resto de CADA grupo de peças desta reserva.
+   *
+   * Enche-se uma peça até o limite antes de abrir a próxima, então a última
+   * quase nunca leva a mesma quantidade de cortes — e termina com um resto
+   * bem maior. Mandar um número só para todas gravava o resto da primeira
+   * peça na última, e a diferença sumia do estoque.
+   *
+   * Só vale quando a reserva guarda o plano de corte. As antigas eram "N
+   * peças, um corte em cada", e ali todas terminam iguais mesmo.
+   */
+  const grupos =
+    cortando?.lote &&
+    cortando.comprimento_corte_mm !== null &&
+    cortando.quantidade_cortes !== null
+      ? distribuirCortes(
+          cortando.lote.comprimento_mm,
+          cortando.comprimento_corte_mm,
+          cortando.quantidade_cortes,
+          configCorte,
+        )
+      : []
+
+  /*
+   * Só manda a lista quando ela descreve exatamente as peças reservadas. Se
+   * discordar — reserva antiga, plano alterado depois — cai no caminho de um
+   * resto só, que é o comportamento de sempre, em vez de recusar o corte.
+   */
+  const pecasNosGrupos = grupos.reduce((total, g) => total + g.pecas, 0)
+  const restosPorPeca =
+    cortando !== null && pecasNosGrupos === cortando.quantidade && grupos.length > 1
+      ? grupos.map((g) => ({
+          comprimento_mm: g.restoMm,
+          quantidade: g.pecas,
+        }))
+      : undefined
 
   /**
    * Calcula o comprimento total a cortar desta peça física com base nos dados
@@ -115,14 +156,29 @@ export default function Reservas() {
         reservaId: cortando.id,
         comprimentoUtilizadoMm: usadoMm,
         comprimentoRestanteMm: previa.restoMm,
+        restos: restosPorPeca,
       })
 
+      /*
+       * Com mais de uma sobra gerada, cada uma é nomeada com o seu próprio
+       * comprimento e código: são peças diferentes na prateleira, e quem vai
+       * guardá-las precisa saber qual é qual.
+       */
+      const geradas = r.sobras_geradas ?? []
+
       setResultado(
-        r.destino_resto === 'sobra'
-          ? `Corte registrado. Sobrou ${formatarComprimento(r.comprimento_restante_mm)}, cadastrada como ${r.lote_resultante_codigo}.`
-          : r.destino_resto === 'descarte'
-            ? `Corte registrado. O resto de ${formatarComprimento(r.comprimento_restante_mm)} foi lançado como descarte.`
-            : 'Corte registrado. A peça foi consumida por inteiro.',
+        geradas.length > 1
+          ? `Corte registrado. Voltaram ao estoque: ${geradas
+              .map(
+                (sobra) =>
+                  `${sobra.quantidade} × ${formatarComprimento(sobra.comprimento_mm)} (${sobra.codigo})`,
+              )
+              .join(' e ')}.`
+          : r.destino_resto === 'sobra'
+            ? `Corte registrado. Sobrou ${formatarComprimento(r.comprimento_restante_mm)}, cadastrada como ${r.lote_resultante_codigo}.`
+            : r.destino_resto === 'descarte'
+              ? `Corte registrado. O resto de ${formatarComprimento(r.comprimento_restante_mm)} foi lançado como descarte.`
+              : 'Corte registrado. A peça foi consumida por inteiro.',
       )
 
       setCortando(null)
@@ -399,17 +455,47 @@ export default function Reservas() {
                 <p className="mb-1 font-semibold">
                   O que acontece ao confirmar
                 </p>
-                {previa.destinoResto === 'sem-resto' && (
+
+                {/* Com os cortes espalhados por várias peças, a última leva
+                    menos que as outras e sobra bem mais. Mostrar peça por peça
+                    evita a surpresa de achar que todas rendem o mesmo — e é o
+                    que de fato vai para o estoque. */}
+                {restosPorPeca ? (
+                  <ul className="flex flex-col gap-1">
+                    {grupos.map((grupo, indice) => (
+                      <li key={indice}>
+                        {grupo.pecas} {grupo.pecas === 1 ? 'peça' : 'peças'} com{' '}
+                        {grupo.cortesPorPeca}{' '}
+                        {grupo.cortesPorPeca === 1 ? 'corte' : 'cortes'} →{' '}
+                        {grupo.destinoResto === 'sobra' ? (
+                          <>
+                            sobra{' '}
+                            <strong>{formatarComprimento(grupo.restoMm)}</strong>
+                          </>
+                        ) : grupo.destinoResto === 'descarte' ? (
+                          <span className="text-atencao-700">
+                            resto de {formatarComprimento(grupo.restoMm)} vira
+                            descarte
+                          </span>
+                        ) : (
+                          'consumida por inteiro'
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+
+                {!restosPorPeca && previa.destinoResto === 'sem-resto' && (
                   <p>A peça é consumida por inteiro.</p>
                 )}
-                {previa.destinoResto === 'sobra' && (
+                {!restosPorPeca && previa.destinoResto === 'sobra' && (
                   <p>
                     Sobram{' '}
                     <strong>{formatarComprimento(previa.restoMm)}</strong>, que
                     voltam ao estoque como um material novo, com código próprio.
                   </p>
                 )}
-                {previa.destinoResto === 'descarte' && (
+                {!restosPorPeca && previa.destinoResto === 'descarte' && (
                   <p className="text-atencao-700">
                     Sobram {formatarComprimento(previa.restoMm)}, abaixo do
                     mínimo aproveitável — será lançado como{' '}

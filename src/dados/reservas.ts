@@ -160,6 +160,24 @@ export interface ResultadoCorte {
   lote_resultante_codigo: string | null
   comprimento_restante_mm: number
   destino_resto: 'sobra' | 'descarte' | 'sem-resto'
+  /**
+   * Uma entrada por lote de sobra criado.
+   *
+   * São vários quando a reserva tinha mais de uma peça e a última recebeu
+   * menos cortes que as anteriores — aí ela termina com um resto diferente, e
+   * cada resto vira o seu próprio lote.
+   */
+  sobras_geradas?: {
+    codigo: string
+    comprimento_mm: number
+    quantidade: number
+  }[]
+}
+
+/** Um resto e quantas peças da reserva terminaram com ele. */
+export interface RestoDoCorte {
+  comprimento_mm: number
+  quantidade: number
 }
 
 /**
@@ -169,6 +187,13 @@ export interface ResultadoCorte {
  * enviado pronto. O banco não recalcula de propósito: ter a mesma fórmula em
  * dois lugares é receita para os dois discordarem, e aí ninguém sabe qual
  * está certo.
+ *
+ * `restos` descreve o resto de CADA grupo de peças. Enche-se uma peça até o
+ * limite antes de abrir a próxima, então a última quase sempre termina com
+ * um resto maior que as anteriores — e mandar um número só fazia esse resto
+ * maior ser gravado como o menor, sumindo com peça aproveitável do estoque.
+ * Sem ele, o banco mantém o comportamento antigo, que continua correto para
+ * as reservas de uma peça.
  */
 export function useConfirmarCorte() {
   const atualizar = useAtualizarDepois()
@@ -178,15 +203,18 @@ export function useConfirmarCorte() {
       reservaId,
       comprimentoUtilizadoMm,
       comprimentoRestanteMm,
+      restos,
     }: {
       reservaId: string
       comprimentoUtilizadoMm: number
       comprimentoRestanteMm: number
+      restos?: readonly RestoDoCorte[] | undefined
     }): Promise<ResultadoCorte> => {
       const { data, error } = await supabase.rpc('confirmar_corte', {
         p_reserva_id: reservaId,
         p_comprimento_utilizado_mm: comprimentoUtilizadoMm,
         p_comprimento_restante_mm: comprimentoRestanteMm,
+        p_restos: restos && restos.length > 0 ? restos : null,
       })
 
       if (error) throw new Error(error.message)

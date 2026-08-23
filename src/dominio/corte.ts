@@ -209,3 +209,94 @@ export function sobraApos(
 
   return resultado.cabe ? resultado.restoMm : null
 }
+
+/**
+ * Quantos cortes de `corteMm` cabem numa peça de `comprimentoMm`.
+ *
+ * A conta segue o modelo físico da serra: k cortes consomem
+ * k×corteMm + (k−1)×serra. Sobe de um em um reusando `comprimentoNecessario`,
+ * em vez de resolver a divisão de cabeça, para que a busca e a confirmação do
+ * corte nunca discordem sobre o que cabe.
+ */
+export function cortesQueUmLoteComporta(
+  comprimentoMm: number,
+  corteMm: number,
+  config: ConfiguracaoCorte,
+): number {
+  if (corteMm <= 0 || comprimentoMm <= 0) return 0
+  if (comprimentoNecessario([corteMm], config) > comprimentoMm) return 0
+
+  let k = 1
+
+  while (comprimentoNecessario(Array(k + 1).fill(corteMm), config) <= comprimentoMm) {
+    k++
+  }
+
+  return k
+}
+
+/** Um grupo de peças que terminam o corte com o MESMO resto. */
+export interface GrupoDeCorte {
+  /** Quantas peças físicas ficam assim. */
+  pecas: number
+  /** Quantos cortes saem de cada uma delas. */
+  cortesPorPeca: number
+  /** O que sobra em CADA uma dessas peças. */
+  restoMm: number
+  destinoResto: DestinoResto
+}
+
+/**
+ * Como N cortes iguais se distribuem entre as peças de um lote — e,
+ * principalmente, QUANTO SOBRA DE CADA UMA.
+ *
+ * ── POR QUE ISTO PRECISOU EXISTIR ────────────────────────────────────────
+ *
+ * Enche-se uma peça até o limite antes de abrir a próxima, então a última
+ * quase nunca recebe a mesma quantidade de cortes que as anteriores — e
+ * termina com um resto muito maior. Sete cortes de 1 m em peças de 6 m: a
+ * primeira leva 5 e sobra 985 mm, a segunda leva 2 e sobra 3.994 mm.
+ *
+ * Antes, o sistema gravava o resto da PRIMEIRA peça para todas. No exemplo
+ * acima, os 3.994 mm da segunda eram registrados como 985 mm: 3 metros de
+ * perfil aproveitável sumiam do estoque, que é exatamente o desperdício que
+ * este aplicativo existe para evitar.
+ *
+ * Devolve um grupo por resto distinto — no máximo dois, porque só a última
+ * peça difere — e é essa lista que vai para o banco criar as sobras.
+ */
+export function distribuirCortes(
+  comprimentoPecaMm: number,
+  corteMm: number,
+  quantidadeCortes: number,
+  config: ConfiguracaoCorte,
+): GrupoDeCorte[] {
+  const porPeca = cortesQueUmLoteComporta(comprimentoPecaMm, corteMm, config)
+
+  if (porPeca <= 0 || quantidadeCortes <= 0) return []
+
+  const grupoDe = (pecas: number, cortesPorPeca: number): GrupoDeCorte => {
+    const plano = planejarCorte(
+      comprimentoPecaMm,
+      Array(cortesPorPeca).fill(corteMm),
+      config,
+    )
+
+    return {
+      pecas,
+      cortesPorPeca,
+      restoMm: plano.restoMm,
+      destinoResto: plano.destinoResto,
+    }
+  }
+
+  const cheias = Math.floor(quantidadeCortes / porPeca)
+  const ultimaParcial = quantidadeCortes % porPeca
+
+  const grupos: GrupoDeCorte[] = []
+
+  if (cheias > 0) grupos.push(grupoDe(cheias, porPeca))
+  if (ultimaParcial > 0) grupos.push(grupoDe(1, ultimaParcial))
+
+  return grupos
+}

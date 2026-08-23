@@ -64,6 +64,49 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.6.69 — 22/08/2026
+
+**Corrigido: sobra aproveitável sumia do estoque quando um pedido usava mais
+de uma peça.**
+
+Quando os cortes passaram a ser contados como cortes — "preciso de 7 pedaços
+de 1 m" —, o sistema começou a distribuir esses cortes entre várias peças.
+Mas o fechamento do corte continuou gravando UM comprimento de resto para
+todas elas.
+
+O problema é que a última peça quase nunca leva a mesma quantidade de cortes
+das anteriores. Sete cortes de 1 m em peças de 6 m: a primeira leva 5 e sobra
+985 mm, a segunda leva 2 e sobra 3.994 mm. O sistema registrava 985 mm para as
+duas — **3 metros de perfil bom desapareciam do estoque a cada corte assim**,
+que é exatamente o desperdício que este aplicativo existe para evitar.
+
+Agora o aplicativo calcula o resto de cada grupo de peças e o banco cria um
+lote de sobra para cada um, com o seu próprio código. A tela de confirmação
+mostra a divisão peça por peça antes de você confirmar, e a mensagem final
+nomeia cada sobra gerada — são peças diferentes na prateleira, e quem vai
+guardá-las precisa saber qual é qual.
+
+O banco agora recusa o fechamento se os restos informados não somarem
+exatamente as peças reservadas: divergência ali viraria estoque inventado ou
+sumido, em silêncio.
+
+**A tela de busca passou a mostrar o total que volta.** Ela dizia "sobram 985
+mm da primeira peça" — verdade, mas subestimava o retorno em 3 metros
+justamente no caso que mais rende. Agora diz "voltam ao estoque 4.979 mm no
+total — 1 de 985 mm e 1 de 3.994 mm", peça por peça.
+
+A busca e a confirmação do corte passaram a usar **o mesmo cálculo** de
+distribuição. Antes eram duas contas parecidas em lugares diferentes, e era
+disso que vinha a divergência entre o que a tela prometia e o que o estoque
+gravava.
+
+Reservas antigas continuam sendo fechadas como antes — no modelo delas, "N
+peças com um corte cada", todas terminavam iguais mesmo.
+
+Migração `20260822230000_resto_por_peca.sql`, já aplicada e conferida no
+banco: a chamada nova (com a lista de restos) e a antiga (sem ela) respondem
+as duas, então reserva antiga em aberto continua fechando normalmente.
+
 ## 1.6.53 — 20/08/2026
 
 **Busca do jeito que se digita: código sem hífen e medidas em qualquer ordem.**

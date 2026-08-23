@@ -4,6 +4,7 @@ import {
   comprimentoNecessario,
   classificarResto,
   sobraApos,
+  distribuirCortes,
   CONFIGURACAO_CORTE_PADRAO,
   type ConfiguracaoCorte,
 } from './corte'
@@ -191,5 +192,66 @@ describe('sobraApos', () => {
 
     // A peça de 1800 não serve e sai da lista; a de 2100 é a mais econômica.
     expect(ordenadas.map((r) => r.peca)).toEqual([2100, 2500, 6000])
+  })
+})
+
+describe('distribuirCortes', () => {
+  const config = CONFIGURACAO_CORTE_PADRAO
+
+  it('cortes que dividem certo: todas as peças terminam igual', () => {
+    // 10 cortes de 1 m em peças de 6 m (5 por peça) → 2 peças cheias.
+    const grupos = distribuirCortes(6000, 1000, 10, config)
+
+    expect(grupos).toHaveLength(1)
+    expect(grupos[0]?.pecas).toBe(2)
+    expect(grupos[0]?.cortesPorPeca).toBe(5)
+  })
+
+  it('a última peça sobra MUITO mais quando os cortes não dividem certo', () => {
+    // O caso que fazia sumir peça do estoque: 7 cortes de 1 m em peças de 6 m.
+    // A primeira leva 5 cortes, a segunda leva 2 — e sobra quase 4 m.
+    const grupos = distribuirCortes(6000, 1000, 7, config)
+
+    expect(grupos).toHaveLength(2)
+
+    expect(grupos[0]).toMatchObject({ pecas: 1, cortesPorPeca: 5, restoMm: 985 })
+    expect(grupos[1]).toMatchObject({ pecas: 1, cortesPorPeca: 2, restoMm: 3994 })
+
+    // O ponto da correção: os dois restos são MUITO diferentes, e registrar o
+    // primeiro para as duas peças perdia 3 m de perfil aproveitável.
+    expect(grupos[1]!.restoMm - grupos[0]!.restoMm).toBe(3009)
+  })
+
+  it('cada peça reservada aparece exatamente uma vez na distribuição', () => {
+    // Sem isto, o banco criaria mais ou menos sobras do que peças consumidas.
+    for (const cortes of [1, 2, 5, 6, 7, 11, 13]) {
+      const grupos = distribuirCortes(6000, 1000, cortes, config)
+      const pecas = grupos.reduce((total, g) => total + g.pecas, 0)
+
+      expect(pecas, `${cortes} cortes`).toBe(Math.ceil(cortes / 5))
+    }
+  })
+
+  it('todos os cortes pedidos são produzidos, nem um a mais', () => {
+    for (const cortes of [1, 4, 7, 12, 23]) {
+      const grupos = distribuirCortes(6000, 1000, cortes, config)
+      const produzidos = grupos.reduce(
+        (total, g) => total + g.pecas * g.cortesPorPeca,
+        0,
+      )
+
+      expect(produzidos, `${cortes} cortes`).toBe(cortes)
+    }
+  })
+
+  it('resto abaixo do mínimo aproveitável é classificado como descarte', () => {
+    // 5 cortes de 1 m deixam 985 mm; 6 m com corte de 5,9 m deixa quase nada.
+    const grupos = distribuirCortes(6000, 5900, 1, config)
+
+    expect(grupos[0]?.destinoResto).toBe('descarte')
+  })
+
+  it('corte que não cabe na peça não produz distribuição nenhuma', () => {
+    expect(distribuirCortes(1000, 2000, 3, config)).toEqual([])
   })
 })

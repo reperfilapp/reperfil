@@ -496,7 +496,17 @@ export default function PesquisarSobras() {
                       {aproveitamento === 'exato' &&
                         'A peça é consumida por inteiro, sem desperdício.'}
                       {aproveitamento === 'ideal' &&
-                        `Sobram ${formatarComprimento(resultado.sobraResultanteMm)} da primeira peça — volta ao estoque.`}
+                        (resultado.grupos.length > 1
+                          ? /* Peça a peça: a última leva menos cortes e sobra
+                               bem mais, e mostrar só a primeira subestimava o
+                               que de fato volta para a prateleira. */
+                            `Voltam ao estoque ${formatarComprimento(resultado.totalRestanteMm)} no total — ${resultado.grupos
+                              .map(
+                                (grupo) =>
+                                  `${grupo.pecas} de ${formatarComprimento(grupo.restoMm)}`,
+                              )
+                              .join(' e ')}.`
+                          : `Sobram ${formatarComprimento(resultado.sobraResultanteMm)} — volta ao estoque.`)}
                       {aproveitamento === 'gera-descarte' &&
                         `Sobram ${formatarComprimento(resultado.sobraResultanteMm)} — vira descarte.`}
                     </span>

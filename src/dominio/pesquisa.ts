@@ -1,8 +1,16 @@
 import {
-  planejarCorte,
-  comprimentoNecessario,
+  cortesQueUmLoteComporta,
+  distribuirCortes,
   type ConfiguracaoCorte,
+  type GrupoDeCorte,
 } from './corte'
+
+/*
+ * Reexportado: a função é geometria de corte e mora em `corte.ts`, mas
+ * chegou aqui primeiro e é daqui que as telas e os testes a importam.
+ * Mantê-la disponível neste caminho evita mexer em quem já a usa.
+ */
+export { cortesQueUmLoteComporta }
 
 /**
  * Pesquisa de sobras para um corte.
@@ -61,6 +69,10 @@ export interface ResultadoPesquisa<T extends CandidataSobra> {
    * porque 1 peça de 6 m comporta os 5 cortes.
    */
   pecasNecessarias: number
+  /** Como os cortes se dividem entre as peças, e o resto de cada grupo. */
+  grupos: GrupoDeCorte[]
+  /** Tudo que volta ao estoque somando as peças, não só a primeira. */
+  totalRestanteMm: number
 }
 
 export interface FiltroPesquisa {
@@ -74,42 +86,6 @@ export interface FiltroPesquisa {
   acabamentosCompativeis?: readonly string[]
   /** Filtra por localização, quando informada. */
   localizacaoCodigo?: string | null
-}
-
-/**
- * Calcula quantos cortes de `corteMm` cabem em uma peça de `comprimentoMm`.
- *
- * A lógica segue o modelo físico da serra: cada corte (exceto o último,
- * quando não há sobra) consome uma passada de serra. Isso significa que
- * k cortes numa peça consomem k×corteMm + (k-1)×serra de material.
- *
- * A abordagem binária (planejarCorte com k cortes) é robusta porque reutiliza
- * exatamente o mesmo cálculo que determina se um corte cabe — garantindo
- * que pesquisa e confirmação de corte nunca discordem.
- */
-export function cortesQueUmLoteComporta(
-  comprimentoMm: number,
-  corteMm: number,
-  config: ConfiguracaoCorte,
-): number {
-  if (corteMm <= 0 || comprimentoMm <= 0) return 0
-
-  // Verifica se ao menos 1 corte cabe antes de entrar no loop.
-  if (comprimentoNecessario([corteMm], config) > comprimentoMm) return 0
-
-  // Começa por 1 e vai subindo até não caber mais.
-  // Na prática, o limite é o comprimento da barra dividido pelo corte (~18),
-  // então este loop é sempre curto.
-  let k = 1
-  while (true) {
-    const necessario = comprimentoNecessario(
-      Array.from({ length: k + 1 }, () => corteMm),
-      config,
-    )
-    if (necessario > comprimentoMm) break
-    k++
-  }
-  return k
 }
 
 /**
@@ -149,44 +125,45 @@ export function pesquisarSobras<T extends CandidataSobra>(
       continue
     }
 
-    // Quantos cortes cabem neste lote?
-    const cortesNesteLote = cortesQueUmLoteComporta(
+    /*
+     * A MESMA distribuição que a confirmação do corte vai usar, e não uma
+     * conta paralela: é ela que diz quantas peças entram e quanto sobra de
+     * cada uma. Duas fórmulas para a mesma pergunta acabam discordando, e aí
+     * a tela promete um resto e o estoque grava outro.
+     */
+    const grupos = distribuirCortes(
       sobra.comprimentoMm,
       filtro.corteMm,
+      quantidadeCortes,
       config,
     )
 
-    if (cortesNesteLote <= 0) continue
+    if (grupos.length === 0) continue
 
-    // Quantas peças físicas do lote são necessárias para produzir todos os cortes?
-    // Exemplo: 5 cortes de 1 m, lote com peças de 6 m (5 cortes/peça) → 1 peça.
-    const pecasNecessarias = Math.ceil(quantidadeCortes / cortesNesteLote)
+    const pecasNecessarias = grupos.reduce((total, g) => total + g.pecas, 0)
 
     // Há peças livres suficientes no lote?
     if (sobra.quantidadeDisponivel < pecasNecessarias) continue
 
-    // Planeja o que sobra da PRIMEIRA peça após os cortes que ela absorverá.
-    // Se 1 peça comporta todos os cortes, planeja todos de uma vez.
-    // Se forem necessárias múltiplas peças, planeja só os cortes da primeira.
-    const cortesNaPrimeiraPeca = Math.min(cortesNesteLote, quantidadeCortes)
-    const cortesParaPlanejamento = Array.from(
-      { length: cortesNaPrimeiraPeca },
-      () => filtro.corteMm,
+    /*
+     * Tudo que volta para a prateleira, somando as peças. Mostrar só o resto
+     * da primeira subestimava o retorno justamente no caso que mais rende: a
+     * última peça costuma levar menos cortes e sobrar bem mais.
+     */
+    const totalRestanteMm = grupos.reduce(
+      (total, g) => total + (g.destinoResto === 'sobra' ? g.restoMm * g.pecas : 0),
+      0,
     )
 
-    const plano = planejarCorte(
-      sobra.comprimentoMm,
-      cortesParaPlanejamento,
-      config,
-    )
-
-    if (!plano.cabe) continue
+    const primeiro = grupos[0]!
 
     resultados.push({
       sobra,
-      sobraResultanteMm: plano.restoMm,
-      destinoResto: plano.destinoResto,
+      sobraResultanteMm: primeiro.restoMm,
+      destinoResto: primeiro.destinoResto,
       pecasNecessarias,
+      grupos,
+      totalRestanteMm,
     })
   }
 
