@@ -768,7 +768,7 @@ export default function ProdutoDetalhe() {
 
                   {/* Linha inferior: medidas/estoque + botões */}
                   <div className="flex items-center justify-between gap-2 px-2 pb-2 pt-1">
-                    <span className="text-texto-suave pl-1 text-xs tabular-nums">
+                    <span className="text-texto-suave pl-1 text-[15px] tabular-nums">
                       {item.quantidade} ×{' '}
                       {formatarComprimento(item.comprimento_mm)} · {estoque.pecas} pç /{' '}
                       {(estoque.milimetros / 1000).toFixed(1).replace('.', ',')} m
