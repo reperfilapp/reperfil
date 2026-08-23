@@ -186,7 +186,7 @@ export default function Linhas() {
         {renomeaveis.map(({ linha, modelos: daLinha, resumo }) => (
           <li
             key={linha}
-            className="bg-superficie flex items-center gap-3 rounded-xl p-4 shadow-sm"
+            className="bg-celula border-borda flex items-center gap-3 rounded-xl border-2 p-4 shadow-sm"
           >
             <Layers
               aria-hidden="true"
@@ -196,12 +196,13 @@ export default function Linhas() {
             <div className="min-w-0 flex-1">
               <Link
                 to={`/perfis?linha=${encodeURIComponent(linha)}`}
-                className="block truncate font-medium hover:underline text-lg"
+                className="block truncate text-lg font-medium hover:underline"
               >
                 {linha}
               </Link>
-              <p className="text-texto-suave truncate text-sm tabular-nums mt-0.5">
-                {formatarResumo(resumo)} · {daLinha.length} {daLinha.length === 1 ? 'perfil' : 'perfis'}
+              <p className="text-texto-suave mt-0.5 truncate text-sm tabular-nums">
+                {formatarResumo(resumo)} · {daLinha.length}{' '}
+                {daLinha.length === 1 ? 'perfil' : 'perfis'}
               </p>
             </div>
 

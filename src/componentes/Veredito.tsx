@@ -141,10 +141,10 @@ export function Veredito({
               /* Tudo verde na lista e "não dá" aqui em cima seria
                  incompreensível sem esta frase. */
               <p className="mt-1 text-sm opacity-80">
-                Há material para todos os cortes, mas em acabamentos
-                diferentes — e uma peça sai toda do mesmo acabamento. Junte o
-                que falta num acabamento só, ou confira se as sobras estão
-                cadastradas com o acabamento certo.
+                Há material para todos os cortes, mas em acabamentos diferentes
+                — e uma peça sai toda do mesmo acabamento. Junte o que falta num
+                acabamento só, ou confira se as sobras estão cadastradas com o
+                acabamento certo.
               </p>
             ) : faltas.length === 0 ? (
               <p className="mt-1 text-sm opacity-80">

@@ -316,7 +316,7 @@ export function FormularioModeloPerfil({
       )}
 
       {modelo && (
-        <label className="flex items-center gap-3 bg-superficie-2 rounded-xl p-4 cursor-pointer hover:bg-superficie-3 transition-colors mt-2">
+        <label className="bg-superficie-2 hover:bg-superficie-3 mt-2 flex cursor-pointer items-center gap-3 rounded-xl p-4 transition-colors">
           <input
             type="checkbox"
             className="size-5 shrink-0"
@@ -324,9 +324,12 @@ export function FormularioModeloPerfil({
             onChange={(e) => aoMudar({ ...form, revisado: e.target.checked })}
           />
           <div className="flex flex-col">
-            <span className="font-semibold text-texto-forte">Perfil verificado e revisado</span>
-            <span className="text-sm text-texto-suave">
-              As informações estão validadas, medidas corretas e o desenho corresponde.
+            <span className="text-texto-forte font-semibold">
+              Perfil verificado e revisado
+            </span>
+            <span className="text-texto-suave text-sm">
+              As informações estão validadas, medidas corretas e o desenho
+              corresponde.
             </span>
           </div>
         </label>

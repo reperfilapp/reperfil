@@ -103,7 +103,11 @@ export default function Sobras() {
   const [busca, setBusca] = useState('')
   const [lendoQr, setLendoQr] = useState(false)
   const [etiqueta, setEtiqueta] = useState<SobraDetalhada | null>(null)
-  const [ampliado, setAmpliado] = useState<{ id: string; codigo: string; descricao: string } | null>(null)
+  const [ampliado, setAmpliado] = useState<{
+    id: string
+    codigo: string
+    descricao: string
+  } | null>(null)
   /*
    * Mesma porta de entrada das outras telas de perfil: primeiro a linha,
    * depois as peças dela. O estoque cresce rápido, e rolar tudo para achar
@@ -248,23 +252,26 @@ export default function Sobras() {
 
           {!isPending && !buscando && linhaAberta !== null && (
             <div className="mb-3 flex items-center justify-between gap-2">
-              <p className="min-w-0 truncate font-semibold flex items-baseline">
+              <p className="flex min-w-0 items-baseline truncate font-semibold">
                 {perfilEmFoco ? (
-                  <span className="font-mono text-2xl font-bold text-acao-600">
+                  <span className="text-acao-600 font-mono text-2xl font-bold">
                     {perfilEmFoco.modelo?.codigo ?? ''}
                   </span>
-                ) : linhaAberta === TODAS ?
+                ) : linhaAberta === TODAS ? (
                   'Todos os materiais'
-                : (
+                ) : (
                   linhaAberta
                 )}
-                <span className="text-texto-suave ml-2 font-normal text-base">
+                <span className="text-texto-suave ml-2 text-base font-normal">
                   ({perfilEmFoco ? visiveis.length : perfis.length})
                 </span>
               </p>
 
               {!perfilEmFoco && (
-                <AlternadorOrdenacao estado={ordenacao} aoMudar={setOrdenacao} />
+                <AlternadorOrdenacao
+                  estado={ordenacao}
+                  aoMudar={setOrdenacao}
+                />
               )}
 
               <BotaoVoltar
@@ -299,7 +306,7 @@ export default function Sobras() {
           <button
             type="button"
             onClick={() => abrir({ linha: TODAS, perfil: null })}
-            className="text-acao-600 shrink-0 text-sm font-medium hover:underline mx-auto block pb-2"
+            className="text-acao-600 mx-auto block shrink-0 pb-2 text-sm font-medium hover:underline"
           >
             Ver todas as sobras
           </button>
@@ -345,7 +352,7 @@ export default function Sobras() {
                 onClick={() => {
                   abrir({ linha, perfil: null })
                 }}
-                className="bg-superficie hover:bg-superficie-2 flex min-h-16 w-full items-center gap-3 rounded-xl p-4 text-left shadow-sm"
+                className="bg-celula hover:bg-celula border-borda flex min-h-16 w-full items-center gap-3 rounded-xl border-2 p-4 text-left shadow-sm"
               >
                 <Layers
                   aria-hidden="true"
@@ -373,61 +380,71 @@ export default function Sobras() {
       {!isPending && mostrandoPerfis && perfis.length > 0 && (
         <ul className="flex flex-col gap-2">
           {perfis.map(({ id, modelo, resumo }) => {
-            const qtdLotes = daLinha.filter((s) => s.modelo_perfil_id === id).length
+            const qtdLotes = daLinha.filter(
+              (s) => s.modelo_perfil_id === id,
+            ).length
             return (
-            <li
-              key={id}
-              className="bg-superficie flex min-h-16 w-full items-center rounded-xl shadow-sm overflow-hidden"
-            >
-              {capas?.get(id) ? (
+              <li
+                key={id}
+                className="bg-celula border-borda flex min-h-16 w-full items-center overflow-hidden rounded-xl border-2 shadow-sm"
+              >
+                {capas?.get(id) ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      modelo &&
+                      setAmpliado({
+                        id,
+                        codigo: modelo.codigo,
+                        descricao: modelo.descricao,
+                      })
+                    }
+                    aria-label={`Ampliar desenho técnico de ${modelo?.descricao}`}
+                    className="shrink-0 py-4 pl-4 transition-opacity hover:opacity-80"
+                  >
+                    <MiniaturaPerfil
+                      link={capas.get(id)}
+                      codigo={modelo?.codigo ?? ''}
+                    />
+                  </button>
+                ) : (
+                  <div className="shrink-0 py-4 pl-4">
+                    <MiniaturaPerfil
+                      link={null}
+                      codigo={modelo?.codigo ?? ''}
+                    />
+                  </div>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => modelo && setAmpliado({ id, codigo: modelo.codigo, descricao: modelo.descricao })}
-                  aria-label={`Ampliar desenho técnico de ${modelo?.descricao}`}
-                  className="pl-4 py-4 shrink-0 hover:opacity-80 transition-opacity"
+                  onClick={() => abrir({ perfil: id })}
+                  className="hover:bg-superficie-2 flex min-w-0 flex-1 items-center justify-between gap-2 self-stretch py-3 pr-3 pl-2 text-left transition-colors"
                 >
-                  <MiniaturaPerfil
-                    link={capas.get(id)}
-                    codigo={modelo?.codigo ?? ''}
+                  <span className="min-w-0 flex-1">
+                    <span className="line-clamp-2 block text-[15px] leading-snug font-medium">
+                      <span className="text-acao-600 font-mono text-lg font-bold">
+                        {modelo?.codigo}
+                      </span>{' '}
+                      {modelo?.descricao}
+                    </span>
+                    <span className="text-texto-suave mt-0.5 block text-xs tabular-nums">
+                      {formatarResumo(resumo)} · {qtdLotes}{' '}
+                      {qtdLotes === 1 ? 'lote' : 'lotes'}
+                    </span>
+                    {modelo && formatarMedidasSecao(modelo) && (
+                      <span className="text-texto-suave mt-0.5 block truncate text-xs">
+                        {formatarMedidasSecao(modelo)}
+                      </span>
+                    )}
+                  </span>
+
+                  <ChevronRight
+                    aria-hidden="true"
+                    className="text-texto-suave size-4 shrink-0"
                   />
                 </button>
-              ) : (
-                <div className="pl-4 py-4 shrink-0">
-                  <MiniaturaPerfil
-                    link={null}
-                    codigo={modelo?.codigo ?? ''}
-                  />
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={() => abrir({ perfil: id })}
-                className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left pl-2 pr-3 py-3 hover:bg-superficie-2 transition-colors self-stretch"
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="block font-medium text-[15px] leading-snug line-clamp-2">
-                    <span className="text-acao-600 font-mono text-lg font-bold">
-                      {modelo?.codigo}
-                    </span>{' '}
-                    {modelo?.descricao}
-                  </span>
-                  <span className="text-texto-suave block text-xs tabular-nums mt-0.5">
-                    {formatarResumo(resumo)} · {qtdLotes} {qtdLotes === 1 ? 'lote' : 'lotes'}
-                  </span>
-                  {modelo && formatarMedidasSecao(modelo) && (
-                    <span className="text-texto-suave block text-xs truncate mt-0.5">
-                      {formatarMedidasSecao(modelo)}
-                    </span>
-                  )}
-                </span>
-
-                <ChevronRight
-                  aria-hidden="true"
-                  className="text-texto-suave size-4 shrink-0"
-                />
-              </button>
-            </li>
+              </li>
             )
           })}
         </ul>
@@ -446,100 +463,117 @@ export default function Sobras() {
           return (
             <li
               key={sobra.id}
-              className="bg-superficie rounded-xl shadow-sm flex flex-col overflow-hidden mb-2"
+              className="bg-celula border-borda mb-2 flex flex-col overflow-hidden rounded-xl border-2 shadow-sm"
             >
               <div className="flex items-start gap-3 px-3 pt-3">
-              {/* Esquerda: desenho técnico pequeno + selo de status */}
-              <div className="shrink-0 flex flex-col items-center gap-1.5 w-[4.5rem]">
-                {capas?.get(sobra.modelo_perfil_id) ? (
-                  <button
-                    type="button"
-                    onClick={() => sobra.modelo && setAmpliado({ id: sobra.modelo_perfil_id, codigo: sobra.modelo.codigo, descricao: sobra.modelo.descricao })}
-                    aria-label={`Ampliar desenho técnico de ${sobra.modelo?.descricao}`}
-                    className="hover:opacity-80 transition-opacity w-[4.5rem] h-[4.5rem] flex items-center justify-center border border-borda rounded-lg bg-white"
+                {/* Esquerda: desenho técnico pequeno + selo de status */}
+                <div className="flex w-[4.5rem] shrink-0 flex-col items-center gap-1.5">
+                  {capas?.get(sobra.modelo_perfil_id) ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        sobra.modelo &&
+                        setAmpliado({
+                          id: sobra.modelo_perfil_id,
+                          codigo: sobra.modelo.codigo,
+                          descricao: sobra.modelo.descricao,
+                        })
+                      }
+                      aria-label={`Ampliar desenho técnico de ${sobra.modelo?.descricao}`}
+                      className="border-borda flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-lg border bg-white transition-opacity hover:opacity-80"
+                    >
+                      <img
+                        src={capas.get(sobra.modelo_perfil_id)!}
+                        alt={sobra.modelo?.codigo ?? ''}
+                        className="max-h-[3.5rem] max-w-[3.5rem] object-contain"
+                      />
+                    </button>
+                  ) : (
+                    <div className="border-borda flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-lg border bg-white">
+                      <MiniaturaPerfil
+                        link={null}
+                        codigo={sobra.modelo?.codigo ?? ''}
+                      />
+                    </div>
+                  )}
+                  <span
+                    className={`rounded-md px-1.5 py-0.5 text-[0.65rem] leading-tight font-semibold ${COR_STATUS[sobra.status]}`}
                   >
-                    <img
-                      src={capas.get(sobra.modelo_perfil_id)!}
-                      alt={sobra.modelo?.codigo ?? ''}
-                      className="max-w-[3.5rem] max-h-[3.5rem] object-contain"
-                    />
-                  </button>
-                ) : (
-                  <div className="w-[4.5rem] h-[4.5rem] flex items-center justify-center border border-borda rounded-lg bg-white">
-                    <MiniaturaPerfil
-                      link={null}
-                      codigo={sobra.modelo?.codigo ?? ''}
-                    />
-                  </div>
-                )}
-                <span
-                  className={`rounded-md px-1.5 py-0.5 text-[0.65rem] font-semibold leading-tight ${COR_STATUS[sobra.status]}`}
-                >
-                  {ROTULO_STATUS[sobra.status]}
-                </span>
-              </div>
-
-              {/* Direita: informações compactas */}
-              <Link
-                to={`/sobras/${sobra.id}`}
-                className="flex min-w-0 flex-1 flex-col gap-0.5"
-                aria-label={`Ver detalhes do material ${sobra.codigo}`}
-              >
-                <p className="text-[15px] leading-snug">
-                  <strong className="text-acao-600 font-mono text-lg font-bold">{sobra.modelo?.codigo}</strong>
-                  <span className="font-bold"> — {sobra.modelo?.descricao}</span>
-                </p>
-                <p className="text-xs text-texto-suave">
-                  {sobra.modelo && formatarMedidasSecao(sobra.modelo)
-                    ? `Medida: ${formatarMedidasSecao(sobra.modelo)}`
-                    : `Medida: ----`}
-                </p>
-                <hr className="border-borda my-1" />
-                <div className="flex items-center gap-x-3 text-xs mt-0.5">
-                  <span>
-                    Qt. Peças:{' '}
-                    <strong className="text-acao-600 font-bold">
-                      {String(disponivel).padStart(2, '0')}
-                    </strong>
-                  </span>
-                  <span>
-                    Med.:{' '}
-                    <strong className="text-acao-600 font-bold">
-                      {formatarComprimento(sobra.comprimento_mm)}
-                    </strong>
+                    {ROTULO_STATUS[sobra.status]}
                   </span>
                 </div>
-                {sobra.acabamento && (
-                  <div className="flex items-center gap-1 text-xs min-w-0">
-                    <span className="shrink-0">Acab.:</span>
-                    <AmostraCor corHex={sobra.acabamento.cor_hex} tamanho="pequeno" />
-                    <strong className="text-acao-600 font-bold truncate">
-                      {sobra.acabamento.nome}
+
+                {/* Direita: informações compactas */}
+                <Link
+                  to={`/sobras/${sobra.id}`}
+                  className="flex min-w-0 flex-1 flex-col gap-0.5"
+                  aria-label={`Ver detalhes do material ${sobra.codigo}`}
+                >
+                  <p className="text-[15px] leading-snug">
+                    <strong className="text-acao-600 font-mono text-lg font-bold">
+                      {sobra.modelo?.codigo}
                     </strong>
+                    <span className="font-bold">
+                      {' '}
+                      — {sobra.modelo?.descricao}
+                    </span>
+                  </p>
+                  <p className="text-texto-suave text-xs">
+                    {sobra.modelo && formatarMedidasSecao(sobra.modelo)
+                      ? `Medida: ${formatarMedidasSecao(sobra.modelo)}`
+                      : `Medida: ----`}
+                  </p>
+                  <hr className="border-borda my-1" />
+                  <div className="mt-0.5 flex items-center gap-x-3 text-xs">
+                    <span>
+                      Qt. Peças:{' '}
+                      <strong className="text-acao-600 font-bold">
+                        {String(disponivel).padStart(2, '0')}
+                      </strong>
+                    </span>
+                    <span>
+                      Med.:{' '}
+                      <strong className="text-acao-600 font-bold">
+                        {formatarComprimento(sobra.comprimento_mm)}
+                      </strong>
+                    </span>
                   </div>
-                )}
-              </Link>
+                  {sobra.acabamento && (
+                    <div className="flex min-w-0 items-center gap-1 text-xs">
+                      <span className="shrink-0">Acab.:</span>
+                      <AmostraCor
+                        corHex={sobra.acabamento.cor_hex}
+                        tamanho="pequeno"
+                      />
+                      <strong className="text-acao-600 truncate font-bold">
+                        {sobra.acabamento.nome}
+                      </strong>
+                    </div>
+                  )}
+                </Link>
               </div>
 
               {/* Rodapé com as informações adicionais solicitadas */}
-              <Link 
+              <Link
                 to={`/sobras/${sobra.id}`}
-                className="mt-2 border-t border-borda flex items-center divide-x divide-borda text-[0.8rem] font-bold text-acao-700 py-2 hover:bg-superficie-2 transition-colors"
+                className="border-borda divide-borda text-acao-700 hover:bg-superficie-2 mt-2 flex items-center divide-x border-t py-2 text-[0.8rem] font-bold transition-colors"
               >
-                <div className={
-                  sobra.cliente_obra || sobra.localizacao 
-                    ? "shrink-0 text-center truncate px-3 uppercase" 
-                    : "flex-1 text-center truncate px-2 uppercase"
-                }>
+                <div
+                  className={
+                    sobra.cliente_obra || sobra.localizacao
+                      ? 'shrink-0 truncate px-3 text-center uppercase'
+                      : 'flex-1 truncate px-2 text-center uppercase'
+                  }
+                >
                   {sobra.tipo_material === 'novo' ? 'NOVO' : 'SOBRA'}
                 </div>
                 {sobra.cliente_obra && (
-                  <div className="flex-1 text-center truncate px-2">
+                  <div className="flex-1 truncate px-2 text-center">
                     {sobra.cliente_obra}
                   </div>
                 )}
                 {sobra.localizacao && (
-                  <div className="shrink-0 text-center truncate px-3">
+                  <div className="shrink-0 truncate px-3 text-center">
                     {sobra.localizacao.codigo}
                   </div>
                 )}

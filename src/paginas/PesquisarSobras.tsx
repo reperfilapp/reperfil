@@ -70,7 +70,7 @@ export default function PesquisarSobras() {
 
   const [linhasSelecionadas, setLinhasSelecionadas] = useState<string[]>([])
   const [buscaExecutada, setBuscaExecutada] = useState(false)
-  
+
   const [acabamentoId, setAcabamentoId] = useState('')
   const [textoMedida, setTextoMedida] = useState('')
   const [unidade, setUnidade] = useState<UnidadeMedida>('mm')
@@ -84,14 +84,16 @@ export default function PesquisarSobras() {
     ? paraConfiguracaoCorte(config)
     : CONFIGURACAO_CORTE_PADRAO
 
-  const podePesquisar =
-    corteMm !== null && corteMm > 0
+  const podePesquisar = corteMm !== null && corteMm > 0
 
   const linhasDisponiveis = useMemo(() => {
     if (!sobras) return []
     const linhas = new Set<string>()
     for (const s of sobras) {
-      if (s.status === 'disponivel' && s.quantidade - s.quantidade_reservada > 0) {
+      if (
+        s.status === 'disponivel' &&
+        s.quantidade - s.quantidade_reservada > 0
+      ) {
         linhas.add(s.modelo?.linha?.trim() || SEM_LINHA)
       }
     }
@@ -104,10 +106,13 @@ export default function PesquisarSobras() {
 
   const candidatasSemFiltroAcabamento = useMemo(() => {
     return (sobras ?? []).filter((s) => {
-      const disponivel = s.status === 'disponivel' && s.quantidade - s.quantidade_reservada > 0
+      const disponivel =
+        s.status === 'disponivel' && s.quantidade - s.quantidade_reservada > 0
       if (!disponivel) return false
       const linha = s.modelo?.linha?.trim() || SEM_LINHA
-      return linhasSelecionadas.length === 0 || linhasSelecionadas.includes(linha)
+      return (
+        linhasSelecionadas.length === 0 || linhasSelecionadas.includes(linha)
+      )
     })
   }, [sobras, linhasSelecionadas])
 
@@ -132,10 +137,12 @@ export default function PesquisarSobras() {
     }))
 
   const acabamentosDisponiveisIds = new Set(
-    candidatasSemFiltroAcabamento.map((s) => s.acabamento_id)
+    candidatasSemFiltroAcabamento.map((s) => s.acabamento_id),
   )
 
-  const opcoesAcabamento = acabamentos?.filter((a) => acabamentosDisponiveisIds.has(a.id))
+  const opcoesAcabamento = acabamentos?.filter((a) =>
+    acabamentosDisponiveisIds.has(a.id),
+  )
 
   // Só pesquisa quando não há reserva confirmada (evita mensagem contraditória).
   const achados =
@@ -203,15 +210,20 @@ export default function PesquisarSobras() {
           <div className="flex flex-col gap-1.5">
             <label className="font-medium">Linhas (opcional)</label>
             <p className="text-texto-suave text-xs">
-              Selecione uma ou mais linhas. Deixe em branco para procurar em todas.
+              Selecione uma ou mais linhas. Deixe em branco para procurar em
+              todas.
             </p>
             {isPending && (!sobras || (sobras as any[]).length === 0) ? (
-              <p className="text-texto-suave text-sm mt-2">Carregando estoque...</p>
+              <p className="text-texto-suave mt-2 text-sm">
+                Carregando estoque...
+              </p>
             ) : linhasDisponiveis.length === 0 ? (
-              <p className="text-texto-suave text-sm mt-2">Nenhum material disponível no estoque.</p>
+              <p className="text-texto-suave mt-2 text-sm">
+                Nenhum material disponível no estoque.
+              </p>
             ) : (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {linhasDisponiveis.map(linha => {
+              <div className="mt-2 flex flex-wrap gap-2">
+                {linhasDisponiveis.map((linha) => {
                   const selecionada = linhasSelecionadas.includes(linha)
                   return (
                     <button
@@ -219,15 +231,17 @@ export default function PesquisarSobras() {
                       type="button"
                       onClick={() => {
                         setBuscaExecutada(false)
-                        setLinhasSelecionadas(prev => 
-                          selecionada ? prev.filter(l => l !== linha) : [...prev, linha]
+                        setLinhasSelecionadas((prev) =>
+                          selecionada
+                            ? prev.filter((l) => l !== linha)
+                            : [...prev, linha],
                         )
                       }}
                       className={cn(
-                        "rounded-full px-3 py-1.5 text-sm font-medium border-2 transition-colors",
-                        selecionada 
-                          ? "bg-acao-600 border-acao-600 text-white" 
-                          : "bg-superficie border-borda text-texto-suave hover:bg-superficie-2"
+                        'rounded-full border-2 px-3 py-1.5 text-sm font-medium transition-colors',
+                        selecionada
+                          ? 'bg-acao-600 border-acao-600 text-white'
+                          : 'bg-superficie border-borda text-texto-suave hover:bg-superficie-2',
                       )}
                     >
                       {linha === SEM_LINHA ? 'Sem linha' : linha}
@@ -310,9 +324,9 @@ export default function PesquisarSobras() {
               </button>
             </div>
           </div>
-          
+
           <Botao
-            className="w-full h-12 text-base font-semibold"
+            className="h-12 w-full text-base font-semibold"
             disabled={!podePesquisar || isPending}
             onClick={() => setBuscaExecutada(true)}
           >
@@ -332,7 +346,8 @@ export default function PesquisarSobras() {
             <p className="font-semibold">Reserva confirmada!</p>
             <p>{reservadaInfo}</p>
             <p className="text-texto-suave mt-1">
-              Veja em <strong>Reservas</strong> para confirmar a retirada e o corte.
+              Veja em <strong>Reservas</strong> para confirmar a retirada e o
+              corte.
             </p>
           </div>
         </div>
@@ -368,9 +383,9 @@ export default function PesquisarSobras() {
                 .
               </p>
               <p>
-                O sistema não sugere material de acabamento diferente — duas peças
-                da mesma cor, de lotes de pintura distintos, ficam visivelmente
-                diferentes na mesma esquadria.
+                O sistema não sugere material de acabamento diferente — duas
+                peças da mesma cor, de lotes de pintura distintos, ficam
+                visivelmente diferentes na mesma esquadria.
               </p>
             </div>
           )}
@@ -383,16 +398,16 @@ export default function PesquisarSobras() {
               return (
                 <li
                   key={s.id}
-                  className="bg-superficie rounded-xl p-4 shadow-sm"
+                  className="bg-celula border-borda rounded-xl border-2 p-4 shadow-sm"
                 >
                   <div className="mb-3 flex items-start gap-3">
-                    <div className="shrink-0 flex flex-col items-center gap-1.5 w-[4.5rem]">
-                      <div className="w-[4.5rem] h-[4.5rem] flex items-center justify-center border border-borda rounded-lg bg-white">
+                    <div className="flex w-[4.5rem] shrink-0 flex-col items-center gap-1.5">
+                      <div className="border-borda flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-lg border bg-white">
                         {capas?.get(s.modeloId) ? (
                           <img
                             src={capas.get(s.modeloId)!}
                             alt={s.modeloCodigo}
-                            className="max-w-[3.5rem] max-h-[3.5rem] object-contain"
+                            className="max-h-[3.5rem] max-w-[3.5rem] object-contain"
                           />
                         ) : (
                           <MiniaturaPerfil
@@ -401,7 +416,7 @@ export default function PesquisarSobras() {
                           />
                         )}
                       </div>
-                      <span className="bg-aluminio-200 text-grafite-900 rounded-md px-1.5 py-0.5 text-[0.65rem] font-semibold leading-tight">
+                      <span className="bg-aluminio-200 text-grafite-900 rounded-md px-1.5 py-0.5 text-[0.65rem] leading-tight font-semibold">
                         disponível
                       </span>
                     </div>
@@ -412,16 +427,21 @@ export default function PesquisarSobras() {
                       aria-label={`Ver detalhes do material ${s.codigo}`}
                     >
                       <p className="text-[15px] leading-snug">
-                        <strong className="text-acao-600 font-mono text-lg font-bold">{s.modeloCodigo}</strong>
-                        <span className="font-bold"> — {s.modeloDescricao}</span>
+                        <strong className="text-acao-600 font-mono text-lg font-bold">
+                          {s.modeloCodigo}
+                        </strong>
+                        <span className="font-bold">
+                          {' '}
+                          — {s.modeloDescricao}
+                        </span>
                       </p>
-                      <p className="text-xs text-texto-suave">
+                      <p className="text-texto-suave text-xs">
                         {s.modeloObj && formatarMedidasSecao(s.modeloObj)
                           ? `Medida: ${formatarMedidasSecao(s.modeloObj)}`
                           : `Medida: ----`}
                       </p>
                       <hr className="border-borda my-1" />
-                      <div className="flex items-center gap-x-3 text-xs mt-0.5">
+                      <div className="mt-0.5 flex items-center gap-x-3 text-xs">
                         <span>
                           Qt. Peças:{' '}
                           <strong className="text-acao-600 font-bold">
@@ -435,10 +455,13 @@ export default function PesquisarSobras() {
                           </strong>
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 text-xs min-w-0 mt-0.5">
+                      <div className="mt-0.5 flex min-w-0 items-center gap-1 text-xs">
                         <span className="shrink-0">Acab.:</span>
-                        <AmostraCor corHex={s.acabamentoCor} tamanho="pequeno" />
-                        <strong className="text-acao-600 font-bold truncate">
+                        <AmostraCor
+                          corHex={s.acabamentoCor}
+                          tamanho="pequeno"
+                        />
+                        <strong className="text-acao-600 truncate font-bold">
                           {s.acabamentoNome}
                         </strong>
                       </div>
@@ -446,7 +469,10 @@ export default function PesquisarSobras() {
                   </div>
 
                   <div className="bg-superficie-2 mb-3 flex items-center gap-2 rounded-lg px-3 py-2 text-sm">
-                    <Scissors aria-hidden="true" className="text-texto-suave size-4 shrink-0" />
+                    <Scissors
+                      aria-hidden="true"
+                      className="text-texto-suave size-4 shrink-0"
+                    />
                     <span>
                       {resultado.pecasNecessarias === 1
                         ? `1 peça deste lote basta para ${quantidadeCortes} ${quantidadeCortes === 1 ? 'corte' : 'cortes'} de ${formatarComprimento(corteMm!)}`
@@ -480,7 +506,11 @@ export default function PesquisarSobras() {
                     tamanho="largura_total"
                     carregando={reservar.isPending}
                     onClick={() =>
-                      void reservarPeca(s.id, s.codigo, resultado.pecasNecessarias)
+                      void reservarPeca(
+                        s.id,
+                        s.codigo,
+                        resultado.pecasNecessarias,
+                      )
                     }
                   >
                     {resultado.pecasNecessarias === 1

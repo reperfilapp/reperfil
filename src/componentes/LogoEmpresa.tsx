@@ -43,11 +43,7 @@ export function LogoEmpresa({
       <img
         src={logoUrl}
         alt={`Logo de ${nomeFantasia}`}
-        className={cn(
-          img,
-          'rounded-lg object-contain bg-white',
-          className,
-        )}
+        className={cn(img, 'rounded-lg bg-white object-contain', className)}
       />
     )
   }
@@ -57,7 +53,7 @@ export function LogoEmpresa({
       aria-label={`Iniciais de ${nomeFantasia}`}
       className={cn(
         container,
-        'rounded-lg bg-acao-600 text-white font-bold flex items-center justify-center shrink-0 select-none',
+        'bg-acao-600 flex shrink-0 items-center justify-center rounded-lg font-bold text-white select-none',
         className,
       )}
     >

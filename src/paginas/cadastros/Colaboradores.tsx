@@ -157,7 +157,7 @@ export default function Colaboradores() {
           return (
             <li
               key={pessoa.id}
-              className="bg-superficie flex items-center gap-3 rounded-xl p-4 shadow-sm"
+              className="bg-celula border-borda flex items-center gap-3 rounded-xl border-2 p-4 shadow-sm"
             >
               {/* A linha inteira leva ao cadastro: é lá que se edita, troca
                   cargo, ajusta permissão e redefine senha. Aqui ficam só as

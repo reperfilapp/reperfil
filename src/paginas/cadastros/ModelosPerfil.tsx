@@ -102,7 +102,9 @@ export default function ModelosPerfil() {
   const { nivel, abrir, voltarNivel } = useNiveisNaUrl(['linha'])
   const linhaAberta = nivel('linha')
   const [ordenacao, setOrdenacao] = useState(ORDENACAO_PADRAO)
-  const [filtroRevisao, setFiltroRevisao] = useState<'todos' | 'revisados' | 'pendentes'>('todos')
+  const [filtroRevisao, setFiltroRevisao] = useState<
+    'todos' | 'revisados' | 'pendentes'
+  >('todos')
   const [aberto, setAberto] = useState(false)
   const [editando, setEditando] = useState<ModeloPerfil | null>(null)
   const [form, setForm] = useState<DadosModeloPerfil>(VAZIO)
@@ -296,7 +298,7 @@ export default function ModelosPerfil() {
             <select
               value={filtroRevisao}
               onChange={(e) => setFiltroRevisao(e.target.value as any)}
-              className="border-borda bg-superficie hover:bg-superficie-2 text-sm font-medium min-h-12 shrink-0 rounded-xl border-2 px-3 outline-none"
+              className="border-borda bg-superficie hover:bg-superficie-2 min-h-12 shrink-0 rounded-xl border-2 px-3 text-sm font-medium outline-none"
             >
               <option value="todos">Todos</option>
               <option value="revisados">Revisados</option>
@@ -339,7 +341,7 @@ export default function ModelosPerfil() {
           <button
             type="button"
             onClick={() => abrir({ linha: TODAS })}
-            className="text-acao-600 shrink-0 text-sm font-medium hover:underline mx-auto block pb-2"
+            className="text-acao-600 mx-auto block shrink-0 pb-2 text-sm font-medium hover:underline"
           >
             Ver todos os perfis
           </button>
@@ -349,36 +351,52 @@ export default function ModelosPerfil() {
       {/* Lista de linhas: a porta de entrada do catálogo. */}
       {!isPending && mostrandoLinhas && grupos.length > 0 && (
         <ul className="flex flex-col gap-2">
-          {grupos.map(({ linha, modelos: daLinha, resumo }) => (
-            <li key={linha}>
-              <button
-                type="button"
-                onClick={() => abrir({ linha })}
-                className="bg-superficie hover:bg-superficie-2 flex min-h-16 w-full items-center gap-3 rounded-xl p-4 text-left shadow-sm"
-              >
-                <Layers
-                  aria-hidden="true"
-                  className="text-acao-600 size-5 shrink-0"
-                />
-                <span className="min-w-0 flex-1 truncate font-medium">
-                  {linha}
-                </span>
-                <span className="text-texto-suave shrink-0 text-sm">
-                  <span className="block tabular-nums">
-                    {formatarResumo(resumo)}
+          {grupos.map(({ linha, modelos: daLinha, resumo }) => {
+            const revisados = daLinha.filter((m) => m.revisado).length
+            const todosRevisados =
+              daLinha.length > 0 && revisados === daLinha.length
+
+            return (
+              <li key={linha}>
+                <button
+                  type="button"
+                  onClick={() => abrir({ linha })}
+                  className="bg-celula hover:bg-celula border-borda flex min-h-16 w-full items-center gap-3 rounded-xl border-2 p-4 text-left shadow-sm"
+                >
+                  <div className="flex w-6 shrink-0 flex-col items-center justify-center gap-1">
+                    {todosRevisados && (
+                      <span
+                        className="z-10 text-sm leading-none"
+                        title="Todos revisados"
+                      >
+                        ✅
+                      </span>
+                    )}
+                    <Layers
+                      aria-hidden="true"
+                      className="text-acao-600 size-5"
+                    />
+                  </div>
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    {linha}
                   </span>
-                  <span className="block text-xs">
-                    {daLinha.length}{' '}
-                    {daLinha.length === 1 ? 'perfil' : 'perfis'}
+                  <span className="text-texto-suave shrink-0 text-right text-sm">
+                    <span className="block tabular-nums">
+                      {formatarResumo(resumo)}
+                    </span>
+                    <span className="block text-xs">
+                      Total: {daLinha.length}{' '}
+                      <span className="inline-block w-2" /> Rev.: {revisados}
+                    </span>
                   </span>
-                </span>
-                <ChevronRight
-                  aria-hidden="true"
-                  className="text-texto-suave size-4 shrink-0"
-                />
-              </button>
-            </li>
-          ))}
+                  <ChevronRight
+                    aria-hidden="true"
+                    className="text-texto-suave size-4 shrink-0"
+                  />
+                </button>
+              </li>
+            )
+          })}
         </ul>
       )}
 
@@ -400,13 +418,17 @@ export default function ModelosPerfil() {
         {visiveisOrdenados.map((modelo) => (
           <li
             key={modelo.id}
-            className="bg-superficie flex items-center gap-3 rounded-xl p-3 shadow-sm"
+            className="bg-celula border-borda flex items-center gap-3 rounded-xl border-2 p-3 shadow-sm"
           >
-            <div className="flex flex-col items-center gap-1.5 shrink-0">
+            <div className="flex shrink-0 flex-col items-center gap-1.5">
               {modelo.revisado && (
-                <div className="flex flex-col items-center -mt-1.5 mb-1">
-                  <span className="text-xl leading-none" title="Revisado">✅</span>
-                  <span className="text-[10px] font-bold text-sucesso-700 uppercase mt-0.5">Revisado</span>
+                <div className="-mt-1.5 mb-1 flex flex-col items-center">
+                  <span className="text-xl leading-none" title="Revisado">
+                    ✅
+                  </span>
+                  <span className="text-sucesso-700 mt-0.5 text-[10px] font-bold uppercase">
+                    Revisado
+                  </span>
                 </div>
               )}
               {capas?.get(modelo.id) ? (
@@ -421,10 +443,7 @@ export default function ModelosPerfil() {
                   />
                 </button>
               ) : (
-                <MiniaturaPerfil
-                  link={null}
-                  codigo={modelo.codigo}
-                />
+                <MiniaturaPerfil link={null} codigo={modelo.codigo} />
               )}
             </div>
 
@@ -433,7 +452,7 @@ export default function ModelosPerfil() {
                 to={`/perfis/${modelo.id}`}
                 className="flex min-w-0 flex-col"
               >
-                <span className="flex items-start gap-1.5 font-medium text-base leading-tight">
+                <span className="flex items-start gap-1.5 text-base leading-tight font-medium">
                   <span className="line-clamp-2">{modelo.descricao}</span>
                   {!modelo.ativo && (
                     <span className="bg-superficie-2 text-texto-suave shrink-0 rounded px-2 py-0.5 text-xs">
@@ -451,16 +470,16 @@ export default function ModelosPerfil() {
                   {modelo.aplicacao && ` · ${modelo.aplicacao}`}
                 </span>
                 {formatarMedidasSecao(modelo) && (
-                  <span className="text-texto-suave block truncate text-sm mt-0.5">
+                  <span className="text-texto-suave mt-0.5 block truncate text-sm">
                     {formatarMedidasSecao(modelo)}
                   </span>
                 )}
               </Link>
 
-              <div className="flex items-center justify-between gap-2 mt-2">
+              <div className="mt-2 flex items-center justify-between gap-2">
                 <Link
                   to={`/perfis/${modelo.id}`}
-                  className="text-acao-600 font-mono font-bold whitespace-nowrap shrink-0 text-lg"
+                  className="text-acao-600 shrink-0 font-mono text-lg font-bold whitespace-nowrap"
                 >
                   {modelo.codigo}
                 </Link>
@@ -547,13 +566,20 @@ export default function ModelosPerfil() {
           </p>
 
           {erroApagar && (
-            <p role="alert" className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm">
+            <p
+              role="alert"
+              className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm"
+            >
               {erroApagar}
             </p>
           )}
 
           <div className="flex gap-3">
-            <Botao variante="contorno" onClick={() => setApagando(null)} className="flex-1">
+            <Botao
+              variante="contorno"
+              onClick={() => setApagando(null)}
+              className="flex-1"
+            >
               Cancelar
             </Botao>
             <Botao

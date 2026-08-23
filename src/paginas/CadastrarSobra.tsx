@@ -1,5 +1,11 @@
 import { useState } from 'react'
-import { CheckCircle2, Copy, PackagePlus, Package, Scissors } from 'lucide-react'
+import {
+  CheckCircle2,
+  Copy,
+  PackagePlus,
+  Package,
+  Scissors,
+} from 'lucide-react'
 import {
   useCadastrarSobra,
   useSomarAoLote,
@@ -89,7 +95,8 @@ export default function CadastrarSobra() {
   const [tipoMaterial, setTipoMaterial] = useState<'novo' | 'sobra'>('sobra')
   // Quando tipo = 'novo', o estado é fixado em 'novo_embalado'
   const [estadoManual, setEstadoManual] = useState<EstadoConservacao>('bom')
-  const estado: EstadoConservacao = tipoMaterial === 'novo' ? 'novo_embalado' : estadoManual
+  const estado: EstadoConservacao =
+    tipoMaterial === 'novo' ? 'novo_embalado' : estadoManual
   const [clienteObra, setClienteObra] = useState('')
   const [observacoes, setObservacoes] = useState('')
   const [origem, setOrigem] = useState('')
@@ -403,7 +410,7 @@ export default function CadastrarSobra() {
                   }}
                   aria-pressed={tipoMaterial === 'sobra'}
                   className={cn(
-                    'flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border-2 font-semibold transition-colors',
+                    'flex min-h-20 flex-col items-center justify-center gap-0.5 rounded-xl border-2 pt-2 font-semibold transition-colors',
                     tipoMaterial === 'sobra'
                       ? 'border-acao-600 bg-acao-600 text-white'
                       : 'border-borda bg-superficie text-texto hover:bg-superficie-2',
@@ -411,7 +418,14 @@ export default function CadastrarSobra() {
                 >
                   <Scissors aria-hidden="true" className="size-6" />
                   <span>SOBRA</span>
-                  <span className={cn('text-[0.65rem] font-normal leading-tight', tipoMaterial === 'sobra' ? 'text-white/75' : 'text-texto-suave')}>
+                  <span
+                    className={cn(
+                      'mt-0.5 text-[0.65rem] leading-tight font-normal',
+                      tipoMaterial === 'sobra'
+                        ? 'text-white/75'
+                        : 'text-texto-suave',
+                    )}
+                  >
                     saiu de um corte/obra
                   </span>
                 </button>
@@ -425,7 +439,7 @@ export default function CadastrarSobra() {
                   }}
                   aria-pressed={tipoMaterial === 'novo'}
                   className={cn(
-                    'flex min-h-20 flex-col items-center justify-center gap-1.5 rounded-xl border-2 font-semibold transition-colors',
+                    'flex min-h-20 flex-col items-center justify-center gap-0.5 rounded-xl border-2 pt-2 font-semibold transition-colors',
                     tipoMaterial === 'novo'
                       ? 'border-economia-600 bg-economia-600 text-white'
                       : 'border-borda bg-superficie text-texto hover:bg-superficie-2',
@@ -433,7 +447,14 @@ export default function CadastrarSobra() {
                 >
                   <Package aria-hidden="true" className="size-6" />
                   <span>NOVO</span>
-                  <span className={cn('text-[0.65rem] font-normal leading-tight', tipoMaterial === 'novo' ? 'text-white/75' : 'text-texto-suave')}>
+                  <span
+                    className={cn(
+                      'mt-0.5 text-[0.65rem] leading-tight font-normal',
+                      tipoMaterial === 'novo'
+                        ? 'text-white/75'
+                        : 'text-texto-suave',
+                    )}
+                  >
                     direto do fornecedor
                   </span>
                 </button>
@@ -442,8 +463,12 @@ export default function CadastrarSobra() {
               {/* Quando é novo, exibe o estado fixado como informação */}
               {tipoMaterial === 'novo' && (
                 <p className="text-economia-700 bg-economia-50 mt-2 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium">
-                  <CheckCircle2 aria-hidden="true" className="size-4 shrink-0" />
-                  Condição visual definida automaticamente como <strong>Novo/Embalado</strong>
+                  <CheckCircle2
+                    aria-hidden="true"
+                    className="size-4 shrink-0"
+                  />
+                  Condição visual definida automaticamente como{' '}
+                  <strong>Novo/Embalado</strong>
                 </p>
               )}
             </section>
@@ -455,7 +480,9 @@ export default function CadastrarSobra() {
                 <CampoSelecao
                   rotulo="Condição visual"
                   value={estadoManual}
-                  onChange={(e) => setEstadoManual(e.target.value as EstadoConservacao)}
+                  onChange={(e) =>
+                    setEstadoManual(e.target.value as EstadoConservacao)
+                  }
                 >
                   <option value="novo_embalado">Novo/Embalado</option>
                   <option value="excelente">Excelente</option>
@@ -505,7 +532,9 @@ export default function CadastrarSobra() {
                 <datalist id={datalistId}>
                   {clientes?.map((c) => (
                     <option key={c.id} value={c.nome}>
-                      {c.nome_fantasia ? `${c.nome} (${c.nome_fantasia})` : c.nome}
+                      {c.nome_fantasia
+                        ? `${c.nome} (${c.nome_fantasia})`
+                        : c.nome}
                     </option>
                   ))}
                 </datalist>

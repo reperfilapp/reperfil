@@ -91,7 +91,7 @@ export function LayoutApp() {
               end={exato}
               className={({ isActive }) =>
                 cn(
-                  'flex min-h-16 flex-col items-center justify-start pt-2.5 pb-1 gap-0.5 text-[0.65rem] sm:text-xs text-center leading-tight px-0.5',
+                  'flex min-h-16 flex-col items-center justify-start gap-0.5 px-0.5 pt-2.5 pb-1 text-center text-[0.65rem] leading-tight sm:text-xs',
                   destacado
                     ? 'text-acao-600'
                     : isActive

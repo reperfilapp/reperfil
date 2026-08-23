@@ -17,11 +17,17 @@ interface ModalEditarSobraProps {
   aoFechar: () => void
 }
 
-export function ModalEditarSobra({ sobra, aberto, aoFechar }: ModalEditarSobraProps) {
+export function ModalEditarSobra({
+  sobra,
+  aberto,
+  aoFechar,
+}: ModalEditarSobraProps) {
   const editar = useEditarSobraLote()
   const { data: acabamentos } = useAcabamentos()
 
-  const [textoMedida, setTextoMedida] = useState(sobra.comprimento_mm.toString())
+  const [textoMedida, setTextoMedida] = useState(
+    sobra.comprimento_mm.toString(),
+  )
   const [unidade, setUnidade] = useState<UnidadeMedida>('mm')
   const comprimentoMm = interpretarMedidaDigitada(textoMedida, unidade)
 
@@ -82,7 +88,11 @@ export function ModalEditarSobra({ sobra, aberto, aoFechar }: ModalEditarSobraPr
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setQuantidade((q: number) => Math.max(sobra.quantidade_reservada, q - 1))}
+              onClick={() =>
+                setQuantidade((q: number) =>
+                  Math.max(sobra.quantidade_reservada, q - 1),
+                )
+              }
               className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-12 w-12 shrink-0 rounded-xl border-2 text-xl font-bold"
             >
               −
@@ -98,7 +108,9 @@ export function ModalEditarSobra({ sobra, aberto, aoFechar }: ModalEditarSobraPr
             />
             <button
               type="button"
-              onClick={() => setQuantidade((q: number) => Math.min(9999, q + 1))}
+              onClick={() =>
+                setQuantidade((q: number) => Math.min(9999, q + 1))
+              }
               className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-12 w-12 shrink-0 rounded-xl border-2 text-xl font-bold"
             >
               +
@@ -106,7 +118,8 @@ export function ModalEditarSobra({ sobra, aberto, aoFechar }: ModalEditarSobraPr
           </div>
           {sobra.quantidade_reservada > 0 && (
             <span className="text-texto-suave text-sm">
-              Mínimo permitido: {sobra.quantidade_reservada} (quantidade reservada).
+              Mínimo permitido: {sobra.quantidade_reservada} (quantidade
+              reservada).
             </span>
           )}
         </div>
@@ -151,16 +164,29 @@ export function ModalEditarSobra({ sobra, aberto, aoFechar }: ModalEditarSobraPr
         )}
 
         {erro && (
-          <p role="alert" className="bg-erro-50 text-erro-700 rounded-xl p-4 text-sm">
+          <p
+            role="alert"
+            className="bg-erro-50 text-erro-700 rounded-xl p-4 text-sm"
+          >
             {erro}
           </p>
         )}
 
         <div className="flex gap-3">
-          <Botao type="button" variante="contorno" onClick={aoFechar} className="flex-1">
+          <Botao
+            type="button"
+            variante="contorno"
+            onClick={aoFechar}
+            className="flex-1"
+          >
             Cancelar
           </Botao>
-          <Botao type="submit" carregando={editar.isPending} disabled={!podeSalvar} className="flex-1">
+          <Botao
+            type="submit"
+            carregando={editar.isPending}
+            disabled={!podeSalvar}
+            className="flex-1"
+          >
             Salvar
           </Botao>
         </div>

@@ -103,7 +103,7 @@ export default function OQueProduzir() {
             <li key={produto.id}>
               <Link
                 to={`/produtos/${produto.id}`}
-                className="bg-superficie flex items-center gap-3 rounded-xl p-4 shadow-sm"
+                className="bg-celula border-borda flex items-center gap-3 rounded-xl border-2 p-4 shadow-sm"
               >
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">

@@ -311,11 +311,14 @@ export function useEditarSobraLote() {
     }) => {
       // 1. Se a quantidade mudou, chama a RPC para manter histórico correto.
       if (novaQuantidade !== quantidadeAtual) {
-        const { error: errQtd } = await supabase.rpc('ajustar_quantidade_lote', {
-          p_lote_id: loteId,
-          p_nova_quantidade: novaQuantidade,
-          p_justificativa: justificativa,
-        })
+        const { error: errQtd } = await supabase.rpc(
+          'ajustar_quantidade_lote',
+          {
+            p_lote_id: loteId,
+            p_nova_quantidade: novaQuantidade,
+            p_justificativa: justificativa,
+          },
+        )
         if (errQtd) throw new Error(errQtd.message)
       }
 

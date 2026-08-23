@@ -10,7 +10,7 @@ export function AmostraCor({
   const dimensao = tamanho === 'grande' ? 'size-8' : 'size-3.5'
 
   return (
-    <span className="inline-flex items-center gap-1.5 min-w-0">
+    <span className="inline-flex min-w-0 items-center gap-1.5">
       <span
         aria-hidden="true"
         className={`shrink-0 rounded-full ${dimensao}`}

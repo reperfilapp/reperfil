@@ -10,10 +10,7 @@ import {
   PackageCheck,
   Pencil,
 } from 'lucide-react'
-import {
-  useSobra,
-  useHistoricoDoLote,
-} from '@/dados/sobras'
+import { useSobra, useHistoricoDoLote } from '@/dados/sobras'
 import { useReservarSobra } from '@/dados/reservas'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
 import { obterLinkTemporario, BALDE_FOTOS } from '@/lib/armazenamento'
@@ -192,9 +189,7 @@ export default function SobraDetalhe() {
       setUsando(false)
       navegar('/reservas')
     } catch (e) {
-      setErroUsar(
-        e instanceof Error ? e.message : 'Não foi possível reservar.',
-      )
+      setErroUsar(e instanceof Error ? e.message : 'Não foi possível reservar.')
     }
   }
 
@@ -215,7 +210,11 @@ export default function SobraDetalhe() {
       acoes={
         <>
           {podeMovimentar && sobra.status !== 'consumida' && (
-            <Botao variante="contorno" onClick={() => setEditando(true)} className="flex-1 sm:flex-none">
+            <Botao
+              variante="contorno"
+              onClick={() => setEditando(true)}
+              className="flex-1 sm:flex-none"
+            >
               <Pencil aria-hidden="true" className="size-4" />
               Editar material
             </Botao>
@@ -242,19 +241,19 @@ export default function SobraDetalhe() {
         <h2 className="mb-2 font-semibold">Perfil</h2>
         <Link
           to={`/perfis/${sobra.modelo_perfil_id}`}
-          className="bg-superficie shadow-sm hover:bg-superficie-2 flex items-center gap-3 rounded-xl p-3"
+          className="bg-superficie hover:bg-superficie-2 flex items-center gap-3 rounded-xl p-3 shadow-sm"
         >
-          <div className="shrink-0 flex flex-col items-center gap-1.5 w-[4.5rem]">
+          <div className="flex w-[4.5rem] shrink-0 flex-col items-center gap-1.5">
             {capas?.get(sobra.modelo_perfil_id) ? (
-              <div className="w-[4.5rem] h-[4.5rem] flex items-center justify-center border border-borda rounded-lg bg-white">
+              <div className="border-borda flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-lg border bg-white">
                 <img
                   src={capas.get(sobra.modelo_perfil_id)!}
                   alt={sobra.modelo?.codigo ?? ''}
-                  className="max-w-[3.5rem] max-h-[3.5rem] object-contain"
+                  className="max-h-[3.5rem] max-w-[3.5rem] object-contain"
                 />
               </div>
             ) : (
-              <div className="w-[4.5rem] h-[4.5rem] flex items-center justify-center border border-borda rounded-lg bg-white">
+              <div className="border-borda flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-lg border bg-white">
                 <MiniaturaPerfil
                   link={null}
                   codigo={sobra.modelo?.codigo ?? ''}
@@ -264,24 +263,29 @@ export default function SobraDetalhe() {
           </div>
           <div className="flex min-w-0 flex-1 flex-col justify-center">
             <p className="text-[0.8rem] leading-snug">
-              <strong className="text-acao-600 font-bold">{sobra.modelo?.codigo}</strong>
+              <strong className="text-acao-600 font-bold">
+                {sobra.modelo?.codigo}
+              </strong>
               <span className="font-bold"> — {sobra.modelo?.descricao}</span>
             </p>
             {sobra.modelo?.linha && (
-              <p className="text-xs text-texto-suave mt-0.5">
+              <p className="text-texto-suave mt-0.5 text-xs">
                 {sobra.modelo.linha}
               </p>
             )}
             {sobra.modelo && formatarMedidasSecao(sobra.modelo) && (
-              <p className="text-xs text-texto-suave mt-0.5">
+              <p className="text-texto-suave mt-0.5 text-xs">
                 Medida: {formatarMedidasSecao(sobra.modelo)}
               </p>
             )}
             {sobra.acabamento && (
-              <div className="flex items-center gap-1 text-xs min-w-0 mt-1">
+              <div className="mt-1 flex min-w-0 items-center gap-1 text-xs">
                 <span className="text-texto-suave shrink-0">Acab.:</span>
-                <AmostraCor corHex={sobra.acabamento.cor_hex} tamanho="pequeno" />
-                <strong className="text-acao-600 font-bold truncate">
+                <AmostraCor
+                  corHex={sobra.acabamento.cor_hex}
+                  tamanho="pequeno"
+                />
+                <strong className="text-acao-600 truncate font-bold">
                   {sobra.acabamento.nome}
                 </strong>
               </div>
@@ -309,33 +313,33 @@ export default function SobraDetalhe() {
 
       <section className="bg-destaque border-destaque-borda flex items-stretch justify-center rounded-xl border py-4">
         <div className="flex flex-1 flex-col items-center justify-end px-2">
-          <span className="text-destaque-texto text-sm font-medium opacity-80 mb-1">
+          <span className="text-destaque-texto mb-1 text-sm font-medium opacity-80">
             Quantidade
           </span>
-          <span className="text-destaque-texto text-2xl sm:text-3xl font-bold tabular-nums text-center leading-none">
+          <span className="text-destaque-texto text-center text-2xl leading-none font-bold tabular-nums sm:text-3xl">
             {sobra.quantidade}
-            <span className="ml-1 text-sm sm:text-base font-medium">
+            <span className="ml-1 text-sm font-medium sm:text-base">
               {sobra.quantidade === 1 ? 'peça' : 'peças'}
             </span>
           </span>
         </div>
-        
-        <div className="border-l border-r border-destaque-borda/40 px-3 sm:px-4 flex items-center justify-center">
+
+        <div className="border-destaque-borda/40 flex items-center justify-center border-r border-l px-3 sm:px-4">
           <span className="text-destaque-texto text-lg font-medium opacity-80">
             de
           </span>
         </div>
 
         <div className="flex flex-1 flex-col items-center justify-end px-2">
-          <span className="text-destaque-texto text-sm font-medium opacity-80 mb-1">
+          <span className="text-destaque-texto mb-1 text-sm font-medium opacity-80">
             Comprimento
           </span>
-          <span className="text-destaque-texto text-2xl sm:text-3xl font-bold tabular-nums text-center leading-none">
+          <span className="text-destaque-texto text-center text-2xl leading-none font-bold tabular-nums sm:text-3xl">
             {formatarComprimento(sobra.comprimento_mm)}
           </span>
         </div>
       </section>
- 
+
       <FichaDados
         titulo="Dados da peça"
         linhas={[
@@ -466,12 +470,17 @@ export default function SobraDetalhe() {
           quem já está com a sobra certa na mão — abriu pelo código, pela
           busca ou por um link — não deveria precisar refazer a busca por
           perfil e comprimento para chegar à mesma peça. */}
-      <Modal aberto={usando} aoFechar={() => setUsando(false)} titulo="Usar peça">
+      <Modal
+        aberto={usando}
+        aoFechar={() => setUsando(false)}
+        titulo="Usar peça"
+      >
         <div className="flex flex-col gap-4">
           <p className="text-sm">
-            Reserva peças de <strong className="font-mono">{sobra.codigo}</strong>{' '}
-            — o próximo passo (retirar da prateleira e confirmar o corte) fica
-            na tela Reservas.
+            Reserva peças de{' '}
+            <strong className="font-mono">{sobra.codigo}</strong> — o próximo
+            passo (retirar da prateleira e confirmar o corte) fica na tela
+            Reservas.
           </p>
 
           <CampoMedida
@@ -519,13 +528,20 @@ export default function SobraDetalhe() {
           </div>
 
           {(erroUsar || erroUsarCalculado) && (
-            <p role="alert" className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm font-medium">
+            <p
+              role="alert"
+              className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm font-medium"
+            >
               {erroUsar || erroUsarCalculado}
             </p>
           )}
 
           <div className="flex gap-3">
-            <Botao variante="contorno" onClick={() => setUsando(false)} className="flex-1">
+            <Botao
+              variante="contorno"
+              onClick={() => setUsando(false)}
+              className="flex-1"
+            >
               Cancelar
             </Botao>
             <Botao

@@ -227,7 +227,7 @@ export default function Reservas() {
         {reservas?.map((reserva) => (
           <li
             key={reserva.id}
-            className="bg-superficie rounded-xl p-4 shadow-sm"
+            className="bg-celula border-borda rounded-xl border-2 p-4 shadow-sm"
           >
             <div className="mb-2 flex items-start justify-between gap-3">
               <Link
@@ -239,7 +239,7 @@ export default function Reservas() {
                   <span className="block font-mono font-bold">
                     Lote {reserva.lote?.codigo}
                   </span>
-                  <span className="block truncate text-sm flex items-center gap-1">
+                  <span className="block flex items-center gap-1 truncate text-sm">
                     {reserva.lote?.modelo?.codigo} ·{' '}
                     <AmostraCor
                       corHex={reserva.lote?.acabamento?.cor_hex ?? null}
@@ -327,23 +327,29 @@ export default function Reservas() {
           <div className="flex flex-col gap-4">
             {/* Resumo do que foi reservado */}
             <div className="bg-superficie-2 rounded-xl p-3 text-sm">
-              <p className="font-semibold mb-1">O que foi reservado</p>
+              <p className="mb-1 font-semibold">O que foi reservado</p>
               {cortando.comprimento_corte_mm !== null &&
               cortando.quantidade_cortes !== null ? (
                 <p>
                   <strong>{cortando.quantidade_cortes}</strong>{' '}
                   {cortando.quantidade_cortes === 1 ? 'corte' : 'cortes'} de{' '}
-                  <strong>{formatarComprimento(cortando.comprimento_corte_mm)}</strong>{' '}
-                  — usando{' '}
-                  <strong>{cortando.quantidade}</strong>{' '}
+                  <strong>
+                    {formatarComprimento(cortando.comprimento_corte_mm)}
+                  </strong>{' '}
+                  — usando <strong>{cortando.quantidade}</strong>{' '}
                   {cortando.quantidade === 1 ? 'peça' : 'peças'} de{' '}
-                  <strong>{formatarComprimento(cortando.lote.comprimento_mm)}</strong>{' '}
-                  do lote <span className="font-mono">{cortando.lote.codigo}</span>.
+                  <strong>
+                    {formatarComprimento(cortando.lote.comprimento_mm)}
+                  </strong>{' '}
+                  do lote{' '}
+                  <span className="font-mono">{cortando.lote.codigo}</span>.
                 </p>
               ) : (
                 <p>
-                  Lote <strong className="font-mono">{cortando.lote.codigo}</strong>{' '}
-                  ({cortando.quantidade} {cortando.quantidade === 1 ? 'peça' : 'peças'} de{' '}
+                  Lote{' '}
+                  <strong className="font-mono">{cortando.lote.codigo}</strong>{' '}
+                  ({cortando.quantidade}{' '}
+                  {cortando.quantidade === 1 ? 'peça' : 'peças'} de{' '}
                   {formatarComprimento(cortando.lote.comprimento_mm)}).
                 </p>
               )}
@@ -363,13 +369,15 @@ export default function Reservas() {
               {cortando.comprimento_corte_mm !== null &&
                 cortando.quantidade_cortes !== null && (
                   <p className="text-texto-suave mt-1.5 text-xs">
-                    Valor sugerido:{' '}
-                    {cortando.quantidade_cortes} ×{' '}
+                    Valor sugerido: {cortando.quantidade_cortes} ×{' '}
                     {formatarComprimento(cortando.comprimento_corte_mm)} +{' '}
                     {cortando.quantidade_cortes - 1} ×{' '}
-                    {formatarComprimento(configCorte.espessuraSerraMm)} (serra) ={' '}
+                    {formatarComprimento(configCorte.espessuraSerraMm)} (serra)
+                    ={' '}
                     <strong>
-                      {formatarComprimento(calcularConsumoSugerido(cortando) ?? 0)}
+                      {formatarComprimento(
+                        calcularConsumoSugerido(cortando) ?? 0,
+                      )}
                     </strong>
                     . Ajuste se necessário.
                   </p>

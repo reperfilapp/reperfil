@@ -1,5 +1,13 @@
 import { Link } from 'react-router-dom'
-import { PackagePlus, Package, Clock, Ruler, Layers, Boxes, Scissors } from 'lucide-react'
+import {
+  PackagePlus,
+  Package,
+  Clock,
+  Ruler,
+  Layers,
+  Boxes,
+  Scissors,
+} from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { useResumoEstoque } from '@/dados/sobras'
@@ -28,7 +36,7 @@ export default function Inicio() {
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
       {/* O logo da empresa assume a posição principal se existir,
           mas mantemos a marca do aplicativo visível para reforço. */}
-      <div className="mb-6 flex justify-center gap-4 items-center">
+      <div className="mb-6 flex items-center justify-center gap-4">
         {org ? (
           <>
             <LogoEmpresa
@@ -36,10 +44,10 @@ export default function Inicio() {
               nomeFantasia={org.nome_fantasia}
               tamanho="gigante"
             />
-            <div className="h-10 w-px bg-borda/50" aria-hidden="true" />
+            <div className="bg-borda/50 h-10 w-px" aria-hidden="true" />
             <MarcaRePerfil
               variante="simbolo"
-              className="w-28 h-28 rounded-xl bg-white p-4 shrink-0"
+              className="h-28 w-28 shrink-0 rounded-xl bg-white p-4"
             />
           </>
         ) : (
@@ -52,7 +60,7 @@ export default function Inicio() {
 
       <header className="mb-6 text-center">
         {org && (
-          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wider text-acao-600">
+          <h2 className="text-acao-600 mb-1 text-sm font-semibold tracking-wider uppercase">
             {org.nome_fantasia}
           </h2>
         )}
@@ -184,7 +192,7 @@ function Atalho({
       <span className="flex flex-col items-center">
         <span>{rotulo}</span>
         {subrotulo && (
-          <span className="text-[0.65rem] font-medium opacity-75 leading-tight mt-0.5">
+          <span className="mt-0.5 text-[0.65rem] leading-tight font-medium opacity-75">
             {subrotulo}
           </span>
         )}
@@ -207,12 +215,13 @@ function Indicador({
   const conteudo = (
     <>
       <Icone aria-hidden="true" className="text-acao-600 mx-auto mb-1 size-5" />
-      <p className="text-2xl font-bold tabular-nums">{valor}</p>
+      <p className="text-xl font-bold tabular-nums">{valor}</p>
       <p className="text-texto-suave text-xs">{rotulo}</p>
     </>
   )
 
-  const classes = "bg-superficie rounded-xl p-4 text-center shadow-sm block transition-colors"
+  const classes =
+    'bg-celula border-2 border-borda rounded-xl p-4 text-center shadow-sm block transition-colors'
 
   if (para) {
     return (
@@ -222,9 +231,5 @@ function Indicador({
     )
   }
 
-  return (
-    <div className={classes}>
-      {conteudo}
-    </div>
-  )
+  return <div className={classes}>{conteudo}</div>
 }

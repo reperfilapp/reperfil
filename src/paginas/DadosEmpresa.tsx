@@ -20,9 +20,33 @@ import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { LogoEmpresa } from '@/componentes/LogoEmpresa'
 
 const UFs = [
-  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
-  'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
-  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+  'AC',
+  'AL',
+  'AP',
+  'AM',
+  'BA',
+  'CE',
+  'DF',
+  'ES',
+  'GO',
+  'MA',
+  'MT',
+  'MS',
+  'MG',
+  'PA',
+  'PB',
+  'PR',
+  'PE',
+  'PI',
+  'RJ',
+  'RN',
+  'RS',
+  'RO',
+  'RR',
+  'SC',
+  'SP',
+  'SE',
+  'TO',
 ]
 
 const VAZIO: DadosOrganizacao = {
@@ -119,7 +143,9 @@ export default function DadosEmpresa() {
         caminhoAnterior: org.logo_caminho,
       })
     } catch (e) {
-      setErroLogo(e instanceof Error ? e.message : 'Não foi possível enviar o logo.')
+      setErroLogo(
+        e instanceof Error ? e.message : 'Não foi possível enviar o logo.',
+      )
     } finally {
       setEnviandoLogo(false)
     }
@@ -142,7 +168,10 @@ export default function DadosEmpresa() {
       <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
 
       <header className="mb-6 flex items-center gap-3">
-        <Building2 aria-hidden="true" className="text-acao-600 size-6 shrink-0" />
+        <Building2
+          aria-hidden="true"
+          className="text-acao-600 size-6 shrink-0"
+        />
         <h1 className="text-2xl font-bold">Dados da empresa</h1>
       </header>
 
@@ -158,7 +187,7 @@ export default function DadosEmpresa() {
               tamanho="grande"
             />
 
-            <div className="flex flex-col gap-2 flex-1">
+            <div className="flex flex-1 flex-col gap-2">
               <input
                 ref={entradaCamera}
                 type="file"
@@ -187,7 +216,10 @@ export default function DadosEmpresa() {
                   className="border-borda bg-superficie-2 flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl border-2 text-sm font-medium disabled:opacity-50"
                 >
                   {enviandoLogo ? (
-                    <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+                    <Loader2
+                      aria-hidden="true"
+                      className="size-4 animate-spin"
+                    />
                   ) : (
                     <Camera aria-hidden="true" className="size-4" />
                   )}
@@ -210,7 +242,10 @@ export default function DadosEmpresa() {
               </p>
 
               {erroLogo && (
-                <p role="alert" className="text-erro-600 flex items-center gap-1 text-sm">
+                <p
+                  role="alert"
+                  className="text-erro-600 flex items-center gap-1 text-sm"
+                >
                   <X aria-hidden="true" className="size-4 shrink-0" />
                   {erroLogo}
                 </p>
@@ -220,7 +255,7 @@ export default function DadosEmpresa() {
         </section>
 
         {/* ── Identidade ────────────────────────────────────────────────── */}
-        <section className="bg-superficie rounded-xl p-5 shadow-sm flex flex-col gap-4">
+        <section className="bg-superficie flex flex-col gap-4 rounded-xl p-5 shadow-sm">
           <h2 className="font-semibold">Identidade</h2>
 
           <CampoTexto
@@ -252,7 +287,7 @@ export default function DadosEmpresa() {
         </section>
 
         {/* ── Contato ───────────────────────────────────────────────────── */}
-        <section className="bg-superficie rounded-xl p-5 shadow-sm flex flex-col gap-4">
+        <section className="bg-superficie flex flex-col gap-4 rounded-xl p-5 shadow-sm">
           <h2 className="font-semibold">Contato</h2>
 
           <div className="grid grid-cols-2 gap-4">
@@ -291,7 +326,7 @@ export default function DadosEmpresa() {
         </section>
 
         {/* ── Endereço ──────────────────────────────────────────────────── */}
-        <section className="bg-superficie rounded-xl p-5 shadow-sm flex flex-col gap-4">
+        <section className="bg-superficie flex flex-col gap-4 rounded-xl p-5 shadow-sm">
           <h2 className="font-semibold">Endereço</h2>
 
           <div className="grid grid-cols-3 gap-4">
@@ -334,7 +369,7 @@ export default function DadosEmpresa() {
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="font-medium text-sm" htmlFor="uf-select">
+              <label className="text-sm font-medium" htmlFor="uf-select">
                 Estado
               </label>
               <select
@@ -365,13 +400,19 @@ export default function DadosEmpresa() {
 
         {/* ── Feedback e salvar ─────────────────────────────────────────── */}
         {erro && (
-          <p role="alert" className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm">
+          <p
+            role="alert"
+            className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm"
+          >
             {erro}
           </p>
         )}
 
         {salvo && (
-          <p role="status" className="bg-economia-50 text-economia-700 flex items-center gap-2 rounded-xl px-4 py-3 text-sm">
+          <p
+            role="status"
+            className="bg-economia-50 text-economia-700 flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
+          >
             <CheckCircle2 aria-hidden="true" className="size-4 shrink-0" />
             Dados salvos com sucesso.
           </p>

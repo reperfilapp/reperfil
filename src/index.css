@@ -93,6 +93,7 @@
   --cor-fundo: var(--color-aluminio-50);
   --cor-superficie: white;
   --cor-superficie-2: var(--color-aluminio-100);
+  --cor-celula: var(--color-acao-50);
   --cor-borda: var(--color-aluminio-300);
   --cor-texto: var(--color-grafite-900);
   --cor-texto-suave: var(--color-grafite-600);
@@ -128,6 +129,7 @@
     --cor-fundo: var(--color-grafite-950);
     --cor-superficie: var(--color-grafite-900);
     --cor-superficie-2: var(--color-grafite-800);
+    --cor-celula: var(--color-grafite-800);
     --cor-borda: var(--color-grafite-700);
     --cor-texto: var(--color-aluminio-50);
     --cor-texto-suave: var(--color-aluminio-400);
@@ -162,6 +164,7 @@
   --cor-fundo: var(--color-grafite-950);
   --cor-superficie: var(--color-grafite-900);
   --cor-superficie-2: var(--color-grafite-800);
+  --cor-celula: var(--color-grafite-800);
   --cor-borda: var(--color-grafite-700);
   --cor-texto: var(--color-aluminio-50);
   --cor-texto-suave: var(--color-aluminio-400);
@@ -184,6 +187,7 @@
   --color-fundo: var(--cor-fundo);
   --color-superficie: var(--cor-superficie);
   --color-superficie-2: var(--cor-superficie-2);
+  --color-celula: var(--cor-celula);
   --color-borda: var(--cor-borda);
   --color-texto: var(--cor-texto);
   --color-texto-suave: var(--cor-texto-suave);

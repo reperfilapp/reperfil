@@ -1,11 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import {
-  Plus,
-  Pencil,
-  Archive,
-  ArchiveRestore,
-} from 'lucide-react'
+import { Plus, Pencil, Archive, ArchiveRestore } from 'lucide-react'
 import {
   useProdutos,
   useCapasProdutos,
@@ -148,7 +143,7 @@ export default function Produtos() {
         {produtos?.map((produto) => (
           <li
             key={produto.id}
-            className="bg-superficie flex items-center gap-3 rounded-xl p-3 shadow-sm"
+            className="bg-celula border-borda flex items-center gap-3 rounded-xl border-2 p-3 shadow-sm"
           >
             {capas?.get(produto.id) ? (
               <button
@@ -178,7 +173,7 @@ export default function Produtos() {
                 className="flex min-w-0 flex-col"
                 aria-label={`Ver ${produto.nome}`}
               >
-                <span className="flex items-center gap-1 font-medium text-base leading-tight">
+                <span className="flex items-center gap-1 text-base leading-tight font-medium">
                   <span className="truncate">{produto.nome}</span>
                   {!produto.ativo && (
                     <span className="bg-superficie-2 text-texto-suave shrink-0 rounded px-2 py-0.5 text-xs">
@@ -191,10 +186,10 @@ export default function Produtos() {
                 </span>
               </Link>
 
-              <div className="flex items-center justify-between gap-2 mt-1">
+              <div className="mt-1 flex items-center justify-between gap-2">
                 <Link
                   to={`/produtos/${produto.id}`}
-                  className="text-acao-600 font-mono font-medium whitespace-nowrap shrink-0 text-[15px]"
+                  className="text-acao-600 shrink-0 font-mono text-[15px] font-medium whitespace-nowrap"
                 >
                   {produto.codigo}
                 </Link>

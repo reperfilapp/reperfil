@@ -236,7 +236,12 @@ function traduzirErro(mensagem: string): string {
     )
   }
 
-  if (/column "revisado" of relation "modelos_perfil" does not exist/.test(mensagem) || /revisado/.test(mensagem)) {
+  if (
+    /column "revisado" of relation "modelos_perfil" does not exist/.test(
+      mensagem,
+    ) ||
+    /revisado/.test(mensagem)
+  ) {
     return (
       'O campo de Revisão ainda não existe no banco desta organização. ' +
       'Peça para aplicar a migração 20260822134000_perfil_revisado.sql.'
@@ -340,7 +345,10 @@ export function useExcluirModeloPerfil() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('modelos_perfil').delete().eq('id', id)
+      const { error } = await supabase
+        .from('modelos_perfil')
+        .delete()
+        .eq('id', id)
 
       if (error) {
         if (error.code === '23503') {

@@ -198,9 +198,9 @@ export default function Relatorios() {
                   {paradas.slice(0, 5).map((p, i) => (
                     <li
                       key={`${p.modeloCodigo}-${i}`}
-                      className="bg-superficie flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm"
+                      className="bg-celula border-borda flex items-center justify-between gap-3 rounded-lg border-2 px-3 py-2 text-sm"
                     >
-                      <span className="min-w-0 truncate flex items-center gap-1">
+                      <span className="flex min-w-0 items-center gap-1 truncate">
                         {p.modeloCodigo} ·{' '}
                         <AmostraCor
                           corHex={p.acabamentoCor}
@@ -290,7 +290,11 @@ function Resumo({
   rotuloExportacao,
 }: {
   titulo: string
-  grupos: { grupo: string | React.ReactNode; pecas: number; milimetros: number }[]
+  grupos: {
+    grupo: string | React.ReactNode
+    pecas: number
+    milimetros: number
+  }[]
   aoExportar?: () => void
   rotuloExportacao?: string
 }) {
@@ -302,7 +306,7 @@ function Resumo({
         {grupos.map((g, index) => (
           <li
             key={index}
-            className="bg-superficie flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm"
+            className="bg-celula border-borda flex items-center justify-between gap-3 rounded-lg border-2 px-3 py-2 text-sm"
           >
             <span className="min-w-0 truncate">{g.grupo}</span>
             <span className="shrink-0 text-right">

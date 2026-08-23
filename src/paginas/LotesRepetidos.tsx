@@ -127,7 +127,7 @@ export default function LotesRepetidos() {
           return (
             <li
               key={destino.id}
-              className="bg-superficie rounded-xl p-4 shadow-sm"
+              className="bg-celula border-borda rounded-xl border-2 p-4 shadow-sm"
             >
               <p className="font-semibold">
                 <span className="text-acao-600 font-mono">

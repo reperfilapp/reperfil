@@ -131,7 +131,7 @@ export default function Localizacoes() {
         {locais?.map((local) => (
           <li
             key={local.id}
-            className="bg-superficie flex items-center gap-3 rounded-xl p-4 shadow-sm"
+            className="bg-celula border-borda flex items-center gap-3 rounded-xl border-2 p-4 shadow-sm"
           >
             <Link
               to={`/localizacoes/${local.id}`}

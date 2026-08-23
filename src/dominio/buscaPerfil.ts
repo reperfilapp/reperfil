@@ -134,7 +134,8 @@ export function filtrarPerfis<T extends PerfilBuscavel>(
   }
 
   return perfis.filter(
-    (perfil) => codigoCombina(perfil.codigo, termo) || combinaTexto(perfil, busca),
+    (perfil) =>
+      codigoCombina(perfil.codigo, termo) || combinaTexto(perfil, busca),
   )
 }
 

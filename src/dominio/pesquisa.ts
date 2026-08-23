@@ -1,4 +1,8 @@
-import { planejarCorte, comprimentoNecessario, type ConfiguracaoCorte } from './corte'
+import {
+  planejarCorte,
+  comprimentoNecessario,
+  type ConfiguracaoCorte,
+} from './corte'
 
 /**
  * Pesquisa de sobras para um corte.
@@ -170,7 +174,11 @@ export function pesquisarSobras<T extends CandidataSobra>(
       () => filtro.corteMm,
     )
 
-    const plano = planejarCorte(sobra.comprimentoMm, cortesParaPlanejamento, config)
+    const plano = planejarCorte(
+      sobra.comprimentoMm,
+      cortesParaPlanejamento,
+      config,
+    )
 
     if (!plano.cabe) continue
 

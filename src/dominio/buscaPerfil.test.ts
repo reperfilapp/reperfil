@@ -110,9 +110,10 @@ describe('filtrarPerfis', () => {
 
   it('acha o SU-001 pelo código digitado sem hífen', () => {
     for (const digitado of ['su001', 'SU 001', 'su1']) {
-      expect(filtrarPerfis(CATALOGO, digitado), `busca "${digitado}"`).toContain(
-        SU001,
-      )
+      expect(
+        filtrarPerfis(CATALOGO, digitado),
+        `busca "${digitado}"`,
+      ).toContain(SU001)
     }
   })
 

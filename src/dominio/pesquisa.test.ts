@@ -44,7 +44,9 @@ function filtro(parcial: Partial<Parameters<typeof pesquisarSobras>[1]> = {}) {
 describe('cortesQueUmLoteComporta', () => {
   it('1 corte de 1 m numa peça de 6 m', () => {
     // 1 × 1000 = 1000 mm, sem serra (último corte sem sobra). Cabe.
-    expect(cortesQueUmLoteComporta(6000, 1000, config)).toBeGreaterThanOrEqual(1)
+    expect(cortesQueUmLoteComporta(6000, 1000, config)).toBeGreaterThanOrEqual(
+      1,
+    )
   })
 
   it('5 cortes de 1 m numa peça de 6 m (o caso central do sistema)', () => {
@@ -213,7 +215,11 @@ describe('ordenação', () => {
       sobra({ id: 'media', comprimentoMm: 2500 }),
     ]
 
-    const achados = pesquisarSobras(candidatas, filtro({ corteMm: 1000 }), config)
+    const achados = pesquisarSobras(
+      candidatas,
+      filtro({ corteMm: 1000 }),
+      config,
+    )
 
     // Gastar a ponta curta antes evita picar a barra de 6 m por causa de um
     // corte de 1 m.

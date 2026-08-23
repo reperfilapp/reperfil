@@ -386,7 +386,7 @@ export default function IdentificarPerfil() {
               <li key={perfil.id}>
                 <Link
                   to={destinoDo(perfil.id)}
-                  className="bg-superficie hover:bg-superficie-2 flex items-center gap-3 rounded-xl p-3 shadow-sm"
+                  className="bg-celula hover:bg-celula border-borda flex items-center gap-3 rounded-xl border-2 p-3 shadow-sm"
                 >
                   {/* A foto da ponta ao lado do desenho: é a comparação que
                       antes obrigava a sair da tela com a peça na mão. */}
