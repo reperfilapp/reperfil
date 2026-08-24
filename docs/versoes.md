@@ -64,6 +64,18 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.6.73 — 24/08/2026
+
+**Corrigido: tela "Falta pouco" travava depois de concluir o cadastro.**
+
+Salvava certo, mas a tela continuava exibindo o mesmo formulário sem
+nenhum aviso. Agora mostra "Cadastro concluído" e abre a tela inicial ao
+tocar em OK. Conferido também os campos obrigatórios: nome e foto já eram
+exigidos de verdade; telefone e CPF são opcionais por design (bate com o
+formulário de convite do colaborador) — só faltava o rótulo dizer isso.
+
+---
+
 ## 1.6.72 — 23/08/2026
 
 **Zerar estoque da empresa, e usar todo o estoque de uma peça de uma vez.**

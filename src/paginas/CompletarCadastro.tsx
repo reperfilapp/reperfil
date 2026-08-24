@@ -1,4 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { CheckCircle2 } from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { useEditarColaborador } from '@/dados/colaboradores'
 import {
@@ -33,11 +35,13 @@ import { MarcaRePerfil } from '@/componentes/MarcaRePerfil'
 export default function CompletarCadastro() {
   const { perfil, recarregarPerfil } = useAutenticacao()
   const editar = useEditarColaborador()
+  const navegar = useNavigate()
 
   const [form, setForm] = useState({ nome: '', telefone: '', cpf: '' })
   const [foto, setFoto] = useState<string | null>(null)
   const [previa, setPrevia] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
+  const [concluido, setConcluido] = useState(false)
 
   useEffect(() => {
     if (perfil) {
@@ -89,9 +93,38 @@ export default function CompletarCadastro() {
       // enviada: quem decide se o cadastro está completo é o perfil em
       // memória, e ele ainda é o de antes do salvamento.
       await recarregarPerfil()
+
+      // Só a mensagem — a navegação para o início espera o toque em "OK".
+      // Sem isto, o salvamento acontecia certo mas a tela continuava exibindo
+      // o mesmo formulário, sem nenhum sinal de que deu certo.
+      setConcluido(true)
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível concluir.')
     }
+  }
+
+  if (concluido) {
+    return (
+      <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-6 px-6 py-10 text-center">
+        <div className="bg-economia-50 text-economia-700 rounded-full p-6">
+          <CheckCircle2 aria-hidden="true" className="size-12" />
+        </div>
+
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold">Cadastro concluído</h1>
+          <p className="text-texto-suave text-balance">
+            Seus dados foram salvos com sucesso.
+          </p>
+        </div>
+
+        <Botao
+          tamanho="largura_total"
+          onClick={() => navegar('/', { replace: true })}
+        >
+          OK
+        </Botao>
+      </main>
+    )
   }
 
   return (
@@ -131,7 +164,7 @@ export default function CompletarCadastro() {
         />
 
         <CampoMascarado
-          rotulo="Telefone"
+          rotulo="Telefone (opcional)"
           tipo="telefone"
           value={form.telefone}
           onChange={(telefone) => setForm({ ...form, telefone })}
