@@ -382,3 +382,29 @@ export function useJuntarLotes() {
     },
   })
 }
+
+/**
+ * Zera a quantidade de TODA sobra da empresa — recomeço de controle, não uso
+ * do dia a dia. Só o administrador pode chamar; o banco confere de novo,
+ * então esconder o botão na tela é conveniência, não a proteção real.
+ */
+export function useZerarEstoqueOrganizacao() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (justificativa: string): Promise<number> => {
+      const { data, error } = await supabase.rpc(
+        'zerar_estoque_organizacao',
+        { p_justificativa: justificativa },
+      )
+
+      if (error) throw new Error(error.message)
+
+      return data as number
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.sobras })
+      void cliente.invalidateQueries({ queryKey: chaves.reservas })
+    },
+  })
+}

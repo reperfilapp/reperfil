@@ -8,10 +8,12 @@ import {
   Layers,
   PackageMinus,
   PackageCheck,
+  PackageX,
   Pencil,
+  CheckCircle2,
 } from 'lucide-react'
 import { useSobra, useHistoricoDoLote } from '@/dados/sobras'
-import { useReservarSobra } from '@/dados/reservas'
+import { useReservarSobra, useConfirmarCorte } from '@/dados/reservas'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
 import { obterLinkTemporario, BALDE_FOTOS } from '@/lib/armazenamento'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
@@ -89,14 +91,17 @@ export default function SobraDetalhe() {
   const { data: historico } = useHistoricoDoLote(id ?? null)
   const { data: capas } = useCapasDesenhos('imagem')
   const reservar = useReservarSobra()
+  const confirmarCorte = useConfirmarCorte()
   const { data: config } = useConfiguracoes()
   const [etiqueta, setEtiqueta] = useState(false)
   const [fotoPeca, setFotoPeca] = useState<string | null>(null)
   const [usando, setUsando] = useState(false)
+  const [modoTudo, setModoTudo] = useState(false)
   const [textoMedidaUsar, setTextoMedidaUsar] = useState('')
   const [unidadeUsar, setUnidadeUsar] = useState<UnidadeMedida>('mm')
   const [quantidadeCortes, setQuantidadeCortes] = useState(1)
   const [erroUsar, setErroUsar] = useState<string | null>(null)
+  const [resultadoUso, setResultadoUso] = useState<string | null>(null)
   const [editando, setEditando] = useState(false)
 
   // A foto da peça fica em balde privado: precisa de link temporário.
@@ -164,7 +169,46 @@ export default function SobraDetalhe() {
     setUnidadeUsar('mm')
     setQuantidadeCortes(1)
     setErroUsar(null)
+    setModoTudo(false)
     setUsando(true)
+  }
+
+  /*
+   * Usa TODO o estoque livre desta peça de uma vez, sem passar por
+   * "comprimento de cada corte" — o corte é o comprimento inteiro da peça, e
+   * por isso não sobra nada para virar sobra nova. Vai direto ao ponto
+   * (reservar → confirmar) porque quem chegou aqui já decidiu: não há
+   * "retirar da prateleira" para conferir, como no fluxo normal em Reservas.
+   */
+  async function confirmarUsoTotal() {
+    setErroUsar(null)
+
+    const quantidadeUsada = livres
+
+    try {
+      const reserva = await reservar.mutateAsync({
+        loteId: sobra!.id,
+        quantidade: quantidadeUsada,
+        comprimentoCorteMm: sobra!.comprimento_mm,
+        quantidadeCortes: quantidadeUsada,
+      })
+
+      await confirmarCorte.mutateAsync({
+        reservaId: reserva.id,
+        comprimentoUtilizadoMm: sobra!.comprimento_mm,
+        comprimentoRestanteMm: 0,
+      })
+
+      setUsando(false)
+      setModoTudo(false)
+      setResultadoUso(
+        `${quantidadeUsada} ${quantidadeUsada === 1 ? 'peça usada' : 'peças usadas'} do estoque — nenhuma sobra gerada.`,
+      )
+    } catch (e) {
+      setErroUsar(
+        e instanceof Error ? e.message : 'Não foi possível confirmar o uso.',
+      )
+    }
   }
 
   async function confirmarUso() {
@@ -236,6 +280,16 @@ export default function SobraDetalhe() {
         </>
       }
     >
+      {resultadoUso && (
+        <p
+          role="status"
+          className="bg-economia-50 text-economia-700 flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
+        >
+          <CheckCircle2 aria-hidden="true" className="size-4 shrink-0" />
+          {resultadoUso}
+        </p>
+      )}
+
       {/* O perfil, clicável — leva à ficha técnica completa. */}
       <section>
         <h2 className="mb-2 font-semibold">Perfil</h2>
@@ -473,88 +527,167 @@ export default function SobraDetalhe() {
       <Modal
         aberto={usando}
         aoFechar={() => setUsando(false)}
-        titulo="Usar peça"
+        titulo={modoTudo ? 'Usar todo o estoque' : 'Usar peça'}
       >
-        <div className="flex flex-col gap-4">
-          <p className="text-sm">
-            Reserva peças de{' '}
-            <strong className="font-mono">{sobra.codigo}</strong> — o próximo
-            passo (retirar da prateleira e confirmar o corte) fica na tela
-            Reservas.
-          </p>
-
-          <CampoMedida
-            rotulo="Comprimento de cada corte"
-            texto={textoMedidaUsar}
-            unidade={unidadeUsar}
-            aoMudarTexto={setTextoMedidaUsar}
-            aoMudarUnidade={setUnidadeUsar}
-          />
-
-          <div>
-            <p className="mb-1 font-medium">Quantos cortes?</p>
-            <p className="text-texto-suave mb-2 text-xs">
-              Número de peças do tamanho acima que você precisa produzir.
+        {modoTudo ? (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm">
+              Confirma o uso de{' '}
+              <strong>
+                {livres} {livres === 1 ? 'barra' : 'barras'} de{' '}
+                {formatarComprimento(sobra.comprimento_mm)}
+              </strong>{' '}
+              — toda a quantidade livre de{' '}
+              <strong className="font-mono">{sobra.codigo}</strong>?
             </p>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setQuantidadeCortes((q) => Math.max(1, q - 1))}
-                aria-label="Diminuir quantidade de cortes"
-                className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-14 w-14 shrink-0 rounded-xl border-2 text-2xl font-bold"
+
+            <p className="bg-superficie-2 text-texto-suave rounded-xl p-3 text-sm">
+              Não será gerado estoque de sobras: a peça inteira será dada como
+              usada. Ideal para baixar material novo ou corrigir cadastro
+              feito no perfil errado.
+            </p>
+
+            {erroUsar && (
+              <p
+                role="alert"
+                className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm font-medium"
               >
-                −
-              </button>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={quantidadeCortes}
-                onChange={(e) => {
-                  const n = Number(e.target.value.replace(/\D/g, ''))
-                  setQuantidadeCortes(Number.isFinite(n) && n >= 1 ? n : 1)
-                }}
-                aria-label="Quantidade de cortes"
-                className="border-borda bg-superficie min-h-14 min-w-0 flex-1 rounded-xl border-2 text-center text-2xl font-semibold tabular-nums"
-              />
-              <button
-                type="button"
-                onClick={() => setQuantidadeCortes((q) => Math.min(999, q + 1))}
-                aria-label="Aumentar quantidade de cortes"
-                className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-14 w-14 shrink-0 rounded-xl border-2 text-2xl font-bold"
+                {erroUsar}
+              </p>
+            )}
+
+            <div className="flex gap-3">
+              <Botao
+                variante="contorno"
+                onClick={() => setModoTudo(false)}
+                className="flex-1"
               >
-                +
-              </button>
+                Voltar
+              </Botao>
+              <Botao
+                onClick={() => void confirmarUsoTotal()}
+                carregando={reservar.isPending || confirmarCorte.isPending}
+                className="flex-1"
+              >
+                <PackageX aria-hidden="true" className="size-4" />
+                Confirmar uso total
+              </Botao>
             </div>
           </div>
-
-          {(erroUsar || erroUsarCalculado) && (
-            <p
-              role="alert"
-              className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm font-medium"
-            >
-              {erroUsar || erroUsarCalculado}
+        ) : (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm">
+              Reserva peças de{' '}
+              <strong className="font-mono">{sobra.codigo}</strong> — o
+              próximo passo (retirar da prateleira e confirmar o corte) fica
+              na tela Reservas.
             </p>
-          )}
 
-          <div className="flex gap-3">
-            <Botao
-              variante="contorno"
-              onClick={() => setUsando(false)}
-              className="flex-1"
+            {/* Atalho para quem vai usar a peça inteira: baixa material novo,
+                ou corrige um cadastro feito no perfil errado. Sem passar pelo
+                formulário de corte, que não faz sentido quando não sobra
+                nada para calcular. */}
+            <button
+              type="button"
+              onClick={() => setModoTudo(true)}
+              className="border-borda bg-superficie-2 hover:bg-borda flex items-center justify-between gap-2 rounded-xl border-2 p-3 text-left text-sm"
             >
-              Cancelar
-            </Botao>
-            <Botao
-              onClick={() => void confirmarUso()}
-              carregando={reservar.isPending}
-              disabled={!!erroUsarCalculado || !corteMmUsar}
-              className="flex-1"
-            >
-              <PackageCheck aria-hidden="true" className="size-4" />
-              Reservar
-            </Botao>
+              <span>
+                Usar todo o estoque agora —{' '}
+                <strong>
+                  {livres} {livres === 1 ? 'barra' : 'barras'} de{' '}
+                  {formatarComprimento(sobra.comprimento_mm)}
+                </strong>
+              </span>
+              <ChevronRight
+                aria-hidden="true"
+                className="text-texto-suave size-4 shrink-0"
+              />
+            </button>
+
+            <div className="text-texto-suave flex items-center gap-2 text-xs">
+              <hr className="border-borda flex-1" />
+              ou informe um corte específico
+              <hr className="border-borda flex-1" />
+            </div>
+
+            <CampoMedida
+              rotulo="Comprimento de cada corte"
+              texto={textoMedidaUsar}
+              unidade={unidadeUsar}
+              aoMudarTexto={setTextoMedidaUsar}
+              aoMudarUnidade={setUnidadeUsar}
+            />
+
+            <div>
+              <p className="mb-1 font-medium">Quantos cortes?</p>
+              <p className="text-texto-suave mb-2 text-xs">
+                Número de peças do tamanho acima que você precisa produzir.
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setQuantidadeCortes((q) => Math.max(1, q - 1))
+                  }
+                  aria-label="Diminuir quantidade de cortes"
+                  className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-14 w-14 shrink-0 rounded-xl border-2 text-2xl font-bold"
+                >
+                  −
+                </button>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={quantidadeCortes}
+                  onChange={(e) => {
+                    const n = Number(e.target.value.replace(/\D/g, ''))
+                    setQuantidadeCortes(Number.isFinite(n) && n >= 1 ? n : 1)
+                  }}
+                  aria-label="Quantidade de cortes"
+                  className="border-borda bg-superficie min-h-14 min-w-0 flex-1 rounded-xl border-2 text-center text-2xl font-semibold tabular-nums"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setQuantidadeCortes((q) => Math.min(999, q + 1))
+                  }
+                  aria-label="Aumentar quantidade de cortes"
+                  className="border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover min-h-14 w-14 shrink-0 rounded-xl border-2 text-2xl font-bold"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {(erroUsar || erroUsarCalculado) && (
+              <p
+                role="alert"
+                className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm font-medium"
+              >
+                {erroUsar || erroUsarCalculado}
+              </p>
+            )}
+
+            <div className="flex gap-3">
+              <Botao
+                variante="contorno"
+                onClick={() => setUsando(false)}
+                className="flex-1"
+              >
+                Cancelar
+              </Botao>
+              <Botao
+                onClick={() => void confirmarUso()}
+                carregando={reservar.isPending}
+                disabled={!!erroUsarCalculado || !corteMmUsar}
+                className="flex-1"
+              >
+                <PackageCheck aria-hidden="true" className="size-4" />
+                Reservar
+              </Botao>
+            </div>
           </div>
-        </div>
+        )}
       </Modal>
 
       {editando && (

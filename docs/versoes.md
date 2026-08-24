@@ -64,6 +64,23 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.6.72 — 23/08/2026
+
+**Zerar estoque da empresa, e usar todo o estoque de uma peça de uma vez.**
+
+Em Mais → Dados da empresa, uma "Zona de perigo" só para o administrador:
+zera a quantidade de toda sobra cadastrada, cancela reservas em aberto e
+exige digitar CONFIRMO. Fica registrado no histórico de cada lote.
+
+Na tela de uma peça (Usar peça), um atalho novo: "Usar todo o estoque agora"
+mostra quantas barras e de qual comprimento serão baixadas, avisa que não
+gera sobra nova, e confirma com um toque — sem precisar informar
+comprimento de corte e quantidade. Útil para dar baixa em material novo ou
+corrigir cadastro feito no perfil errado. Afeta só a peça aberta (um
+comprimento, um acabamento), nunca as outras cores do mesmo perfil.
+
+---
+
 ## 1.6.71 — 22/08/2026
 
 **Card da lista técnica segue o mesmo padrão do card de estoque.**

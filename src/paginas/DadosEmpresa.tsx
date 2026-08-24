@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   ImagePlus,
   Loader2,
+  TriangleAlert,
   X,
 } from 'lucide-react'
 import {
@@ -14,10 +15,12 @@ import {
   useEnviarLogo,
   type DadosOrganizacao,
 } from '@/dados/organizacao'
+import { useZerarEstoqueOrganizacao } from '@/dados/sobras'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { LogoEmpresa } from '@/componentes/LogoEmpresa'
+import { Modal } from '@/componentes/ui/Modal'
 
 const UFs = [
   'AC',
@@ -76,6 +79,13 @@ export default function DadosEmpresa() {
   const [form, setForm] = useState<DadosOrganizacao>(VAZIO)
   const [salvo, setSalvo] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+
+  const zerarEstoque = useZerarEstoqueOrganizacao()
+  const [zerando, setZerando] = useState(false)
+  const [justificativaZerar, setJustificativaZerar] = useState('')
+  const [textoConfirmacao, setTextoConfirmacao] = useState('')
+  const [erroZerar, setErroZerar] = useState<string | null>(null)
+  const [resultadoZerar, setResultadoZerar] = useState<number | null>(null)
 
   const entradaCamera = useRef<HTMLInputElement>(null)
   const entradaGaleria = useRef<HTMLInputElement>(null)
@@ -161,6 +171,37 @@ export default function DadosEmpresa() {
         Não foi possível carregar os dados da empresa.
       </p>
     )
+  }
+
+  function abrirZerarEstoque() {
+    setJustificativaZerar('')
+    setTextoConfirmacao('')
+    setErroZerar(null)
+    setResultadoZerar(null)
+    setZerando(true)
+  }
+
+  async function confirmarZerarEstoque() {
+    setErroZerar(null)
+
+    if (justificativaZerar.trim().length < 5) {
+      setErroZerar('Descreva o motivo (pelo menos 5 letras).')
+      return
+    }
+
+    if (textoConfirmacao !== 'CONFIRMO') {
+      setErroZerar('Digite exatamente a palavra CONFIRMO para prosseguir.')
+      return
+    }
+
+    try {
+      const afetados = await zerarEstoque.mutateAsync(justificativaZerar)
+      setResultadoZerar(afetados)
+    } catch (e) {
+      setErroZerar(
+        e instanceof Error ? e.message : 'Não foi possível zerar o estoque.',
+      )
+    }
   }
 
   return (
@@ -426,6 +467,110 @@ export default function DadosEmpresa() {
           Salvar
         </Botao>
       </form>
+
+      {/* ── Zona de perigo ────────────────────────────────────────────────
+          Fora do formulário de propósito: não é um dado da empresa que se
+          salva, é uma ação que acontece na hora, sem volta. */}
+      <section className="border-erro-300 bg-erro-50 mt-8 flex flex-col gap-3 rounded-xl border-2 p-5">
+        <h2 className="text-erro-700 flex items-center gap-2 font-semibold">
+          <TriangleAlert aria-hidden="true" className="size-5 shrink-0" />
+          Zona de perigo
+        </h2>
+        <p className="text-erro-700 text-sm">
+          Zera a quantidade de toda sobra cadastrada na empresa. Usado para
+          recomeçar o controle de estoque do zero — depois de um inventário
+          físico muito diferente do sistema, por exemplo. Não afeta o
+          catálogo de perfis, produtos ou listas técnicas.
+        </p>
+        <Botao
+          type="button"
+          variante="destrutiva"
+          onClick={abrirZerarEstoque}
+          className="self-start"
+        >
+          Zerar estoque da empresa
+        </Botao>
+      </section>
+
+      <Modal
+        aberto={zerando}
+        aoFechar={() => setZerando(false)}
+        titulo="Zerar estoque da empresa"
+      >
+        {resultadoZerar !== null ? (
+          <div className="flex flex-col gap-4">
+            <p
+              role="status"
+              className="bg-economia-50 text-economia-700 flex items-center gap-2 rounded-xl px-4 py-3 text-sm"
+            >
+              <CheckCircle2 aria-hidden="true" className="size-4 shrink-0" />
+              Estoque zerado. {resultadoZerar}{' '}
+              {resultadoZerar === 1
+                ? 'lote foi afetado.'
+                : 'lotes foram afetados.'}
+            </p>
+            <Botao onClick={() => setZerando(false)} className="w-full">
+              Fechar
+            </Botao>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <p className="text-erro-700 bg-erro-50 rounded-xl p-3 text-sm font-medium">
+              Esta ação zera a quantidade de TODA sobra da empresa e cancela
+              toda reserva em aberto. Não pode ser desfeita.
+            </p>
+
+            <CampoTexto
+              rotulo="Motivo"
+              value={justificativaZerar}
+              onChange={(e) => setJustificativaZerar(e.target.value)}
+              ajuda="Fica registrado no histórico de cada lote afetado."
+              required
+            />
+
+            <CampoTexto
+              rotulo='Digite CONFIRMO para prosseguir'
+              value={textoConfirmacao}
+              onChange={(e) => setTextoConfirmacao(e.target.value)}
+              autoComplete="off"
+              required
+            />
+
+            {erroZerar && (
+              <p
+                role="alert"
+                className="bg-erro-100 text-erro-700 rounded-xl px-4 py-3 text-sm"
+              >
+                {erroZerar}
+              </p>
+            )}
+
+            <div className="flex gap-3">
+              <Botao
+                type="button"
+                variante="contorno"
+                onClick={() => setZerando(false)}
+                className="flex-1"
+              >
+                Cancelar
+              </Botao>
+              <Botao
+                type="button"
+                variante="destrutiva"
+                onClick={() => void confirmarZerarEstoque()}
+                carregando={zerarEstoque.isPending}
+                disabled={
+                  textoConfirmacao !== 'CONFIRMO' ||
+                  justificativaZerar.trim().length < 5
+                }
+                className="flex-1"
+              >
+                Zerar estoque
+              </Botao>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
