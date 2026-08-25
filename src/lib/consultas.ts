@@ -42,4 +42,7 @@ export const chaves = {
   acessos: ['acessos'] as const,
   produtos: ['produtos'] as const,
   listaTecnica: ['lista-tecnica'] as const,
+  modelosAcessorio: ['modelos-acessorio'] as const,
+  lotesAcessorio: ['lotes-acessorio'] as const,
+  inventario: ['inventario'] as const,
 } as const

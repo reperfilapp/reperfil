@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { ShieldAlert, UserX, Loader2 } from 'lucide-react'
+import { ShieldAlert, UserX, MailWarning, Loader2 } from 'lucide-react'
 import { useAutenticacao } from './useAutenticacao'
+import { supabase } from '@/lib/supabase'
 import { Botao } from '@/componentes/ui/Botao'
 import type { PapelUsuario } from '@/tipos/banco'
 
@@ -75,6 +76,21 @@ export function RotaProtegida({
     )
   }
 
+  // E-mail não confirmado não entra — só chega aqui quem se cadastrou SEM
+  // passar pelo link do e-mail de convite (endereço digitado na mão, ou
+  // "Criar minha empresa"). Quem veio do link já foi confirmado na hora,
+  // por `vincular_convite` no banco.
+  //
+  // `=== null` de propósito, e não `== null`: antes desta migração a coluna
+  // nem vem do banco e o campo chega AUSENTE (undefined). Ausente quer
+  // dizer "este sistema ainda não exige confirmação"; nulo quer dizer
+  // "exige, e esta pessoa não confirmou". Só o segundo caso bloqueia —
+  // senão todo mundo que já tinha conta ficaria trancado de uma hora para
+  // a outra, sem nunca ter recebido e-mail nenhum para confirmar.
+  if (perfil.email_confirmado_em === null) {
+    return <TelaConfirmarEmail email={perfil.email} sair={sair} />
+  }
+
   // Cadastro sem foto não entra. A regra vale para quem já usava o sistema
   // antes dela existir, e não só para quem chega agora: a foto serve para
   // identificar quem mexeu em cada peça, e um histórico onde metade das
@@ -115,4 +131,107 @@ export function RotaProtegida({
   }
 
   return <>{children}</>
+}
+
+interface PropsTelaConfirmarEmail {
+  email: string
+  sair: () => Promise<void>
+}
+
+/**
+ * Bloqueio de acesso até confirmar o e-mail — a pessoa já tem sessão (o
+ * cadastro terminou), só não passa daqui. O botão de reenviar chama a Edge
+ * Function `enviar-email` direto (não pelo Database Webhook, que só
+ * escuta INSERT): é a mesma sessão da pessoa que prova quem ela é, sem
+ * precisar de segredo nenhum.
+ *
+ * ── "JÁ CONFIRMEI" ────────────────────────────────────────────────────────
+ *
+ * Confirmar acontece numa ABA OU SESSÃO diferente (a pessoa abre o e-mail
+ * no celular, ou numa segunda aba do navegador) — o clique lá não avisa
+ * esta aba sozinho, porque cada aba guarda o próprio perfil em memória.
+ * Este botão só chama `recarregarPerfil()`: se já confirmou, o perfil
+ * novo chega com `email_confirmado_em` preenchido, `RotaProtegida`
+ * reavalia sozinha e esta tela nem chega a reaparecer.
+ */
+function TelaConfirmarEmail({ email, sair }: PropsTelaConfirmarEmail) {
+  const { recarregarPerfil } = useAutenticacao()
+  const [estado, setEstado] = useState<'ocioso' | 'enviando' | 'enviado' | 'erro'>(
+    'ocioso',
+  )
+  const [atualizando, setAtualizando] = useState(false)
+  const [aindaNaoConfirmado, setAindaNaoConfirmado] = useState(false)
+
+  async function reenviar() {
+    setEstado('enviando')
+    const { error } = await supabase.functions.invoke('enviar-email')
+    setEstado(error ? 'erro' : 'enviado')
+  }
+
+  async function atualizar() {
+    setAtualizando(true)
+    setAindaNaoConfirmado(false)
+    await recarregarPerfil()
+    setAtualizando(false)
+    // Se este componente ainda existir depois do recarregamento, é porque
+    // `RotaProtegida` olhou o perfil novo e continua vendo `null` — ainda
+    // não confirmou de verdade.
+    setAindaNaoConfirmado(true)
+  }
+
+  return (
+    <main
+      role="alert"
+      className="flex min-h-dvh flex-col items-center justify-center gap-6 px-6 text-center"
+    >
+      <div className="bg-atencao-100 text-atencao-700 rounded-full p-6">
+        <MailWarning aria-hidden="true" className="size-12" />
+      </div>
+
+      <div className="space-y-2">
+        <h1 className="text-2xl font-bold">Confirme seu e-mail</h1>
+        <p className="text-texto-suave max-w-sm text-balance">
+          Mandamos um link de confirmação para <strong>{email}</strong>. Abra
+          a mensagem, toque nele e volte aqui para atualizar.
+        </p>
+      </div>
+
+      {aindaNaoConfirmado && (
+        <p className="bg-superficie-2 rounded-xl px-4 py-3 text-sm">
+          Ainda não encontramos a confirmação. Se já tocou no link do
+          e-mail, aguarde um instante e tente de novo.
+        </p>
+      )}
+
+      {estado === 'enviado' && (
+        <p className="bg-superficie-2 rounded-xl px-4 py-3 text-sm">
+          Reenviado. Confira sua caixa de entrada (e o spam).
+        </p>
+      )}
+
+      {estado === 'erro' && (
+        <p className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm">
+          Não foi possível reenviar agora. Tente de novo em instantes.
+        </p>
+      )}
+
+      <div className="flex flex-col items-center gap-3">
+        <div className="flex gap-3">
+          <Botao onClick={() => void atualizar()} carregando={atualizando}>
+            Já confirmei
+          </Botao>
+          <Botao
+            variante="contorno"
+            onClick={() => void reenviar()}
+            carregando={estado === 'enviando'}
+          >
+            Reenviar e-mail
+          </Botao>
+        </div>
+        <Botao variante="texto" onClick={() => void sair()}>
+          Sair
+        </Botao>
+      </div>
+    </main>
+  )
 }

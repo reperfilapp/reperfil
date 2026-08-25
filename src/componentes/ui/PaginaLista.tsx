@@ -27,10 +27,14 @@ interface PropsPaginaLista {
  *
  * ── O CÁLCULO DA ALTURA ──────────────────────────────────────────────────
  *
- * `100dvh - 4rem` é a tela menos a barra de navegação inferior. O `-mb-24`
- * anula o `pb-24` que o `main` reserva para essa mesma barra: sem isso, os
- * dois se somam, 32px de conteúdo saem para fora e a página passa a rolar
- * justamente o que este componente existe para evitar.
+ * `100dvh - 5.5rem` é a tela menos a barra de navegação inferior — os 4rem
+ * dos ícones mais ~1,5rem da linha "Licenciado para" e o traço dela (ver
+ * `LayoutApp.tsx`). O `-mb-[5.5rem]` anula o `pb-[5.5rem]` que o `main`
+ * reserva para essa mesma barra: sem isso, os dois se somam, o conteúdo sai
+ * para fora e a página passa a rolar justamente o que este componente
+ * existe para evitar. Os TRÊS números (aqui, o `pb` do `main` e o de
+ * `CadastrarSobra.tsx`) precisam mudar juntos se a barra mudar de altura de
+ * novo.
  *
  * No computador (`md:`) nada disso vale: o menu é lateral, não há barra
  * inferior, e a página rola normalmente.
@@ -45,8 +49,8 @@ export function PaginaLista({
   return (
     <div
       className={cn(
-        'mx-auto flex h-[calc(100dvh-4rem)] w-full flex-col px-5 py-4',
-        '-mb-24 md:mb-0 md:h-auto md:min-h-dvh md:py-6',
+        'mx-auto flex h-[calc(100dvh-5.5rem)] w-full flex-col px-5 py-4',
+        '-mb-[5.5rem] md:mb-0 md:h-auto md:min-h-dvh md:py-6',
         className ?? 'max-w-2xl',
       )}
     >

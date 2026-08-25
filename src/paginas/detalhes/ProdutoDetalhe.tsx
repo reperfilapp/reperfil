@@ -813,7 +813,7 @@ export default function ProdutoDetalhe() {
             className="mt-3 w-full"
           >
             <Plus aria-hidden="true" className="size-5" />
-            Acrescentar corte
+            Acrescentar material
           </Botao>
         )}
       </section>
@@ -872,7 +872,7 @@ export default function ProdutoDetalhe() {
       <Modal
         aberto={aberto}
         aoFechar={fecharCorte}
-        titulo={itemEditando ? 'Alterar corte' : 'Acrescentar corte'}
+        titulo={itemEditando ? 'Alterar corte' : 'Acrescentar material'}
       >
         <form onSubmit={aoEnviar} className="flex flex-col gap-4" noValidate>
           {/* Campo de texto com sugestões, e não uma lista fechada: o

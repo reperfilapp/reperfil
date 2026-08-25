@@ -56,8 +56,8 @@ export const CARGOS: Record<PapelUsuario, DescricaoCargo> = {
   },
   serralheiro: {
     rotulo: 'Serralheiro',
-    resumo: 'Procura peça, reserva e confirma o que usou.',
-    padrao: permissoes(false, false, false),
+    resumo: 'Procura peça, cadastra estoque, reserva e confirma o que usou.',
+    padrao: permissoes(true, false, false),
   },
   vendedor: {
     rotulo: 'Vendedor',

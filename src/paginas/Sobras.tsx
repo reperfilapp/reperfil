@@ -25,6 +25,7 @@ import {
   maiorPrimeiro,
 } from '@/dominio/estoqueResumo'
 import { formatarMedidasSecao } from '@/dominio/secao'
+import { filtrarPerfis } from '@/dominio/buscaPerfil'
 
 import { AlternadorOrdenacao } from '@/componentes/ui/AlternadorOrdenacao'
 import { useNiveisNaUrl } from '@/componentes/useNiveisNaUrl'
@@ -80,19 +81,31 @@ const COR_STATUS: Record<StatusLote, string> = {
   em_conferencia: 'bg-atencao-50 text-atencao-700',
 }
 
-function combina(sobra: SobraDetalhada, termo: string): boolean {
+/*
+ * O texto próprio da sobra (código, acabamento, local, cliente/obra,
+ * observações) É comparado aqui. O que é do PERFIL (código sem hífen,
+ * descrição, e as medidas digitadas "35 25") passa por `filtrarPerfis` —
+ * mesma regra usada no catálogo e na busca de sobras por medida —, e chega
+ * pronto no conjunto `codigosDeModeloCorrespondentes`, calculado uma vez só
+ * para todos os modelos em estoque, não sobra por sobra.
+ */
+function combina(
+  sobra: SobraDetalhada,
+  termo: string,
+  codigosDeModeloCorrespondentes: ReadonlySet<string>,
+): boolean {
   const busca = termo.trim().toLowerCase()
 
   if (busca === '') return true
 
   return (
     sobra.codigo.toLowerCase().includes(busca) ||
-    (sobra.modelo?.codigo.toLowerCase().includes(busca) ?? false) ||
-    (sobra.modelo?.descricao.toLowerCase().includes(busca) ?? false) ||
     (sobra.acabamento?.nome.toLowerCase().includes(busca) ?? false) ||
     (sobra.localizacao?.codigo.toLowerCase().includes(busca) ?? false) ||
     (sobra.cliente_obra?.toLowerCase().includes(busca) ?? false) ||
-    (sobra.observacoes?.toLowerCase().includes(busca) ?? false)
+    (sobra.observacoes?.toLowerCase().includes(busca) ?? false) ||
+    (sobra.modelo !== null &&
+      codigosDeModeloCorrespondentes.has(sobra.modelo.codigo))
   )
 }
 
@@ -132,7 +145,23 @@ export default function Sobras() {
   // vem sem essa ambiguidade, não há "nome" a mais para ordenar.
   const [ordenacao, setOrdenacao] = useState(ORDENACAO_PADRAO)
 
-  const encontradas = (sobras ?? []).filter((sobra) => combina(sobra, busca))
+  // Um perfil por código — a mesma regra de busca do catálogo (código sem
+  // hífen, medidas em qualquer ordem) roda uma vez sobre eles, não sobra
+  // por sobra.
+  const modelosUnicos = [
+    ...new Map(
+      (sobras ?? [])
+        .filter((s) => s.modelo !== null)
+        .map((s) => [s.modelo!.codigo, s.modelo!] as const),
+    ).values(),
+  ]
+  const codigosDeModeloCorrespondentes = new Set(
+    filtrarPerfis(modelosUnicos, busca).map((m) => m.codigo),
+  )
+
+  const encontradas = (sobras ?? []).filter((sobra) =>
+    combina(sobra, busca, codigosDeModeloCorrespondentes),
+  )
   const buscando = busca.trim() !== ''
 
   const linhaDaSobra = (sobra: SobraDetalhada) =>
@@ -192,8 +221,11 @@ export default function Sobras() {
           )
     })
 
+  // Buscando, o resultado fica dentro da linha aberta (`daLinha` já é
+  // `encontradas` inteiro quando não há linha, ou for "todas") — digitar
+  // dentro de "Suprema" não deve trazer sobra de outra linha.
   const visiveis = buscando
-    ? encontradas
+    ? daLinha
     : perfilAberto === null
       ? []
       : daLinha.filter((s) => s.modelo_perfil_id === perfilAberto)
@@ -234,7 +266,7 @@ export default function Sobras() {
                 type="search"
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
-                placeholder="Código, perfil, acabamento ou local"
+                placeholder="Código, medidas, perfil, acabamento ou local"
                 aria-label="Buscar material"
                 className="border-borda bg-superficie min-h-12 w-full rounded-xl border-2 pr-4 pl-12"
               />
@@ -250,7 +282,9 @@ export default function Sobras() {
             </button>
           </div>
 
-          {!isPending && !buscando && linhaAberta !== null && (
+          {/* Continua à mostra buscando: confirma que o resultado está
+              restrito a esta linha, e "Voltar" segue disponível. */}
+          {!isPending && linhaAberta !== null && (
             <div className="mb-3 flex items-center justify-between gap-2">
               <p className="flex min-w-0 items-baseline truncate font-semibold">
                 {perfilEmFoco ? (

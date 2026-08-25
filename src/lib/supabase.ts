@@ -64,7 +64,12 @@ export function traduzirErro(erro: unknown): string {
   }
 
   if (mensagem.includes('password should be at least')) {
-    return 'A senha precisa ter pelo menos 8 caracteres.'
+    // O Supabase já manda o número certo na própria mensagem — hardcoded
+    // aqui divergiria toda vez que o mínimo do projeto mudasse no painel.
+    const minimo = mensagem.match(/at least (\d+)/)?.[1]
+    return minimo
+      ? `A senha precisa ter pelo menos ${minimo} caracteres.`
+      : 'A senha é muito curta.'
   }
 
   // O gatilho `vincular_convite` recusa cadastro sem convite aberto. O
@@ -96,6 +101,18 @@ export function traduzirErro(erro: unknown): string {
 
   if (mensagem.includes('user already registered')) {
     return 'Já existe uma conta com este e-mail. Use "Já tenho acesso".'
+  }
+
+  // Acontece quando o link de redefinição de senha "queima" antes da hora
+  // — o endereço de destino não está liberado em Authentication → URL
+  // Configuration → Redirect URLs, ou algum programa de e-mail abriu o
+  // link sozinho antes da pessoa clicar (comum em verificadores de
+  // segurança corporativos).
+  if (mensagem.includes('auth session missing')) {
+    return (
+      'O link expirou ou já foi aberto antes. Peça uma nova redefinição de ' +
+      'senha e clique nela assim que chegar.'
+    )
   }
 
   return erro.message

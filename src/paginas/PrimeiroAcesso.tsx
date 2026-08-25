@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
+import { TriangleAlert } from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { supabase, traduzirErro } from '@/lib/supabase'
 import { Botao } from '@/componentes/ui/Botao'
@@ -24,10 +25,23 @@ const MINIMO_SENHA = 6
  *
  * Isto NÃO é cadastro aberto. Um gatilho no banco recusa qualquer cadastro
  * sem convite em aberto para aquele e-mail, e a conta nem chega a existir.
+ *
+ * ── O LINK DO E-MAIL DE CONVITE JÁ CONFIRMA O E-MAIL ─────────────────────
+ *
+ * Chegando aqui a partir do botão do e-mail de convite, a URL traz
+ * `?convite=<id>&email=<endereço>` — o e-mail preenche o campo sozinho, e o
+ * id vai junto no cadastro (`vincular_convite` confere que bate com o
+ * convite de verdade). Clicar num link que só chega naquela caixa de
+ * entrada já prova que o e-mail é da pessoa, então ela entra direto, sem
+ * precisar confirmar de novo. Quem digita o endereço na mão (sem o `?convite=`)
+ * ainda recebe o cadastro, mas fica bloqueada até confirmar por e-mail — ver
+ * `RotaProtegida.tsx`.
  */
 export default function PrimeiroAcesso() {
   const { sessao } = useAutenticacao()
-  const [email, setEmail] = useState('')
+  const [parametros] = useSearchParams()
+  const conviteId = parametros.get('convite')
+  const [email, setEmail] = useState(parametros.get('email') ?? '')
   const [senha, setSenha] = useState('')
   const [confirmacao, setConfirmacao] = useState('')
   const [erro, setErro] = useState<string | null>(null)
@@ -68,6 +82,10 @@ export default function PrimeiroAcesso() {
           // O endereço precisa estar em Authentication → URL Configuration →
           // Redirect URLs, senão o Supabase ignora e usa o Site URL de novo.
           emailRedirectTo: `${window.location.origin}/entrar`,
+          // Vai junto só se veio do link do e-mail de convite — é o que
+          // `vincular_convite`, no banco, confere contra o convite de
+          // verdade para decidir se confirma o e-mail na hora.
+          ...(conviteId ? { data: { convite_id: conviteId } } : {}),
         },
       })
 
@@ -95,6 +113,18 @@ export default function PrimeiroAcesso() {
           className="max-w-56 rounded-xl bg-white p-4"
         />
         <h1 className="text-2xl font-bold">Primeiro acesso</h1>
+
+        <div className="border-erro-300 bg-erro-50 text-erro-700 flex items-start gap-2 rounded-xl border-2 p-4 text-left text-sm">
+          <TriangleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
+          <p>
+            Só consegue criar acesso quem foi convidado pelo administrador da
+            empresa. Sua empresa ainda não usa o RePerfil?{' '}
+            <Link to="/criar-empresa" className="font-medium underline">
+              Criar minha empresa
+            </Link>
+            .
+          </p>
+        </div>
       </header>
 
       {pronto ? (
@@ -159,6 +189,21 @@ export default function PrimeiroAcesso() {
             {enviando ? 'Criando…' : 'Criar meu acesso'}
           </Botao>
 
+          <p className="text-texto-suave text-center text-xs">
+            Ao criar acesso, você concorda com os{' '}
+            <Link to="/termos-de-uso" className="text-acao-600 hover:underline">
+              Termos de uso
+            </Link>{' '}
+            e a{' '}
+            <Link
+              to="/politica-privacidade"
+              className="text-acao-600 hover:underline"
+            >
+              Política de privacidade
+            </Link>
+            .
+          </p>
+
           <Link
             to="/entrar"
             className="text-acao-600 text-center underline-offset-4 hover:underline"
@@ -167,11 +212,6 @@ export default function PrimeiroAcesso() {
           </Link>
         </form>
       )}
-
-      <p className="text-texto-suave text-center text-sm">
-        Só consegue criar acesso quem foi convidado pelo administrador da
-        empresa.
-      </p>
 
       <SeloVersao />
     </main>

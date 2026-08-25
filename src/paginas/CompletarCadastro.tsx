@@ -9,6 +9,7 @@ import {
   BALDE_FOTOS_COLABORADOR,
 } from '@/lib/armazenamento'
 import { rotuloCargo } from '@/dominio/cargos'
+import { apelidoValido } from '@/dominio/apelido'
 import { Botao } from '@/componentes/ui/Botao'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoMascarado } from '@/componentes/ui/CampoMascarado'
@@ -37,7 +38,12 @@ export default function CompletarCadastro() {
   const editar = useEditarColaborador()
   const navegar = useNavigate()
 
-  const [form, setForm] = useState({ nome: '', telefone: '', cpf: '' })
+  const [form, setForm] = useState({
+    nome: '',
+    telefone: '',
+    cpf: '',
+    apelido: '',
+  })
   const [foto, setFoto] = useState<string | null>(null)
   const [previa, setPrevia] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
@@ -49,6 +55,7 @@ export default function CompletarCadastro() {
         nome: perfil.nome,
         telefone: perfil.telefone ?? '',
         cpf: perfil.cpf ?? '',
+        apelido: perfil.apelido ?? '',
       })
     }
   }, [perfil])
@@ -78,6 +85,13 @@ export default function CompletarCadastro() {
       return
     }
 
+    if (form.apelido.trim() !== '' && !apelidoValido(form.apelido)) {
+      setErro(
+        'Nickname inválido: use de 3 a 30 letras minúsculas, números, ponto, hífen ou underline.',
+      )
+      return
+    }
+
     try {
       await editar.mutateAsync({
         id: perfil.id,
@@ -86,6 +100,7 @@ export default function CompletarCadastro() {
           telefone: form.telefone.trim() || null,
           cpf: form.cpf.trim() || null,
           foto_url: foto,
+          apelido: form.apelido.trim() || null,
         },
       })
 
@@ -175,6 +190,17 @@ export default function CompletarCadastro() {
           tipo="cpf_cnpj"
           value={form.cpf}
           onChange={(cpf) => setForm({ ...form, cpf })}
+        />
+
+        <CampoTexto
+          rotulo="Nickname (opcional)"
+          value={form.apelido}
+          onChange={(e) =>
+            setForm({ ...form, apelido: e.target.value.toLowerCase() })
+          }
+          autoCapitalize="none"
+          spellCheck={false}
+          ajuda="Para entrar sem digitar o e-mail. Só letras minúsculas, números, ponto, hífen ou underline."
         />
 
         {/* E-mail e cargo aparecem para conferência, e não para edição: o

@@ -19,6 +19,7 @@ import { useZerarEstoqueOrganizacao } from '@/dados/sobras'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
+import { CampoMascarado } from '@/componentes/ui/CampoMascarado'
 import { LogoEmpresa } from '@/componentes/LogoEmpresa'
 import { Modal } from '@/componentes/ui/Modal'
 
@@ -312,12 +313,11 @@ export default function DadosEmpresa() {
             onChange={(e) => alterar('razao_social', e.target.value)}
           />
           <div className="grid grid-cols-2 gap-4">
-            <CampoTexto
+            <CampoMascarado
               rotulo="CNPJ"
+              tipo="cpf_cnpj"
               value={form.cnpj}
-              onChange={(e) => alterar('cnpj', e.target.value)}
-              placeholder="00.000.000/0000-00"
-              inputMode="numeric"
+              onChange={(valor) => alterar('cnpj', valor)}
             />
             <CampoTexto
               rotulo="Inscrição estadual"
@@ -332,20 +332,17 @@ export default function DadosEmpresa() {
           <h2 className="font-semibold">Contato</h2>
 
           <div className="grid grid-cols-2 gap-4">
-            <CampoTexto
+            <CampoMascarado
               rotulo="Telefone"
+              tipo="telefone"
               value={form.telefone}
-              onChange={(e) => alterar('telefone', e.target.value)}
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
+              onChange={(valor) => alterar('telefone', valor)}
             />
-            <CampoTexto
+            <CampoMascarado
               rotulo="WhatsApp"
+              tipo="telefone"
               value={form.whatsapp}
-              onChange={(e) => alterar('whatsapp', e.target.value)}
-              type="tel"
-              inputMode="tel"
+              onChange={(valor) => alterar('whatsapp', valor)}
             />
           </div>
           <CampoTexto

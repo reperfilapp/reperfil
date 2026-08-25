@@ -35,7 +35,8 @@ export default function Inicio() {
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
       {/* O logo da empresa assume a posição principal se existir,
-          mas mantemos a marca do aplicativo visível para reforço. */}
+          mas mantemos a marca do aplicativo visível para reforço. Ela é o
+          link para "Sobre": quem desenvolveu, contato e documentos legais. */}
       <div className="mb-6 flex items-center justify-center gap-4">
         {org ? (
           <>
@@ -45,16 +46,20 @@ export default function Inicio() {
               tamanho="gigante"
             />
             <div className="bg-borda/50 h-10 w-px" aria-hidden="true" />
-            <MarcaRePerfil
-              variante="simbolo"
-              className="h-28 w-28 shrink-0 rounded-xl bg-white p-4"
-            />
+            <Link to="/sobre" aria-label="Sobre o RePerfil">
+              <MarcaRePerfil
+                variante="simbolo"
+                className="h-28 w-28 shrink-0 rounded-xl bg-white p-4"
+              />
+            </Link>
           </>
         ) : (
-          <MarcaRePerfil
-            variante="completa"
-            className="max-w-48 rounded-xl bg-white p-3"
-          />
+          <Link to="/sobre" aria-label="Sobre o RePerfil">
+            <MarcaRePerfil
+              variante="completa"
+              className="max-w-48 rounded-xl bg-white p-3"
+            />
+          </Link>
         )}
       </div>
 
@@ -155,6 +160,23 @@ export default function Inicio() {
       </nav>
 
       <SeloVersao className="mt-8" />
+
+      <nav
+        aria-label="Sobre e documentos legais"
+        className="text-texto-suave mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs"
+      >
+        <Link to="/sobre" className="hover:underline">
+          Sobre
+        </Link>
+        <span aria-hidden="true">·</span>
+        <Link to="/termos-de-uso" className="hover:underline">
+          Termos de uso
+        </Link>
+        <span aria-hidden="true">·</span>
+        <Link to="/politica-privacidade" className="hover:underline">
+          Política de privacidade
+        </Link>
+      </nav>
     </div>
   )
 }

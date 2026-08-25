@@ -64,8 +64,10 @@ export function SeletorPerfil({
    * perfis, e quem vai lançar uma sobra já sabe de que linha ela é. Abrir
    * numa lista corrida obriga a rolar por linhas que não interessam.
    *
-   * A BUSCA continua ignorando o agrupamento: quem digita um código quer
-   * achá-lo esteja em que linha estiver.
+   * A BUSCA respeita a linha aberta: quem entrou em "Suprema" e digita um
+   * código está procurando dentro dela, não no catálogo inteiro — senão o
+   * resultado mistura perfis de linhas que não interessam. Para buscar em
+   * tudo, basta não abrir nenhuma linha (ou abrir "Ver todos os perfis").
    *
    * Na URL, e não em estado: abrir uma linha vira navegação de verdade, e é
    * o que faz o botão físico de voltar do Android subir um nível em vez de
@@ -106,12 +108,13 @@ export function SeletorPerfil({
         : a.linha.localeCompare(b.linha, 'pt-BR')
     })
 
-  const visiveis = buscando
-    ? encontrados
-    : linhaAberta === TODAS
-      ? encontrados
-      : linhaAberta === null
-        ? []
+  const visiveis =
+    linhaAberta === null
+      ? buscando
+        ? encontrados
+        : []
+      : linhaAberta === TODAS
+        ? encontrados
         : encontrados.filter(
             (m) => (m.linha?.trim() || SEM_LINHA) === linhaAberta,
           )
@@ -270,13 +273,11 @@ export function SeletorPerfil({
         )}
 
         {/* Lista de linhas: a porta de entrada, como em "Modelos de perfil".
-          A altura é a de SETE itens inteiros, não o espaço que sobrar: com
-          `flex-1` a lista terminava no meio do sétimo, e item cortado ao pé
-          da tela parece defeito de renderização, não convite a rolar.
-          516px = 7 × 64 (item) + 6 × 8 (respiro) + 16 (recheio) + 4 (borda).
-          `max-h-full` cede em tela baixa, onde sete não cabem mesmo. */}
+          `flex-1`, como a lista de sobras em Estoque — preenche o espaço
+          disponível de verdade, em vez de uma altura fixa que sobrava vazia
+          em tela alta e cortava numa baixa. */}
         {!isPending && mostrandoLinhas && grupos.length > 0 && (
-          <ul className="border-borda flex h-[516px] max-h-full min-h-0 flex-col gap-2 overflow-y-auto rounded-xl border-2 p-2">
+          <ul className="border-borda flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto rounded-xl border-2 p-2">
             {grupos.map(({ linha, modelos: daLinha, resumo }) => (
               <li key={linha}>
                 <button
@@ -320,8 +321,11 @@ export function SeletorPerfil({
           </button>
         )}
 
-        {/* Dentro de uma linha: diz onde se está, como ordenar e como voltar. */}
-        {!isPending && !buscando && linhaAberta !== null && (
+        {/* Dentro de uma linha: diz onde se está, como ordenar e como voltar.
+            Continua à mostra buscando: é a confirmação de que o resultado
+            está restrito a esta linha, e "Voltar" segue disponível para
+            sair dela. */}
+        {!isPending && linhaAberta !== null && (
           <div className="flex shrink-0 items-center justify-between gap-2">
             <p className="min-w-0 truncate text-sm font-semibold">
               {linhaAberta === TODAS ? 'Todos os perfis' : linhaAberta}

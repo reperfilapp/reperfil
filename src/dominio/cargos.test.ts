@@ -65,14 +65,15 @@ describe('permissões iniciais do cargo', () => {
   it('quem mexe no depósito movimenta estoque', () => {
     expect(permissoesIniciais('gerente').pode_movimentar_estoque).toBe(true)
     expect(permissoesIniciais('auxiliar').pode_movimentar_estoque).toBe(true)
+    // O serralheiro cadastra estoque por padrão — é quem está no depósito
+    // com a peça em mãos, e esperar um administrador cadastrar por ele só
+    // atrasa o trabalho.
+    expect(permissoesIniciais('serralheiro').pode_movimentar_estoque).toBe(
+      true,
+    )
   })
 
   it('quem só consulta não movimenta estoque', () => {
-    // O serralheiro reserva e confirma o que usou — isso não é movimentar
-    // estoque no sentido de cadastrar peça e corrigir quantidade.
-    expect(permissoesIniciais('serralheiro').pode_movimentar_estoque).toBe(
-      false,
-    )
     expect(permissoesIniciais('vendedor').pode_movimentar_estoque).toBe(false)
     expect(permissoesIniciais('financeiro').pode_movimentar_estoque).toBe(false)
   })

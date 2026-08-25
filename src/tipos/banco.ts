@@ -90,6 +90,8 @@ export interface PerfilUsuario {
   organizacao_id: string
   nome: string
   email: string
+  /** Nome de usuário alternativo para entrar. Único por organização. */
+  apelido: string | null
   telefone: string | null
   cpf: string | null
   /** Caminho no balde privado, não endereço público. */
@@ -106,6 +108,8 @@ export interface PerfilUsuario {
   pode_gerenciar_colaboradores: boolean
   ativo: boolean
   criado_em: string
+  /** `null` = ainda não confirmou o e-mail do cadastro. */
+  email_confirmado_em: string | null
 }
 
 /** Convite aberto: quem o administrador autorizou a criar conta. */
@@ -119,6 +123,10 @@ export interface ConviteColaborador {
   criado_por: string | null
   criado_em: string
   aceito_em: string | null
+  /** `null` até a Edge Function confirmar que o e-mail de convite saiu. */
+  email_enviado_em: string | null
+  /** Depois disso, o convite conta como inexistente para `Primeiro acesso`. */
+  expira_em: string
 }
 
 export interface ModeloPerfil {
@@ -212,6 +220,80 @@ export interface LoteSobra {
   versao: number
 }
 
+/** Catálogo de acessórios — paralelo a ModeloPerfil, sem comprimento/seção. */
+export interface ModeloAcessorio {
+  id: string
+  organizacao_id: string
+  codigo: string
+  descricao: string
+  fabricante: string | null
+  categoria: string | null
+  unidade_medida: string
+  imagem_url: string | null
+  codigo_barras: string | null
+  preco_unitario_centavos: number | null
+  observacoes: string | null
+  ativo: boolean
+  criado_em: string
+  atualizado_em: string
+  criado_por: string | null
+}
+
+/** Estoque de acessórios — paralelo a LoteSobra, sem comprimento nem reserva. */
+export interface LoteAcessorio {
+  id: string
+  organizacao_id: string
+  codigo: string
+  modelo_acessorio_id: string
+  acabamento_id: string | null
+  localizacao_id: string | null
+  quantidade: number
+  estado: EstadoConservacao
+  status: StatusLote
+  foto_url: string | null
+  observacoes: string | null
+  criado_em: string
+  atualizado_em: string
+  criado_por: string | null
+  versao: number
+}
+
+export type TipoMovimentacaoAcessorio =
+  'entrada' | 'uso' | 'ajuste' | 'descarte' | 'transferencia'
+
+export type TipoItemInventario = 'perfil' | 'acessorio'
+export type StatusSessaoInventario = 'em_andamento' | 'concluida' | 'cancelada'
+
+export interface SessaoInventario {
+  id: string
+  organizacao_id: string
+  codigo: string
+  titulo: string | null
+  tipo_item: TipoItemInventario
+  criterios: Record<string, unknown> | null
+  status: StatusSessaoInventario
+  criado_em: string
+  criado_por: string | null
+  concluido_em: string | null
+}
+
+export interface ItemInventario {
+  id: string
+  organizacao_id: string
+  sessao_id: string
+  lote_sobra_id: string | null
+  lote_acessorio_id: string | null
+  estoque_esperado_quantidade: number
+  estoque_esperado_comprimento_mm: number | null
+  contagem_quantidade: number | null
+  contagem_comprimento_mm: number | null
+  confirmado_sem_alteracao: boolean
+  contado_em: string | null
+  contado_por: string | null
+  aplicado_em: string | null
+  criado_em: string
+}
+
 export interface Reserva {
   id: string
   organizacao_id: string
@@ -260,6 +342,7 @@ export interface ConfiguracoesAplicacao {
   considerar_perfis_equivalentes: boolean
   confirmado_pelo_administrador: boolean
   confirmado_em: string | null
+  logo_desenvolvedor_caminho?: string | null
 }
 
 export interface MovimentacaoEstoque {

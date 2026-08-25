@@ -1,6 +1,16 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { useParams } from 'react-router-dom'
-import { Pencil, KeyRound, Power, PowerOff, Mail, Clock } from 'lucide-react'
+import { useParams, useNavigate } from 'react-router-dom'
+import {
+  Pencil,
+  KeyRound,
+  Power,
+  PowerOff,
+  Mail,
+  Clock,
+  ShieldCheck,
+  Trash2,
+  TriangleAlert,
+} from 'lucide-react'
 import {
   useColaborador,
   useAcessos,
@@ -9,6 +19,7 @@ import {
   useAtivarColaborador,
   useAjustarPermissoes,
   useEnviarRedefinicaoDeSenha,
+  useExcluirPropriaConta,
 } from '@/dados/colaboradores'
 import {
   CARGOS_ATIVOS,
@@ -27,17 +38,20 @@ import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { CampoMascarado } from '@/componentes/ui/CampoMascarado'
 import { CampoFoto } from '@/componentes/ui/CampoFoto'
+import { Modal } from '@/componentes/ui/Modal'
 import {
   enviarFotoColaborador,
   obterLinkTemporario,
   BALDE_FOTOS_COLABORADOR,
 } from '@/lib/armazenamento'
 import { formatarCpfCnpj, formatarTelefone } from '@/dominio/documentos'
+import { apelidoValido } from '@/dominio/apelido'
 import type { PapelUsuario } from '@/tipos/banco'
 
 export default function ColaboradorDetalhe() {
   const { id = null } = useParams()
-  const { perfil: eu } = useAutenticacao()
+  const navegar = useNavigate()
+  const { perfil: eu, sair } = useAutenticacao()
   const consulta = useColaborador(id)
   const pessoa = consulta.data ?? null
 
@@ -53,13 +67,23 @@ export default function ColaboradorDetalhe() {
   const ativar = useAtivarColaborador()
   const ajustar = useAjustarPermissoes()
   const redefinir = useEnviarRedefinicaoDeSenha()
+  const excluirConta = useExcluirPropriaConta()
 
   const [editando, setEditando] = useState(false)
-  const [form, setForm] = useState({ nome: '', telefone: '', cpf: '' })
+  const [form, setForm] = useState({
+    nome: '',
+    telefone: '',
+    cpf: '',
+    apelido: '',
+  })
   const [foto, setFoto] = useState<string | null>(null)
   const [previaFoto, setPreviaFoto] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [avisoSenha, setAvisoSenha] = useState<string | null>(null)
+  const [promovendo, setPromovendo] = useState(false)
+  const [excluindo, setExcluindo] = useState(false)
+  const [confirmacaoExcluir, setConfirmacaoExcluir] = useState('')
+  const [erroExcluir, setErroExcluir] = useState<string | null>(null)
 
   useEffect(() => {
     if (foto === null) {
@@ -77,6 +101,7 @@ export default function ColaboradorDetalhe() {
       nome: pessoa.nome,
       telefone: pessoa.telefone ?? '',
       cpf: pessoa.cpf ?? '',
+      apelido: pessoa.apelido ?? '',
     })
     setFoto(pessoa.foto_url)
     setErro(null)
@@ -94,6 +119,13 @@ export default function ColaboradorDetalhe() {
       return
     }
 
+    if (form.apelido.trim() !== '' && !apelidoValido(form.apelido)) {
+      setErro(
+        'Nickname inválido: use de 3 a 30 letras minúsculas, números, ponto, hífen ou underline.',
+      )
+      return
+    }
+
     try {
       await editar.mutateAsync({
         id: pessoa.id,
@@ -102,11 +134,40 @@ export default function ColaboradorDetalhe() {
           telefone: form.telefone.trim() || null,
           cpf: form.cpf.trim() || null,
           foto_url: foto,
+          apelido: form.apelido.trim() || null,
         },
       })
       setEditando(false)
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível salvar.')
+    }
+  }
+
+  async function confirmarPromocao() {
+    if (pessoa === null) return
+
+    await trocarCargo.mutateAsync({ id: pessoa.id, papel: 'administrador' })
+    setPromovendo(false)
+  }
+
+  async function confirmarExclusao() {
+    setErroExcluir(null)
+
+    if (confirmacaoExcluir.trim().toUpperCase() !== 'EXCLUIR') {
+      setErroExcluir('Digite exatamente a palavra EXCLUIR para prosseguir.')
+      return
+    }
+
+    try {
+      await excluirConta.mutateAsync()
+      // A conta acabou de ser desativada — não há mais o que fazer aqui
+      // além de sair e voltar para a entrada, como qualquer desligamento.
+      await sair()
+      navegar('/entrar', { replace: true })
+    } catch (e) {
+      setErroExcluir(
+        e instanceof Error ? e.message : 'Não foi possível excluir a conta.',
+      )
     }
   }
 
@@ -131,7 +192,7 @@ export default function ColaboradorDetalhe() {
     return (
       <PaginaDetalhe
         voltarPara="/colaboradores"
-        rotuloVoltar="Colaboradores"
+        rotuloVoltar="Equipe"
         titulo="Colaborador"
       >
         <EstadoConsulta
@@ -163,10 +224,10 @@ export default function ColaboradorDetalhe() {
       }
       acoes={
         !editando && (
-          // Uma linha só, com botões menores: em tela estreita os três
-          // quebravam, e o terceiro ficava numa fileira sozinha parecendo
-          // outra coisa. Aqui eles se apertam e continuam sendo um conjunto.
-          <div className="flex w-full flex-nowrap gap-2 [&_button]:min-h-11 [&_button]:px-3 [&_button]:text-sm">
+          // Grade de 2 colunas: com até 4 botões, "flex-nowrap" espremia o
+          // texto do último até cortar (ex.: "Tornar admin"). Em grade, cada
+          // botão tem a largura da coluna e o texto sempre cabe.
+          <div className="grid w-full grid-cols-2 gap-2 [&_button]:min-h-11 [&_button]:px-3 [&_button]:text-sm">
             {podeEditarDados && (
               <Botao variante="secundaria" onClick={abrirEdicao}>
                 <Pencil aria-hidden="true" className="size-4 shrink-0" />
@@ -207,6 +268,20 @@ export default function ColaboradorDetalhe() {
                       <Power aria-hidden="true" className="size-4 shrink-0" />
                     )}
                     {pessoa.ativo ? 'Desligar' : 'Religar'}
+                  </Botao>
+                )}
+
+                {/* Ação explícita, e não só a troca de cargo escondida
+                    dentro de "Editar": quem procura "tornar admin" não
+                    espera abrir um formulário de nome e telefone para
+                    achá-la no meio do caminho. */}
+                {!souEu && pessoa.papel !== 'administrador' && (
+                  <Botao
+                    variante="contorno"
+                    onClick={() => setPromovendo(true)}
+                  >
+                    <ShieldCheck aria-hidden="true" className="size-4 shrink-0" />
+                    Tornar admin
                   </Botao>
                 )}
               </>
@@ -261,6 +336,17 @@ export default function ColaboradorDetalhe() {
             value={pessoa.email}
             ajuda="O e-mail é o login e não muda por aqui."
             disabled
+          />
+
+          <CampoTexto
+            rotulo="Nickname (opcional)"
+            value={form.apelido}
+            onChange={(e) =>
+              setForm({ ...form, apelido: e.target.value.toLowerCase() })
+            }
+            autoCapitalize="none"
+            spellCheck={false}
+            ajuda="Para entrar sem digitar o e-mail. Só letras minúsculas, números, ponto, hífen ou underline."
           />
 
           {administra && (
@@ -380,6 +466,7 @@ export default function ColaboradorDetalhe() {
           linhas={[
             { rotulo: 'Nome', valor: pessoa.nome },
             { rotulo: 'E-mail', valor: pessoa.email },
+            { rotulo: 'Nickname', valor: pessoa.apelido },
             {
               rotulo: 'Telefone',
               valor: pessoa.telefone && formatarTelefone(pessoa.telefone),
@@ -438,6 +525,127 @@ export default function ColaboradorDetalhe() {
       )}
 
       {(administra || souEu) && <UltimosAcessos usuarioId={pessoa.id} />}
+
+      {/* Só a própria pessoa vê isto — nem o administrador, que tem seu
+          próprio botão "Desligar" para tirar o acesso de um colega. Fica
+          separado do resto, no mesmo padrão da Zona de perigo em Dados da
+          empresa: ação rara e séria não fica ao lado dos botões do dia a
+          dia. */}
+      {souEu && (
+        <section className="border-erro-300 bg-erro-50 flex flex-col gap-3 rounded-xl border-2 p-5">
+          <h2 className="text-erro-700 flex items-center gap-2 font-semibold">
+            <TriangleAlert aria-hidden="true" className="size-5 shrink-0" />
+            Zona de perigo
+          </h2>
+          <p className="text-erro-700 text-sm">
+            Apaga seu nome, telefone, CPF, foto e nickname, e desliga seu
+            acesso ao sistema. O histórico do que você já cadastrou ou
+            movimentou continua existindo, sem o seu nome nele.
+          </p>
+          <Botao
+            type="button"
+            variante="destrutiva"
+            onClick={() => {
+              setConfirmacaoExcluir('')
+              setErroExcluir(null)
+              setExcluindo(true)
+            }}
+            className="self-start"
+          >
+            <Trash2 aria-hidden="true" className="size-4" />
+            Excluir minha conta
+          </Botao>
+        </section>
+      )}
+
+      <Modal
+        aberto={promovendo}
+        aoFechar={() => setPromovendo(false)}
+        titulo="Tornar administrador"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm">
+            <strong>{pessoa.nome}</strong> vai ganhar acesso completo ao
+            sistema: dados da empresa, configurações do cálculo, gestão de
+            colaboradores e a zona de perigo (zerar estoque, por exemplo).
+          </p>
+
+          <div className="flex gap-3">
+            <Botao
+              type="button"
+              variante="contorno"
+              onClick={() => setPromovendo(false)}
+              className="flex-1"
+            >
+              Cancelar
+            </Botao>
+            <Botao
+              type="button"
+              onClick={() => void confirmarPromocao()}
+              carregando={trocarCargo.isPending}
+              className="flex-1"
+            >
+              <ShieldCheck aria-hidden="true" className="size-4" />
+              Confirmar
+            </Botao>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        aberto={excluindo}
+        aoFechar={() => setExcluindo(false)}
+        titulo="Excluir minha conta"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-erro-700 bg-erro-50 rounded-xl p-3 text-sm font-medium">
+            Isto apaga seu nome, telefone, CPF, foto e nickname, desliga seu
+            acesso e libera este e-mail. Não pode ser desfeito por você —
+            seus dados pessoais já teriam sido apagados. Para voltar a
+            trabalhar com este e-mail depois, peça a um administrador da
+            empresa um novo convite.
+          </p>
+
+          <CampoTexto
+            rotulo='Digite EXCLUIR para prosseguir'
+            value={confirmacaoExcluir}
+            onChange={(e) => setConfirmacaoExcluir(e.target.value)}
+            autoComplete="off"
+            required
+          />
+
+          {erroExcluir && (
+            <p
+              role="alert"
+              className="bg-erro-100 text-erro-700 rounded-xl px-4 py-3 text-sm"
+            >
+              {erroExcluir}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <Botao
+              type="button"
+              variante="contorno"
+              onClick={() => setExcluindo(false)}
+              className="flex-1"
+            >
+              Cancelar
+            </Botao>
+            <Botao
+              type="button"
+              variante="destrutiva"
+              onClick={() => void confirmarExclusao()}
+              carregando={excluirConta.isPending}
+              disabled={confirmacaoExcluir.trim().toUpperCase() !== 'EXCLUIR'}
+              className="flex-1"
+            >
+              <Trash2 aria-hidden="true" className="size-4" />
+              Excluir conta
+            </Botao>
+          </div>
+        </div>
+      </Modal>
     </PaginaDetalhe>
   )
 }

@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { chaves } from '@/lib/consultas'
+import {
+  obterLinkTemporario,
+  enviarLogoDesenvolvedor,
+  BALDE_LOGOS,
+} from '@/lib/armazenamento'
 import type { ConfiguracoesAplicacao } from '@/tipos/banco'
 import type { ConfiguracaoCorte } from '@/dominio/corte'
 
@@ -87,5 +92,51 @@ export function useSalvarConfiguracoes() {
     onSuccess: () => {
       void cliente.invalidateQueries({ queryKey: chaves.configuracoes })
     },
+  })
+}
+
+/**
+ * Logo da empresa desenvolvedora, para a página "Sobre".
+ *
+ * Vive em `configuracoes_aplicacao`, e não em `organizacoes`: é informação
+ * sobre quem fez o sistema, não sobre a empresa que o usa.
+ */
+export function useEnviarLogoDesenvolvedor() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      arquivo,
+    }: {
+      id: string
+      arquivo: File
+    }): Promise<string> => {
+      const { caminho } = await enviarLogoDesenvolvedor(arquivo)
+
+      const { error } = await supabase
+        .from('configuracoes_aplicacao')
+        .update({ logo_desenvolvedor_caminho: caminho })
+        .eq('id', id)
+
+      if (error) throw new Error(error.message)
+
+      return caminho
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.configuracoes })
+    },
+  })
+}
+
+export function useLogoDesenvolvedor(caminho: string | null | undefined) {
+  return useQuery({
+    queryKey: ['logo-desenvolvedor', caminho],
+    queryFn: async (): Promise<string | null> => {
+      if (!caminho) return null
+      return obterLinkTemporario(BALDE_LOGOS, caminho)
+    },
+    enabled: Boolean(caminho),
+    staleTime: 55 * 60_000,
   })
 }

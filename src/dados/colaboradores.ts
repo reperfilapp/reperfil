@@ -127,6 +127,72 @@ export function useCancelarConvite() {
 }
 
 /**
+ * Reenvia um convite pendente — ou corrige e-mail, nome, telefone ou cargo
+ * antes de reenviar.
+ *
+ * "Reenviar" não é mandar o mesmo e-mail de novo: é apagar o convite antigo
+ * e criar outro com os dados (iguais ou corrigidos), porque o e-mail de
+ * convite só dispara no INSERT da tabela. A função `reenviar_convite` no
+ * banco faz as duas partes na mesma transação, então nunca fica sem convite
+ * nenhum no meio do caminho.
+ */
+export function useReenviarConvite() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      dados,
+    }: {
+      id: string
+      dados: Omit<DadosConvite, 'organizacao_id'>
+    }): Promise<ConviteColaborador> => {
+      const { data, error } = await supabase.rpc('reenviar_convite', {
+        p_id: id,
+        p_nome: dados.nome.trim(),
+        p_email: dados.email.trim().toLowerCase(),
+        p_papel: dados.papel,
+        p_telefone: dados.telefone,
+      })
+
+      if (error) throw new Error(error.message)
+
+      return data as ConviteColaborador
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.convites })
+    },
+  })
+}
+
+/**
+ * Espera até alguns segundos pela confirmação de que o e-mail de convite
+ * realmente saiu (`email_enviado_em`), em vez de só supor que deu certo
+ * porque o convite foi gravado — o envio é assíncrono, por um Database
+ * Webhook. `false` no fim do prazo não é necessariamente falha: só quer
+ * dizer que a confirmação não chegou a tempo.
+ */
+export async function aguardarConfirmacaoDeEnvio(
+  conviteId: string,
+  tentativas = 8,
+  intervaloMs = 1000,
+): Promise<boolean> {
+  for (let i = 0; i < tentativas; i++) {
+    const { data } = await supabase
+      .from('convites_colaborador')
+      .select('email_enviado_em')
+      .eq('id', conviteId)
+      .maybeSingle()
+
+    if (data?.email_enviado_em) return true
+
+    await new Promise((resolve) => setTimeout(resolve, intervaloMs))
+  }
+
+  return false
+}
+
+/**
  * Troca o cargo e, com ele, as permissões.
  *
  * Mudar o cargo REESCREVE as permissões pelo padrão do cargo novo, em vez
@@ -262,6 +328,8 @@ export interface DadosColaborador {
   telefone: string | null
   cpf: string | null
   foto_url?: string | null
+  /** Nome de usuário alternativo para entrar. `undefined` = não mexe nele. */
+  apelido?: string | null
 }
 
 export function useEditarColaborador() {
@@ -284,10 +352,25 @@ export function useEditarColaborador() {
           // CPF ter duas formas diferentes no banco.
           cpf: dados.cpf ? apenasDigitos(dados.cpf) : null,
           ...(dados.foto_url === undefined ? {} : { foto_url: dados.foto_url }),
+          ...(dados.apelido === undefined
+            ? {}
+            : {
+                apelido: dados.apelido
+                  ? dados.apelido.trim().toLowerCase()
+                  : null,
+              }),
         })
         .eq('id', id)
 
-      if (error) throw new Error(error.message)
+      if (error) {
+        // 23505 é a unicidade do nickname dentro da mesma organização.
+        if (error.code === '23505') {
+          throw new Error(
+            `Já existe um colaborador com o nickname "${dados.apelido}" nesta empresa.`,
+          )
+        }
+        throw new Error(error.message)
+      }
     },
     onSuccess: () => {
       void cliente.invalidateQueries({ queryKey: chaves.colaboradores })
@@ -330,4 +413,29 @@ export async function registrarAcesso(
   await supabase
     .from('acessos_sistema')
     .insert({ usuario_id: usuarioId, organizacao_id: organizacaoId })
+}
+
+/**
+ * Apaga os dados pessoais da própria conta, desativa o acesso E libera o
+ * e-mail de login para um convite futuro.
+ *
+ * Não apaga a linha (o histórico de estoque aponta para este id). Passa
+ * pela Edge Function `excluir-conta` porque liberar o e-mail em
+ * `auth.users` exige a API de admin do Supabase (chave de serviço, que não
+ * pode viajar dentro do aplicativo) — sem isso, um novo convite para o
+ * mesmo e-mail nunca completaria. Bloqueia se for o único administrador
+ * ativo da organização — ver `excluir_conta_admin` no banco.
+ */
+export function useExcluirPropriaConta() {
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke<{
+        ok: boolean
+        error?: string
+      }>('excluir-conta')
+
+      if (error) throw new Error(error.message)
+      if (!data?.ok) throw new Error(data?.error ?? 'Não foi possível excluir a conta.')
+    },
+  })
 }

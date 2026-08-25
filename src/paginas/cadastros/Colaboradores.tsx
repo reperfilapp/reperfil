@@ -1,12 +1,23 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { UserPlus, MailX, Power, PowerOff, ChevronRight } from 'lucide-react'
+import {
+  UserPlus,
+  MailX,
+  Mail,
+  Power,
+  PowerOff,
+  ChevronRight,
+  CheckCircle2,
+  Loader2,
+} from 'lucide-react'
 import {
   useColaboradores,
   useConvitesAbertos,
   useConvidarColaborador,
   useCancelarConvite,
+  useReenviarConvite,
   useAtivarColaborador,
+  aguardarConfirmacaoDeEnvio,
 } from '@/dados/colaboradores'
 import {
   CARGOS_ATIVOS,
@@ -21,7 +32,7 @@ import { CampoMascarado } from '@/componentes/ui/CampoMascarado'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
-import type { PapelUsuario } from '@/tipos/banco'
+import type { ConviteColaborador, PapelUsuario } from '@/tipos/banco'
 
 const VAZIO = {
   nome: '',
@@ -38,12 +49,74 @@ export default function Colaboradores() {
 
   const convidar = useConvidarColaborador()
   const cancelar = useCancelarConvite()
+  const reenviar = useReenviarConvite()
   const ativar = useAtivarColaborador()
 
   const [aberto, setAberto] = useState(false)
   const [form, setForm] = useState(VAZIO)
   const [erro, setErro] = useState<string | null>(null)
   const [convidado, setConvidado] = useState<string | null>(null)
+
+  // Convite em edição/reenvio — nulo quando o modal está fechado.
+  const [reenviando, setReenviando] = useState<ConviteColaborador | null>(null)
+  const [formReenvio, setFormReenvio] = useState(VAZIO)
+  const [erroReenvio, setErroReenvio] = useState<string | null>(null)
+
+  // Some sozinho quando outro convite é reenviado ou a tela é reaberta.
+  const [statusReenvio, setStatusReenvio] = useState<{
+    email: string
+    situacao: 'confirmando' | 'confirmado' | 'sem_confirmacao'
+  } | null>(null)
+
+  function abrirReenvio(convite: ConviteColaborador) {
+    setFormReenvio({
+      nome: convite.nome,
+      email: convite.email,
+      telefone: convite.telefone ?? '',
+      papel: convite.papel,
+    })
+    setErroReenvio(null)
+    setReenviando(convite)
+  }
+
+  async function aoReenviar(evento: FormEvent) {
+    evento.preventDefault()
+    setErroReenvio(null)
+
+    if (formReenvio.nome.trim() === '' || formReenvio.email.trim() === '') {
+      setErroReenvio('Nome e e-mail são obrigatórios.')
+      return
+    }
+
+    if (reenviando === null) return
+
+    try {
+      const novoConvite = await reenviar.mutateAsync({
+        id: reenviando.id,
+        dados: {
+          nome: formReenvio.nome,
+          email: formReenvio.email,
+          papel: formReenvio.papel,
+          telefone: formReenvio.telefone.trim() || null,
+        },
+      })
+      setReenviando(null)
+
+      // O envio é assíncrono (Database Webhook) — a gravação do convite
+      // responde antes do e-mail sair de verdade. Em vez de já dizer
+      // "enviado" no mesmo instante, espera a Edge Function confirmar.
+      setStatusReenvio({ email: novoConvite.email, situacao: 'confirmando' })
+      const confirmado = await aguardarConfirmacaoDeEnvio(novoConvite.id)
+      setStatusReenvio({
+        email: novoConvite.email,
+        situacao: confirmado ? 'confirmado' : 'sem_confirmacao',
+      })
+    } catch (e) {
+      setErroReenvio(
+        e instanceof Error ? e.message : 'Não foi possível reenviar o convite.',
+      )
+    }
+  }
 
   async function aoEnviar(evento: FormEvent) {
     evento.preventDefault()
@@ -84,7 +157,7 @@ export default function Colaboradores() {
 
           <header className="mb-4 flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold">Colaboradores</h1>
+              <h1 className="text-2xl font-bold">Equipe</h1>
               <p className="text-texto-suave mt-1">
                 Quem entra no sistema e o que cada um pode fazer.
               </p>
@@ -95,19 +168,53 @@ export default function Colaboradores() {
             </Botao>
           </header>
 
-          {/* Aparece depois de convidar, e some ao sair da tela: o convite
-              não manda e-mail nenhum, então alguém precisa avisar o colega
-              — e é aqui que a pessoa está quando isso passa a ser verdade. */}
+          {/* Aparece depois de convidar, e some ao sair da tela. */}
           {convidado && (
             <div className="bg-superficie-2 mb-4 rounded-xl p-4 text-sm">
               <p className="font-medium">
-                Convite registrado para {convidado}.
+                Convite registrado — um e-mail já foi enviado para{' '}
+                {convidado}.
               </p>
               <p className="text-texto-suave mt-1">
-                Avise seu colega: ele entra no aplicativo, toca em{' '}
-                <strong>Primeiro acesso</strong> e cria a senha com esse mesmo
-                e-mail. Quem não tem convite não consegue se cadastrar.
+                Se não chegar (foi para o spam ou o e-mail estava errado),
+                use o botão de reenviar na lista abaixo.
               </p>
+            </div>
+          )}
+
+          {/* Aparece depois de reenviar, com o resultado real da entrega —
+              não só "a gente tentou". */}
+          {statusReenvio && (
+            <div className="bg-superficie-2 mb-4 flex items-start gap-2 rounded-xl p-4 text-sm">
+              {statusReenvio.situacao === 'confirmando' && (
+                <Loader2
+                  aria-hidden="true"
+                  className="mt-0.5 size-4 shrink-0 animate-spin"
+                />
+              )}
+              {statusReenvio.situacao === 'confirmado' && (
+                <CheckCircle2
+                  aria-hidden="true"
+                  className="text-acao-600 mt-0.5 size-4 shrink-0"
+                />
+              )}
+              <div>
+                {statusReenvio.situacao === 'confirmando' && (
+                  <p>Reenviando para {statusReenvio.email}…</p>
+                )}
+                {statusReenvio.situacao === 'confirmado' && (
+                  <p className="font-medium">
+                    E-mail reenviado com sucesso para {statusReenvio.email}.
+                  </p>
+                )}
+                {statusReenvio.situacao === 'sem_confirmacao' && (
+                  <p>
+                    Convite atualizado para {statusReenvio.email} — não deu
+                    tempo de confirmar o envio, mas o e-mail deve chegar em
+                    instantes.
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
@@ -135,6 +242,15 @@ export default function Colaboradores() {
                     {convite.email} · {rotuloCargo(convite.papel)}
                   </span>
                 </span>
+
+                <Botao
+                  variante="contorno"
+                  onClick={() => abrirReenvio(convite)}
+                  aria-label={`Reenviar ou corrigir convite de ${convite.nome}`}
+                  title="Reenviar ou corrigir convite"
+                >
+                  <Mail aria-hidden="true" className="size-4" />
+                </Botao>
 
                 <Botao
                   variante="contorno"
@@ -286,6 +402,90 @@ export default function Colaboradores() {
               className="flex-1"
             >
               Convidar
+            </Botao>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        aberto={reenviando !== null}
+        aoFechar={() => setReenviando(null)}
+        titulo="Reenviar convite"
+      >
+        <form onSubmit={aoReenviar} className="flex flex-col gap-4" noValidate>
+          <p className="text-texto-suave text-sm">
+            Manda um novo e-mail de convite. Corrija os dados abaixo se algo
+            estava errado — por exemplo, um e-mail digitado errado.
+          </p>
+
+          <CampoTexto
+            rotulo="Nome"
+            value={formReenvio.nome}
+            onChange={(e) =>
+              setFormReenvio({ ...formReenvio, nome: e.target.value })
+            }
+            required
+          />
+
+          <CampoMascarado
+            rotulo="E-mail"
+            tipo="email"
+            value={formReenvio.email}
+            onChange={(email) => setFormReenvio({ ...formReenvio, email })}
+            ajuda="Precisa ser o mesmo e-mail que ele vai usar para entrar."
+          />
+
+          <CampoMascarado
+            rotulo="Telefone (opcional)"
+            tipo="telefone"
+            value={formReenvio.telefone}
+            onChange={(telefone) =>
+              setFormReenvio({ ...formReenvio, telefone })
+            }
+          />
+
+          <CampoSelecao
+            rotulo="Cargo"
+            value={formReenvio.papel}
+            onChange={(e) =>
+              setFormReenvio({
+                ...formReenvio,
+                papel: e.target.value as PapelUsuario,
+              })
+            }
+          >
+            {CARGOS_ATIVOS.map((papel) => (
+              <option key={papel} value={papel}>
+                {rotuloCargo(papel)}
+              </option>
+            ))}
+          </CampoSelecao>
+
+          {erroReenvio && (
+            <p
+              role="alert"
+              className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3"
+            >
+              {erroReenvio}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <Botao
+              type="button"
+              variante="contorno"
+              onClick={() => setReenviando(null)}
+              className="flex-1"
+            >
+              Cancelar
+            </Botao>
+            <Botao
+              type="submit"
+              carregando={reenviar.isPending}
+              className="flex-1"
+            >
+              <Mail aria-hidden="true" className="size-4" />
+              Reenviar convite
             </Botao>
           </div>
         </form>

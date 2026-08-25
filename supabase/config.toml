@@ -4,6 +4,13 @@
 # working directory name when running `supabase init`.
 project_id = "AppRePerfil"
 
+# Quem chama esta função é um Database Webhook, não uma pessoa logada — não
+# há usuário para o Supabase verificar um JWT dele. A autorização de verdade
+# é o cabeçalho `x-webhook-secret`, conferido dentro do próprio código da
+# função (ver supabase/functions/enviar-email/index.ts).
+[functions.enviar-email]
+verify_jwt = false
+
 [api]
 enabled = true
 # Port to use for the API URL.

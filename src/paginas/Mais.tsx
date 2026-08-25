@@ -18,6 +18,10 @@ import {
   UsersRound,
   PackageSearch,
   Boxes,
+  Puzzle,
+  ClipboardList,
+  Info,
+  UserCircle2,
 } from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import {
@@ -95,6 +99,27 @@ export default function Mais() {
       visivel: true,
     },
     {
+      para: '/estoque-acessorios',
+      rotulo: 'Estoque de acessórios',
+      descricao: 'Dobradiça, roldana, puxador — sem comprimento a controlar',
+      Icone: Puzzle,
+      visivel: true,
+    },
+    {
+      para: '/acessorios',
+      rotulo: 'Catálogo de acessórios',
+      descricao: 'Os acessórios que a empresa usa',
+      Icone: Puzzle,
+      visivel: true,
+    },
+    {
+      para: '/inventario',
+      rotulo: 'Inventário',
+      descricao: 'Contagem física de perfis e acessórios',
+      Icone: ClipboardList,
+      visivel: true,
+    },
+    {
       para: '/o-que-produzir',
       rotulo: 'O que dá para produzir',
       descricao: 'Portas e janelas que saem das sobras de hoje',
@@ -134,6 +159,13 @@ export default function Mais() {
   /** O que é escritório: pessoas, clientes e papel. */
   const administracao = [
     {
+      para: `/colaboradores/${perfil?.id ?? ''}`,
+      rotulo: 'Minha conta',
+      descricao: 'Seus dados, foto, nickname — e excluir a conta',
+      Icone: UserCircle2,
+      visivel: perfil !== null,
+    },
+    {
       para: '/empresa',
       rotulo: 'Dados da empresa',
       descricao: 'Nome, endereço e logo para orçamentos e relatórios',
@@ -142,7 +174,7 @@ export default function Mais() {
     },
     {
       para: '/colaboradores',
-      rotulo: 'Colaboradores',
+      rotulo: 'Equipe',
       descricao: 'Quem entra no sistema e o que cada um pode fazer',
       Icone: UsersRound,
       visivel: podeGerenciarColaboradores(perfil),
@@ -159,6 +191,13 @@ export default function Mais() {
       rotulo: 'Relatórios',
       descricao: 'Estoque, sobras paradas e movimentações em CSV',
       Icone: FileSpreadsheet,
+      visivel: true,
+    },
+    {
+      para: '/sobre',
+      rotulo: 'Sobre',
+      descricao: 'Quem desenvolve, contato e documentos legais',
+      Icone: Info,
       visivel: true,
     },
   ].filter((item) => item.visivel)

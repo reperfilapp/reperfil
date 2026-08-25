@@ -180,7 +180,8 @@ export interface MovimentacaoDetalhada {
   comprimento_mm: number | null
   justificativa: string | null
   criado_em: string
-  usuario: { nome: string } | null
+  /** `email` só serve para extrair o código de conta excluída — ver `dominio/contaExcluida.ts`. */
+  usuario: { nome: string; email: string } | null
 }
 
 export function useHistoricoDoLote(loteId: string | null) {
@@ -192,7 +193,7 @@ export function useHistoricoDoLote(loteId: string | null) {
         .from('movimentacoes_estoque')
         .select(
           `id, tipo, quantidade, comprimento_mm, justificativa, criado_em,
-           usuario:perfis_usuario (nome)`,
+           usuario:perfis_usuario (nome, email)`,
         )
         .eq('lote_id', loteId)
         .order('criado_em', { ascending: false })

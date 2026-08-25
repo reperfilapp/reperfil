@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Download, FileSpreadsheet } from 'lucide-react'
+import { Download, FileSpreadsheet, Layers, ChevronRight } from 'lucide-react'
 import {
   useRelatorioEstoque,
   useRelatorioMovimentacoes,
@@ -7,6 +7,8 @@ import {
   type LinhaEstoque,
   type LinhaMovimentacao,
 } from '@/dados/relatorios'
+import { SEM_LINHA } from '@/dados/modelosPerfil'
+import { useNiveisNaUrl } from '@/componentes/useNiveisNaUrl'
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { Botao } from '@/componentes/ui/Botao'
@@ -14,6 +16,9 @@ import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { AmostraCor } from '@/componentes/ui/AmostraCor'
 import { gerarCsv, baixarCsv, nomeArquivoComData } from '@/lib/csv'
 import { formatarComprimento } from '@/dominio/medidas'
+
+/** Valor de `linhaAberta` que significa "ignorar o agrupamento". */
+const TODAS = '__todas__'
 
 /**
  * Relatórios exportáveis.
@@ -40,8 +45,33 @@ export default function Relatorios() {
     (l) => l.status === 'disponivel' || l.status === 'reservada',
   )
 
-  const porModelo = agrupar(
+  /*
+   * Mesma porta de entrada das outras telas de perfil: primeiro a linha,
+   * depois o detalhe. Ver todo o estoque por perfil de uma vez, sem
+   * agrupamento, é útil às vezes — por isso continua existindo, um passo
+   * adiante — mas não é o que se quer ver de cara numa lista que passa de
+   * algumas dezenas de perfis.
+   */
+  const { nivel, abrir, voltarNivel } = useNiveisNaUrl(['linhaRelatorio'])
+  const linhaAberta = nivel('linhaRelatorio')
+  const mostrandoLinhas = linhaAberta === null
+
+  const porLinha = agrupar(
     emEstoque,
+    (l) => l.modeloLinha?.trim() || SEM_LINHA,
+    (l) => l.quantidade,
+    (l) => l.quantidade * l.comprimentoMm,
+  )
+
+  const emEstoqueParaModelo =
+    linhaAberta === null || linhaAberta === TODAS
+      ? emEstoque
+      : emEstoque.filter(
+          (l) => (l.modeloLinha?.trim() || SEM_LINHA) === linhaAberta,
+        )
+
+  const porModelo = agrupar(
+    emEstoqueParaModelo,
     (l) => `${l.modeloCodigo} — ${l.modeloDescricao}`,
     (l) => l.quantidade,
     (l) => l.quantidade * l.comprimentoMm,
@@ -156,12 +186,90 @@ export default function Relatorios() {
 
       {linhas.length > 0 && (
         <div className="flex flex-col gap-6">
-          <Resumo
-            titulo="Estoque por perfil"
-            grupos={porModelo}
-            aoExportar={exportarEstoque}
-            rotuloExportacao="Exportar estoque completo"
-          />
+          <section>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h2 className="font-semibold">
+                {mostrandoLinhas
+                  ? 'Estoque por perfil'
+                  : linhaAberta === TODAS
+                    ? 'Todos os perfis'
+                    : linhaAberta}
+              </h2>
+              {!mostrandoLinhas && (
+                <BotaoVoltar onClick={voltarNivel} rotulo="Linhas" />
+              )}
+            </div>
+
+            {mostrandoLinhas ? (
+              <>
+                <ul className="mb-3 flex flex-col gap-1.5">
+                  {porLinha.map((g) => (
+                    <li key={g.grupo}>
+                      <button
+                        type="button"
+                        onClick={() => abrir({ linhaRelatorio: g.grupo })}
+                        className="bg-celula border-borda flex w-full items-center gap-3 rounded-lg border-2 px-3 py-2 text-left text-sm"
+                      >
+                        <Layers
+                          aria-hidden="true"
+                          className="text-acao-600 size-4 shrink-0"
+                        />
+                        <span className="min-w-0 flex-1 truncate">
+                          {g.grupo}
+                        </span>
+                        <span className="shrink-0 text-right">
+                          <span className="block font-semibold tabular-nums">
+                            {formatarComprimento(g.milimetros)}
+                          </span>
+                          <span className="text-texto-suave text-xs">
+                            {g.pecas} {g.pecas === 1 ? 'peça' : 'peças'}
+                          </span>
+                        </span>
+                        <ChevronRight
+                          aria-hidden="true"
+                          className="text-texto-suave size-4 shrink-0"
+                        />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  type="button"
+                  onClick={() => abrir({ linhaRelatorio: TODAS })}
+                  className="text-acao-600 mx-auto block text-sm font-medium hover:underline"
+                >
+                  Ver todos os perfis
+                </button>
+              </>
+            ) : (
+              <ul className="mb-3 flex flex-col gap-1.5">
+                {porModelo.map((g, index) => (
+                  <li
+                    key={index}
+                    className="bg-celula border-borda flex items-center justify-between gap-3 rounded-lg border-2 px-3 py-2 text-sm"
+                  >
+                    <span className="min-w-0 truncate">{g.grupo}</span>
+                    <span className="shrink-0 text-right">
+                      <span className="block font-semibold tabular-nums">
+                        {formatarComprimento(g.milimetros)}
+                      </span>
+                      <span className="text-texto-suave text-xs">
+                        {g.pecas} {g.pecas === 1 ? 'peça' : 'peças'}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {!mostrandoLinhas && (
+              <Botao variante="contorno" onClick={exportarEstoque}>
+                <Download aria-hidden="true" className="size-4" />
+                Exportar estoque completo
+              </Botao>
+            )}
+          </section>
 
           <Resumo titulo="Por acabamento" grupos={porAcabamento} />
 

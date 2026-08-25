@@ -10,6 +10,8 @@ import Entrar from '@/paginas/Entrar'
 import RecuperarSenha from '@/paginas/RecuperarSenha'
 import DefinirSenha from '@/paginas/DefinirSenha'
 import PrimeiroAcesso from '@/paginas/PrimeiroAcesso'
+import CriarEmpresa from '@/paginas/CriarEmpresa'
+import ConfirmarEmail from '@/paginas/ConfirmarEmail'
 import CompletarCadastro from '@/paginas/CompletarCadastro'
 import Inicio from '@/paginas/Inicio'
 import Sobras from '@/paginas/Sobras'
@@ -37,6 +39,16 @@ import ProdutoDetalhe from '@/paginas/detalhes/ProdutoDetalhe'
 import OQueProduzir from '@/paginas/OQueProduzir'
 import LotesRepetidos from '@/paginas/LotesRepetidos'
 import DadosEmpresa from '@/paginas/DadosEmpresa'
+import ModelosAcessorio from '@/paginas/cadastros/ModelosAcessorio'
+import Acessorios from '@/paginas/Acessorios'
+import AcessorioDetalhe from '@/paginas/AcessorioDetalhe'
+import CadastrarAcessorio from '@/paginas/CadastrarAcessorio'
+import Inventario from '@/paginas/Inventario'
+import NovoInventario from '@/paginas/NovoInventario'
+import SessaoInventarioDetalhe from '@/paginas/SessaoInventarioDetalhe'
+import Sobre from '@/paginas/Sobre'
+import TermosDeUso from '@/paginas/TermosDeUso'
+import PoliticaPrivacidade from '@/paginas/PoliticaPrivacidade'
 
 /**
  * Casca da aplicação.
@@ -56,6 +68,18 @@ export default function App() {
               <Route path="/recuperar-senha" element={<RecuperarSenha />} />
               <Route path="/definir-senha" element={<DefinirSenha />} />
               <Route path="/primeiro-acesso" element={<PrimeiroAcesso />} />
+              <Route path="/criar-empresa" element={<CriarEmpresa />} />
+              <Route path="/confirmar-email" element={<ConfirmarEmail />} />
+
+              {/* Públicas de propósito — precisam abrir sem sessão, tanto
+                  para quem revisa a ficha na Play Store quanto para quem
+                  ainda não é cliente e quer ler antes de pedir acesso. */}
+              <Route path="/sobre" element={<Sobre />} />
+              <Route path="/termos-de-uso" element={<TermosDeUso />} />
+              <Route
+                path="/politica-privacidade"
+                element={<PoliticaPrivacidade />}
+              />
 
               <Route
                 element={
@@ -103,6 +127,25 @@ export default function App() {
                 <Route path="/relatorios" element={<Relatorios />} />
                 <Route path="/configuracoes" element={<Configuracoes />} />
                 <Route path="/empresa" element={<DadosEmpresa />} />
+                <Route path="/acessorios" element={<ModelosAcessorio />} />
+                <Route
+                  path="/estoque-acessorios"
+                  element={<Acessorios />}
+                />
+                <Route
+                  path="/estoque-acessorios/:id"
+                  element={<AcessorioDetalhe />}
+                />
+                <Route
+                  path="/cadastrar-acessorio"
+                  element={<CadastrarAcessorio />}
+                />
+                <Route path="/inventario" element={<Inventario />} />
+                <Route path="/inventario/novo" element={<NovoInventario />} />
+                <Route
+                  path="/inventario/:id"
+                  element={<SessaoInventarioDetalhe />}
+                />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

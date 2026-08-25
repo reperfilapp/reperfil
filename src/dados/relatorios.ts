@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { nomeParaHistorico } from '@/dominio/contaExcluida'
 import type { TipoMovimentacao } from '@/tipos/banco'
 
 /**
@@ -18,6 +19,7 @@ import type { TipoMovimentacao } from '@/tipos/banco'
 export interface LinhaEstoque {
   modeloCodigo: string
   modeloDescricao: string
+  modeloLinha: string | null
   acabamentoNome: string
   acabamentoCor: string | null
   localizacaoCodigo: string
@@ -37,7 +39,7 @@ export function useRelatorioEstoque() {
         .from('lotes_sobras')
         .select(
           `comprimento_mm, quantidade, quantidade_reservada, status, criado_em,
-           modelo:modelos_perfil (codigo, descricao),
+           modelo:modelos_perfil (codigo, descricao, linha),
            acabamento:acabamentos (nome, cor_hex),
            localizacao:localizacoes (codigo)`,
         )
@@ -50,6 +52,7 @@ export function useRelatorioEstoque() {
       return (data as unknown as RegistroEstoque[]).map((linha) => ({
         modeloCodigo: linha.modelo?.codigo ?? '',
         modeloDescricao: linha.modelo?.descricao ?? '',
+        modeloLinha: linha.modelo?.linha ?? null,
         acabamentoNome: linha.acabamento?.nome ?? '',
         acabamentoCor: linha.acabamento?.cor_hex ?? null,
         localizacaoCodigo: linha.localizacao?.codigo ?? 'sem local',
@@ -72,7 +75,7 @@ interface RegistroEstoque {
   quantidade_reservada: number
   status: string
   criado_em: string
-  modelo: { codigo: string; descricao: string } | null
+  modelo: { codigo: string; descricao: string; linha: string | null } | null
   acabamento: { nome: string; cor_hex: string | null } | null
   localizacao: { codigo: string } | null
 }
@@ -99,7 +102,7 @@ export function useRelatorioMovimentacoes(diasAtras: number) {
         .select(
           `criado_em, tipo, quantidade, comprimento_mm, justificativa,
            lote:lotes_sobras (codigo, modelo:modelos_perfil (codigo)),
-           usuario:perfis_usuario (nome)`,
+           usuario:perfis_usuario (nome, email)`,
         )
         .gte('criado_em', desde)
         .order('criado_em', { ascending: false })
@@ -114,7 +117,7 @@ export function useRelatorioMovimentacoes(diasAtras: number) {
         quantidade: linha.quantidade,
         comprimentoMm: linha.comprimento_mm,
         justificativa: linha.justificativa,
-        usuarioNome: linha.usuario?.nome ?? 'não identificado',
+        usuarioNome: nomeParaHistorico(linha.usuario) ?? 'não identificado',
       }))
     },
   })
@@ -127,7 +130,7 @@ interface RegistroMovimentacao {
   comprimento_mm: number | null
   justificativa: string | null
   lote: { codigo: string; modelo: { codigo: string } | null } | null
-  usuario: { nome: string } | null
+  usuario: { nome: string; email: string } | null
 }
 
 /** Agrupa somando quantidade e metragem. Usado pelos resumos da tela. */

@@ -73,12 +73,15 @@ export default function IdentificarPerfil() {
   const [foto, setFoto] = useState<string | null>(null)
   const [ampliada, setAmpliada] = useState<string | null>(null)
   /*
-   * Quatro campos, nenhum obrigatório. Quem está com a ponta na mão mede o
-   * que dá — a largura por fora, a altura, a aba que sobra, o vão de uma
-   * câmara — e não tem como saber quais dessas o catálogo conhece. Aceitar
-   * várias aumenta a chance de as conhecidas estarem no meio.
+   * Um campo só, com as medidas separadas por espaço — não quatro campos.
+   * Quem está com a ponta na mão mede o que dá — a largura por fora, a
+   * altura, a aba que sobra, o vão de uma câmara — e não tem como saber
+   * quais dessas o catálogo conhece. Aceitar várias aumenta a chance de as
+   * conhecidas estarem no meio, e digitar "35 25 2 1" de uma vez é mais
+   * rápido do que pular entre quatro campos — o mesmo texto livre que a
+   * busca por medida já aceita (`dominio/buscaPerfil.ts`).
    */
-  const [medidasTexto, setMedidasTexto] = useState(['', '', '', ''])
+  const [medidasTexto, setMedidasTexto] = useState('')
   const [pesoTexto, setPesoTexto] = useState('')
   const [comprimentoTexto, setComprimentoTexto] = useState('')
   const [unidade, setUnidade] = useState<UnidadeMedida>('mm')
@@ -106,13 +109,13 @@ export default function IdentificarPerfil() {
     })
   }
 
-  function alterarMedida(indice: number, valor: string) {
-    setMedidasTexto((atual) => atual.map((v, i) => (i === indice ? valor : v)))
-  }
-
-  // Vírgula é como se escreve 23,8 aqui; campo vazio vira NaN e é
-  // descartado adiante, junto com zero e negativo.
+  // Vírgula é como se escreve 23,8 aqui; "x" e "×" também separam, porque é
+  // como a medida vem escrita em desenho ("35x25"). Texto vazio ou um
+  // pedaço que não vira número é descartado, junto com zero e negativo.
   const medidas = medidasTexto
+    .trim()
+    .replace(/[x×]/g, ' ')
+    .split(/\s+/)
     .map((t) => Number(t.replace(',', '.')))
     .filter((n) => Number.isFinite(n) && n > 0)
   const mediuSecao = medidas.length > 0
@@ -266,29 +269,23 @@ export default function IdentificarPerfil() {
             </span>
           </h2>
 
-          <div className="grid grid-cols-2 gap-4">
-            {medidasTexto.map((valor, indice) => (
-              /* `text`, não `number`: aqui se escreve 23,8 com vírgula, e o
-                 campo numérico do navegador simplesmente descarta o valor
-                 quando o separador não é ponto — o serralheiro digitava e o
-                 campo ficava vazio. `inputMode` mantém o teclado numérico
-                 no celular. */
-              <CampoTexto
-                key={indice}
-                rotulo={`Medida ${indice + 1} (mm)`}
-                type="text"
-                inputMode="decimal"
-                placeholder="0"
-                value={valor}
-                onChange={(e) => alterarMedida(indice, e.target.value)}
-              />
-            ))}
-          </div>
+          {/* Um campo só, e não quatro: `type="text"` sem `inputMode`
+              restrito, porque o teclado numérico do celular esconde a
+              barra de espaço — e aqui o espaço é o separador. */}
+          <CampoTexto
+            rotulo="Medidas (mm)"
+            type="text"
+            placeholder="Ex.: 35 25 2 1"
+            value={medidasTexto}
+            onChange={(e) => setMedidasTexto(e.target.value)}
+          />
 
           <p className="text-texto-suave mt-2 text-sm">
-            Informe as medidas da seção que forem fáceis de tirar — não o
-            comprimento da peça. A ordem não importa, e não precisa preencher as
-            quatro.
+            Digite as medidas separadas por espaço — por exemplo,{' '}
+            <strong>35 25 2 1</strong> para uma peça com essas quatro medidas
+            de seção (não o comprimento da peça). A ordem não importa, e não
+            precisa informar todas — mesmo uma medida já ajuda a estreitar a
+            lista.
           </p>
         </section>
 

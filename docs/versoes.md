@@ -64,6 +64,433 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.4 — 25/08/2026
+
+**Botão "Já confirmei" na tela de bloqueio de e-mail.**
+
+Confirmar acontece numa aba ou sessão diferente (o e-mail abre no celular,
+por exemplo) — sem avisar a aba onde a pessoa ficou esperando. Agora tem um
+botão que só recarrega o perfil; se já confirmou, a tela de bloqueio
+libera sozinha, sem precisar sair e entrar de novo.
+
+---
+
+## 1.7.3 — 25/08/2026
+
+**Correção: confirmar o e-mail não liberava o acesso.**
+
+A confirmação gravava certinho no banco, mas a tela de bloqueio continuava
+olhando o perfil que já estava carregado na memória do navegador — sem
+recarregar, o campo `email_confirmado_em` seguia parecendo nulo mesmo
+depois de confirmado. A página de confirmação agora atualiza o perfil em
+memória assim que confirma.
+
+---
+
+## 1.7.2 — 25/08/2026
+
+**Confirmação de e-mail passa a fazer sentido de verdade.**
+
+Antes, a confirmação existia mas não travava nada — todo mundo tinha acesso
+assim que terminava o cadastro, confirmado ou não. Agora:
+
+- Clicar no **link do e-mail de convite** já confirma o e-mail na hora (é a
+  prova de que a pessoa tem acesso àquela caixa de entrada) — o link passou
+  a ir direto para "Primeiro acesso", com e-mail preenchido.
+- Quem chega **sem esse link** (endereço digitado na mão, ou pela tela
+  "Criar minha empresa") fica com o acesso **bloqueado** até confirmar pelo
+  e-mail separado, com um botão para reenviar se precisar.
+- Quem já tinha conta antes desta mudança não é afetado — foi perdoado
+  automaticamente na migração, já que nunca recebeu e-mail nenhum para
+  confirmar.
+
+Precisa das migrações `20260825900000_expiracao_convite.sql` (se ainda não
+tiver rodado) e `20260826100000_confirmacao_via_convite.sql`, e do deploy
+da função `enviar-email`.
+
+---
+
+## 1.7.1 — 25/08/2026
+
+**Prazo do convite: de 7 dias para 24 horas.** O e-mail agora mostra data e
+hora exatas (fuso de Brasília), não só a data — com um prazo tão curto, só
+a data seria vaga demais.
+
+**Máscara de CPF/CNPJ e telefone em "Dados da empresa".** Os campos CNPJ,
+Telefone e WhatsApp usavam texto livre; agora usam o mesmo componente
+mascarado do resto do app (formata sozinho, avisa se o número não existe,
+sem travar o campo).
+
+---
+
+## 1.7.0 — 25/08/2026
+
+**Ajustes no e-mail de convite: texto, botão, prazo de validade.**
+
+Corrigido um "=20" solto no meio do texto (sobra de linha em branco na
+montagem do HTML). Título centralizado. Texto e botão revisados ("Abrir o
+app RePerfil") e explicando o passo a passo depois de abrir o app (tocar em
+"Primeiro acesso", usar o mesmo e-mail para criar a senha, e que dá pra
+cadastrar um apelido depois). O convite agora tem prazo real — 7 dias — e
+o e-mail informa a data exata; passado esse prazo, é como se não houvesse
+convite, e o administrador precisa reenviar. Precisa da migração
+`20260825900000_expiracao_convite.sql`.
+
+---
+
+## 1.6.99 — 25/08/2026
+
+**"Acrescentar corte" virou "Acrescentar material" na lista técnica.**
+
+**Serralheiro passa a cadastrar estoque por padrão.**
+
+Está no depósito com a peça em mãos — esperar um administrador ou auxiliar
+cadastrar por ele só atrasava o trabalho. Vale para convites novos a partir
+de agora; quem já tem conta não muda sozinho. Precisa da migração
+`20260825800000_serralheiro_cadastra_estoque.sql`.
+
+---
+
+## 1.6.98 — 25/08/2026
+
+**Correção definitiva: e-mails chegavam com o layout todo quebrado.**
+
+Não era a quebra de linha (`encodeLB`) — era o travessão e o nome da
+empresa no Assunto, que obrigam uma codificação (RFC 2047) que o denomailer
+faz errado em textos longos, corrompendo o e-mail inteiro. O Assunto agora
+nunca leva caractere fora do ASCII; o corpo do e-mail continua acentuado
+normalmente.
+
+**Reenviar convite agora confirma de verdade que o e-mail saiu.**
+
+O botão de reenviar mostrava sucesso assim que o convite era regravado,
+mas o envio em si é assíncrono (Database Webhook) — não confirmava nada de
+verdade. Agora a Edge Function grava quando o envio termina
+(`email_enviado_em`), e a tela espera por essa confirmação antes de dizer
+"enviado com sucesso". Precisa da migração
+`20260825700000_confirmacao_envio_convite.sql`.
+
+---
+
+## 1.6.97 — 25/08/2026
+
+**Reenviar (ou corrigir) convite pendente. Tela renomeada para "Equipe".**
+
+Convites aguardando ganham um botão de reenviar, que abre um formulário
+pré-preenchido — dá para corrigir nome, e-mail, telefone ou cargo antes de
+mandar de novo, útil quando o colaborador não viu o e-mail ou o endereço
+estava errado. Reenviar apaga o convite antigo e cria outro (é o que
+dispara o e-mail de novo), tudo numa transação só. A tela "Colaboradores"
+passou a se chamar "Equipe" em todo o app. Precisa da migração
+`20260825600000_reenviar_convite.sql`.
+
+---
+
+## 1.6.96 — 25/08/2026
+
+**Correção: e-mail de convite chegava todo desconfigurado.**
+
+O Gmail mostrava o e-mail inteiro (cabeçalhos e HTML) como texto cru, sem
+formatação — bug conhecido do denomailer com quebra de linha, corrigido com
+a opção `debug.encodeLB`.
+
+---
+
+## 1.6.95 — 25/08/2026
+
+**Tradução: "Auth session missing" ao redefinir senha.**
+
+Faltava essa regra em `traduzirErro()` — a mensagem crua do Supabase
+aparecia em inglês quando o link de redefinição "queimava" antes da hora.
+
+---
+
+## 1.6.94 — 25/08/2026
+
+**Correção: exclusão de conta falhava com "Failed to send a request".**
+
+Faltava CORS na Edge Function `excluir-conta` — ela é chamada direto pelo
+navegador (diferente da `enviar-email`, chamada só de servidor a servidor),
+e sem os cabeçalhos certos o navegador bloqueia a chamada antes de ela
+chegar à função.
+
+---
+
+## 1.6.93 — 25/08/2026
+
+**Excluir a própria conta agora libera o e-mail de verdade.**
+
+A exclusão apagava os dados do perfil, mas o e-mail de login continuava
+"preso" no Supabase Auth — um novo convite para o mesmo endereço nunca
+completava o cadastro. Passou a usar uma Edge Function própria
+(`excluir-conta`), que também libera o login, exatamente o que o aviso na
+tela já promete: "peça um novo convite". Precisa da migração
+`20260825500000_excluir_conta_libera_email.sql` e do deploy da nova função.
+
+---
+
+## 1.6.92 — 25/08/2026
+
+**E-mail de convite e de confirmação de cadastro.**
+
+Duas mensagens novas, mandadas por uma Edge Function própria via Gmail (sem
+depender do envio compartilhado do Supabase): ao convidar um colaborador,
+ele recebe um e-mail avisando qual empresa (cadastrada no sistema) o
+convidou, com o link do RePerfil; e ao criar a conta, recebe um link para
+confirmar que o e-mail usado é dele mesmo (`/confirmar-email`). Precisa da
+migração `20260825400000_confirmacao_email.sql` e da configuração manual no
+painel do Supabase (Edge Function + Database Webhooks) — ver instruções
+enviadas no chat.
+
+---
+
+## 1.6.91 — 25/08/2026
+
+**"Empresa cadastrada" em negrito na tela de entrar.**
+
+---
+
+## 1.6.90 — 25/08/2026
+
+**Aviso de "Primeiro acesso" ganhou destaque.**
+
+A mensagem que explica quem pode criar acesso (só quem foi convidado)
+subiu para logo abaixo do título, dentro de um destaque de atenção — mesma
+cor e ícone da "Zona de perigo" em Minha conta — em vez de um texto
+discreto no rodapé, fácil de passar batido.
+
+---
+
+## 1.6.89 — 25/08/2026
+
+**Ajuste de texto na tela de entrar.**
+
+"Foi convidado e ainda não tem senha?" agora deixa claro que é convite de uma
+empresa já cadastrada. E "Criar minha empresa" virou "Cadastrar minha
+empresa", para combinar com o nome da tela que ele abre.
+
+---
+
+## 1.6.88 — 25/08/2026
+
+**Lista de linhas em Cadastrar estoque agora preenche a tela, como em Estoque.**
+
+Tinha uma altura fixa de 7 itens, decisão de quando a barra inferior era
+mais baixa — sobrava um vão vazio embaixo em tela alta. Agora usa a mesma
+configuração da lista de Estoque (`flex-1`, preenche o espaço disponível).
+
+---
+
+## 1.6.87 — 25/08/2026
+
+**Corrigido: o rodapé de licença cortava o fim das listas.**
+
+A barra de navegação ficou mais alta com a linha "Licenciado para", mas
+`PaginaLista` (usado em Produtos, Reservas e mais doze telas) e Cadastrar
+estoque ainda calculavam o espaço reservado para a barra com a altura
+antiga — o fim do card/lista ficava escondido atrás da linha de licença.
+Os três lugares que precisam concordar nesse número (o `main` da casca, o
+`PaginaLista` e o Cadastrar estoque) foram atualizados juntos.
+
+---
+
+## 1.6.86 — 25/08/2026
+
+**Linha de licença: uma linha só, com reticências, e um traço embaixo.**
+
+No celular, "Licenciado para" agora corta com "…" em vez de quebrar em
+duas linhas, e ganhou um traço por baixo separando o texto dos ícones —
+igual ao que já existia por cima.
+
+---
+
+## 1.6.85 — 25/08/2026
+
+**Rodapé de licença, e código de rastreio para conta excluída no histórico.**
+
+Uma linha pequena, discreta, "Licenciado para: {nome da empresa}" —
+razão social se houver, senão o nome fantasia — antes da barra de ícones
+no celular e no fim do menu lateral no computador. Visível em toda tela
+autenticada, sem chamar atenção.
+
+E respondendo a uma dúvida legítima: como saber quem fez uma movimentação
+antiga se a conta foi excluída? O id (chave primária) nunca é apagado, só
+os dados pessoais — e agora, quando o autor de uma movimentação está com
+conta excluída, o histórico mostra "Conta excluída (cód. XXXXXXXX)" em vez
+de só "Conta excluída". Esse código está embutido no e-mail que a exclusão
+grava (`conta-excluida-xxxxxxxx@reperfil.local`) e pode ser buscado direto
+no painel do Supabase — e o e-mail ORIGINAL de login, esse nunca é
+apagado, continua em Authentication → Users.
+
+Criado também `supabase/MIGRACOES-APLICADAS.md`: um checklist simples de
+quais migrações já foram coladas no Supabase, para não depender só da
+memória de uma conversa para saber o que falta aplicar.
+
+---
+
+## 1.6.84 — 25/08/2026
+
+**Minha conta: cada um edita e pode excluir os próprios dados.**
+
+Novo link "Minha conta" em Mais, visível para todo mundo — antes só quem
+administra colaboradores enxergava esse menu, e o dono da conta não tinha
+caminho até a própria ficha (editar nome, telefone, foto, nickname já
+funcionava, faltava chegar lá).
+
+Também novo: "Excluir minha conta", na própria ficha, só para si mesmo —
+apaga nome, telefone, CPF, foto e nickname, e desliga o acesso. Digite
+EXCLUIR para confirmar. O histórico de estoque que a pessoa já mexeu
+continua existindo, sem o nome dela. Bloqueado se for o único
+administrador ativo da empresa — promova outra pessoa antes de sair.
+
+O login em si (e-mail no Supabase Auth) não é apagado — exigiria a chave
+de administração do projeto, que não pode viajar dentro do aplicativo. Sem
+acesso liberado, ele não abre mais nada.
+
+---
+
+## 1.6.83 — 25/08/2026
+
+**Busca dentro de uma linha fica dentro dela — em Cadastrar estoque e em Estoque.**
+
+Antes, digitar algo na busca escapava da linha aberta e vasculhava todos os
+perfis de novo. Agora, se você abriu "Suprema", a busca continua dentro de
+"Suprema" — para procurar em tudo, basta não abrir nenhuma linha (ou tocar
+"Ver todos os perfis"). A faixa que mostra onde você está e o botão Voltar
+também continuam à mostra enquanto busca, em vez de sumir.
+
+De quebra, corrigido: a busca em Estoque não reconhecia medida nenhuma —
+digitar "35 25" não filtrava por seção. Agora usa a mesma regra do
+catálogo e da busca de sobras: código sem hífen, e medidas em qualquer
+ordem.
+
+---
+
+## 1.6.82 — 25/08/2026
+
+**Identificar perfil: um campo só para as medidas, em vez de quatro.**
+
+Digite as medidas separadas por espaço — "35 25 2 1", por exemplo — em vez
+de pular entre quatro caixinhas. Aceita também "x" ou "×" como separador
+("35x25"), do jeito que a medida costuma vir escrita em desenho. A regra
+de sempre continua: a ordem não importa e não precisa informar todas.
+
+---
+
+## 1.6.81 — 25/08/2026
+
+**"Criar minha empresa" agora exige CNPJ/CPF, telefone e e-mail válidos.**
+
+Além do nome da empresa e do seu nome (já obrigatórios), a tela passa a
+exigir CNPJ ou CPF (com máscara e conferência do dígito verificador),
+telefone de contato (com máscara e DDD conferido) e e-mail num formato
+válido — os três bloqueiam o cadastro se estiverem errados ou vazios,
+diferente do resto do app, onde esses campos são só um aviso. CNPJ/CPF e
+telefone já ficam salvos no cadastro da empresa.
+
+---
+
+## 1.6.80 — 25/08/2026
+
+**Empresa nova cria o próprio acesso, sem depender do desenvolvedor.**
+
+Nova tela "Criar minha empresa" (linkada de Entrar e de Primeiro acesso):
+nome da empresa, seu nome, e-mail e senha — cria a organização e já entra
+como administrador, na hora. Reaproveita o mesmo gatilho que já protegia o
+cadastro por convite; sem os dados certos vindos dessa tela, o cadastro
+continua recusado exatamente como antes. Isolamento entre empresas não
+muda: essa porta só cria organização nova, nunca entra numa existente.
+
+---
+
+## 1.6.79 — 25/08/2026
+
+**Links para Sobre, Termos e Privacidade na tela inicial.**
+
+A marca do RePerfil na tela inicial agora é um link para "Sobre". Embaixo
+do selo de versão, uma linha com Sobre, Termos de uso e Política de
+privacidade — sempre à mão, sem precisar entrar em Mais.
+
+---
+
+## 1.6.78 — 25/08/2026
+
+**Página "Sobre" e documentos legais (termos de uso, política de privacidade).**
+
+Nova tela "Sobre" (Mais → Sobre): quem desenvolve, contato (e-mail e
+WhatsApp), local, um campo para enviar a logo da empresa desenvolvedora e o
+texto sobre o propósito do app. Acessível mesmo sem login — útil para quem
+avalia o app antes de pedir acesso, e para a revisão da Play Store.
+
+Junto, rascunhos de Termos de Uso e Política de Privacidade, também
+públicos, linkados da tela de primeiro acesso. **Ainda não são documentos
+definitivos** — precisam de revisão de um advogado antes da publicação,
+principalmente pela LGPD (o sistema guarda CPF e foto de colaborador).
+
+---
+
+## 1.6.77 — 24/08/2026
+
+**"Estoque por perfil" em Relatórios agora abre por linha, como o resto do app.**
+
+Em vez de despejar todos os perfis de uma vez, a lista mostra as linhas
+primeiro — cada uma com o total de metros e peças — e abre os perfis dela ao
+tocar. Um link "Ver todos os perfis" no fim continua levando à lista
+completa, para quem quiser ver tudo de uma vez.
+
+---
+
+## 1.6.76 — 24/08/2026
+
+**Ajustes no inventário: desenho técnico na contagem, cancelados escondidos.**
+
+Na tela de contagem, itens de perfil agora mostram o desenho técnico (toque
+para ampliar) e as medidas da seção, como já acontece nas outras telas de
+perfil. Na lista de inventários, sessões canceladas saem da vista por
+padrão — um link "Mostrar cancelados" as traz de volta quando precisar.
+
+---
+
+## 1.6.75 — 24/08/2026
+
+**Estoque de acessórios e inventário de perfis e acessórios.**
+
+Novo estoque para dobradiça, roldana, puxador, borracha e afins — catálogo
+próprio (Mais → Catálogo de acessórios) e estoque com cor/acabamento
+opcional (Mais → Estoque de acessórios). A baixa do dia a dia é direta
+("Usar" — digita a quantidade, confirma), sem passar por reserva: acessório
+não tem corte para calcular, então esse fluxo seria complexidade à toa.
+
+Novo módulo de Inventário (Mais → Inventário): escolhe contar perfis ou
+acessórios, filtra por linha/categoria, localização, cor, condição e (nos
+perfis) tamanho de barra — mesmo espírito dos filtros de Relatórios, mas
+aqui cada lote entra individualmente para conferir. Contar NÃO mexe no
+estoque: um botão "Confirmar" para quando bate, campos para digitar um
+valor novo quando não bate, e só a opção "Aplicar" — por item ou de uma vez
+— grava a diferença de volta. Também gera uma folha para imprimir e contar
+na prancheta, para quem prefere não usar o celular no depósito.
+
+---
+
+## 1.6.74 — 24/08/2026
+
+**Botão para promover colaborador a administrador, e login por nickname.**
+
+Na ficha de um colaborador, um botão novo "Tornar admin" (com confirmação)
+promove diretamente — antes só dava para achar isso trocando o "Cargo" dentro
+de Editar, que ninguém achava. O seletor de cargo continua existindo, para as
+outras trocas.
+
+Login agora aceita e-mail OU nickname — cada colaborador escolhe o seu em
+Editar (ou no primeiro acesso, tela "Falta pouco"). O nickname é único por
+empresa, não no sistema inteiro; se o mesmo nickname existir em mais de uma
+empresa, a tela de entrada pergunta qual delas antes de conferir a senha.
+
+Corrigido também: a tela de criar senha nova exigia 8 caracteres, enquanto o
+primeiro acesso exigia 6 — as duas passam a exigir 6, o mínimo combinado.
+
+---
+
 ## 1.6.73 — 24/08/2026
 
 **Corrigido: tela "Falta pouco" travava depois de concluir o cadastro.**

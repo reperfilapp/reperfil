@@ -4,8 +4,13 @@ import { supabase, traduzirErro } from '@/lib/supabase'
 import { Botao } from '@/componentes/ui/Botao'
 import { CampoSenha } from '@/componentes/ui/CampoSenha'
 
-/** Mínimo exigido pelo Supabase; abaixo disso ele recusa. */
-const TAMANHO_MINIMO_SENHA = 8
+/**
+ * Mesmo mínimo do primeiro acesso (`PrimeiroAcesso.tsx`) — aqui estava em 8,
+ * divergindo de lá. Precisa bater com o "Minimum password length" do painel
+ * do Supabase (Authentication → Providers → Email); mudar só aqui não muda o
+ * que o servidor aceita.
+ */
+const TAMANHO_MINIMO_SENHA = 6
 
 /**
  * Tela alcançada pelo link enviado por e-mail. O Supabase já trocou o código

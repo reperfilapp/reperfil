@@ -260,14 +260,15 @@ export default function CadastrarSobra() {
         // escolher o perfil, a tela volta ao fluxo normal: tem formulário
         // demais para caber numa tela só, e ela precisa rolar.
         //
-        // `-mb-24` anula o `pb-24` que o `main` reserva para a barra de
-        // navegação: aqui a altura já é medida até ela, e somar os dois
-        // empurrava 32px para fora da tela — a página rolava numa tela que
-        // não deveria rolar, e a lista perdia justamente o espaço do último
-        // item. `py-4` no lugar de `py-6` devolve os 16px que faltavam para
-        // sete linhas inteiras caberem.
+        // `-mb-[5.5rem]` anula o `pb-[5.5rem]` que o `main` reserva para a
+        // barra de navegação (ver o comentário em `PaginaLista.tsx` sobre
+        // de onde vêm esses 5,5rem): aqui a altura já é medida até ela, e
+        // somar os dois empurrava conteúdo para fora da tela — a página
+        // rolava numa tela que não deveria rolar, e a lista perdia
+        // justamente o espaço do último item. `py-4` no lugar de `py-6`
+        // devolve o respiro que faltaria para sete linhas inteiras caberem.
         !modelo &&
-          '-mb-24 flex h-[calc(100dvh-4rem)] flex-col py-4 md:mb-0 md:h-auto md:py-6',
+          '-mb-[5.5rem] flex h-[calc(100dvh-5.5rem)] flex-col py-4 md:mb-0 md:h-auto md:py-6',
       )}
     >
       <header className="mb-6 flex shrink-0 items-center gap-3">

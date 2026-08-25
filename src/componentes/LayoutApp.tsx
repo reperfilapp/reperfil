@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { MarcaRePerfil } from './MarcaRePerfil'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
+import { useOrganizacao } from '@/dados/organizacao'
 import { APLICACAO } from '@/config/aplicacao'
 import { cn } from '@/lib/utilitarios'
 
@@ -38,6 +39,12 @@ const ROTA_DESTACADA = '/cadastrar'
 
 export function LayoutApp() {
   const { perfil } = useAutenticacao()
+  const { data: org } = useOrganizacao()
+  // Razão social é o "nome completo" de quem licenciou o uso — nome
+  // fantasia (a marca) é o que já aparece em destaque no resto do app.
+  // Falta uma das duas, usa a outra: empresa recém-criada às vezes só tem
+  // o nome fantasia preenchido.
+  const nomeLicenciado = org?.razao_social?.trim() || org?.nome_fantasia
 
   return (
     <div className="min-h-dvh md:flex">
@@ -72,51 +79,74 @@ export function LayoutApp() {
             </NavLink>
           ))}
         </nav>
+
+        {/* `mt-auto` empurra para o fim da barra lateral fixa — mesmo
+            texto de licença que aparece no celular, ver mais abaixo. */}
+        {nomeLicenciado && (
+          <p className="text-texto-suave mt-auto pt-4 text-center text-[0.65rem] leading-tight">
+            Licenciado para: {nomeLicenciado}
+          </p>
+        )}
       </aside>
 
       {/* Conteúdo. O espaço embaixo evita que a navegação inferior cubra
-          o fim da página no celular. */}
-      <main className="flex-1 pb-24 md:pb-0">
+          o fim da página no celular — 5,5rem, não os 4rem de antes: a barra
+          cresceu com a linha "Licenciado para" por cima dos ícones. Mesmo
+          número usado em `PaginaLista.tsx` e `CadastrarSobra.tsx`, que
+          cancelam este `pb` para medir a própria altura até a barra —
+          mudou aqui, muda nos três. */}
+      <main className="flex-1 pb-[5.5rem] md:pb-0">
         <Outlet />
       </main>
 
-      {/* Navegação inferior — apenas no celular */}
-      <nav
-        aria-label="Navegação principal"
-        className="border-borda bg-superficie fixed inset-x-0 bottom-0 z-10 grid grid-cols-7 border-t md:hidden"
-      >
-        {ITENS_NAVEGACAO.map(({ para, rotulo, Icone, exato }) => {
-          const destacado = para === ROTA_DESTACADA
+      {/* Rodapé inferior — apenas no celular. A linha de licença fica
+          FORA do grid dos ícones (que é `grid-cols-7`): um filho a mais
+          ali dentro quebraria a grade, por isso os dois vivem em blocos
+          separados dentro do mesmo contêiner fixo. */}
+      <div className="border-borda bg-superficie fixed inset-x-0 bottom-0 z-10 border-t md:hidden">
+        {nomeLicenciado && (
+          <p className="text-texto-suave border-borda truncate border-b px-2 py-1 text-center text-[0.6rem] leading-tight">
+            Licenciado para: {nomeLicenciado}
+          </p>
+        )}
 
-          return (
-            <NavLink
-              key={para}
-              to={para}
-              end={exato}
-              className={({ isActive }) =>
-                cn(
-                  'flex min-h-16 flex-col items-center justify-start gap-0.5 px-0.5 pt-2.5 pb-1 text-center text-[0.65rem] leading-tight sm:text-xs',
-                  destacado
-                    ? 'text-acao-600'
-                    : isActive
+        <nav
+          aria-label="Navegação principal"
+          className="grid grid-cols-7"
+        >
+          {ITENS_NAVEGACAO.map(({ para, rotulo, Icone, exato }) => {
+            const destacado = para === ROTA_DESTACADA
+
+            return (
+              <NavLink
+                key={para}
+                to={para}
+                end={exato}
+                className={({ isActive }) =>
+                  cn(
+                    'flex min-h-16 flex-col items-center justify-start gap-0.5 px-0.5 pt-2.5 pb-1 text-center text-[0.65rem] leading-tight sm:text-xs',
+                    destacado
                       ? 'text-acao-600'
-                      : 'text-texto-suave',
-                )
-              }
-            >
-              <Icone
-                aria-hidden="true"
-                className={cn(
-                  destacado
-                    ? 'bg-acao-600 size-9 rounded-full p-1.5 text-white'
-                    : 'size-6',
-                )}
-              />
-              {rotulo}
-            </NavLink>
-          )
-        })}
-      </nav>
+                      : isActive
+                        ? 'text-acao-600'
+                        : 'text-texto-suave',
+                  )
+                }
+              >
+                <Icone
+                  aria-hidden="true"
+                  className={cn(
+                    destacado
+                      ? 'bg-acao-600 size-9 rounded-full p-1.5 text-white'
+                      : 'size-6',
+                  )}
+                />
+                {rotulo}
+              </NavLink>
+            )
+          })}
+        </nav>
+      </div>
     </div>
   )
 }

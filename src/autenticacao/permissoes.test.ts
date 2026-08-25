@@ -18,6 +18,7 @@ function perfilCom(
     organizacao_id: '00000000-0000-0000-0000-000000000002',
     nome: 'Fulano',
     email: 'fulano@exemplo.invalido',
+    apelido: null,
     telefone: null,
     cpf: null,
     foto_url: null,
@@ -26,6 +27,7 @@ function perfilCom(
     ...permissoesIniciais(papel),
     ativo: true,
     criado_em: '2026-08-15T12:00:00Z',
+    email_confirmado_em: null,
     ...ajustes,
   }
 }
@@ -35,10 +37,8 @@ describe('podeMovimentarEstoque', () => {
     expect(podeMovimentarEstoque(perfilCom('administrador'))).toBe(true)
     expect(podeMovimentarEstoque(perfilCom('auxiliar'))).toBe(true)
     expect(podeMovimentarEstoque(perfilCom('gerente'))).toBe(true)
-  })
-
-  it('nega serralheiro, que consulta e reserva mas não cadastra', () => {
-    expect(podeMovimentarEstoque(perfilCom('serralheiro'))).toBe(false)
+    // Está no depósito com a peça em mãos — cadastra estoque por padrão.
+    expect(podeMovimentarEstoque(perfilCom('serralheiro'))).toBe(true)
   })
 
   it('nega quem não tem perfil carregado', () => {

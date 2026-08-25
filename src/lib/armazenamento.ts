@@ -160,6 +160,33 @@ export async function enviarLogoOrganizacao(
 }
 
 /**
+ * Logo da empresa desenvolvedora, para a página "Sobre".
+ *
+ * Mesmo balde e mesmas políticas do logo da organização — só o nome do
+ * arquivo muda, para os dois conviverem na mesma pasta sem se sobrescrever.
+ */
+export async function enviarLogoDesenvolvedor(
+  arquivo: File,
+): Promise<ResultadoEnvio> {
+  const organizacaoId = await organizacaoAtual()
+  const comprimido = await comprimirImagem(arquivo, COMPRESSAO_FOTO)
+  const caminho = `${organizacaoId}/logo-desenvolvedor.jpg`
+
+  const { error } = await supabase.storage
+    .from(BALDE_LOGOS)
+    .upload(caminho, comprimido, {
+      contentType: 'image/jpeg',
+      upsert: true,
+    })
+
+  if (error) {
+    throw new Error(`Falha ao enviar o logo: ${error.message}`)
+  }
+
+  return { caminho, tamanhoBytes: comprimido.size }
+}
+
+/**
  * Desenho do produto, com a compressão dos desenhos técnicos.
  *
  * Mais resolução que a foto: aqui há cota para ler, e quem lê está com a

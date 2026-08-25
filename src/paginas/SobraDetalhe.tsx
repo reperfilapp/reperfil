@@ -33,6 +33,7 @@ import {
   interpretarMedidaDigitada,
 } from '@/dominio/medidas'
 import { cortesQueUmLoteComporta } from '@/dominio/pesquisa'
+import { nomeParaHistorico } from '@/dominio/contaExcluida'
 import { useConfiguracoes, paraConfiguracaoCorte } from '@/dados/configuracoes'
 import { CONFIGURACAO_CORTE_PADRAO } from '@/dominio/corte'
 import {
@@ -501,7 +502,9 @@ export default function SobraDetalhe() {
                   {m.comprimento_mm
                     ? ` · ${formatarComprimento(m.comprimento_mm)}`
                     : ''}
-                  {m.usuario?.nome ? ` · ${m.usuario.nome}` : ''}
+                  {nomeParaHistorico(m.usuario)
+                    ? ` · ${nomeParaHistorico(m.usuario)}`
+                    : ''}
                 </p>
 
                 {m.justificativa && (
