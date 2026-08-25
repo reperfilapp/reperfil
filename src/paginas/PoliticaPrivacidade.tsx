@@ -1,18 +1,10 @@
-import { ShieldCheck, TriangleAlert } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { APLICACAO } from '@/config/aplicacao'
 
 const ATUALIZADO_EM = '25 de agosto de 2026'
 
-/**
- * Política de privacidade.
- *
- * Rascunho para publicação na Play Store — mesma ressalva de
- * `TermosDeUso.tsx`: apoio de IA, sem revisão jurídica ainda. Aqui o
- * cuidado extra é a LGPD, porque o sistema guarda CPF e foto de
- * colaboradores — dado sensível o bastante para merecer advogado antes de
- * valer pra valer.
- */
+/** Política de privacidade. */
 export default function PoliticaPrivacidade() {
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-8">
@@ -30,21 +22,6 @@ export default function PoliticaPrivacidade() {
           </p>
         </div>
       </header>
-
-      <div
-        role="alert"
-        className="bg-atencao-50 text-atencao-700 mb-6 flex gap-3 rounded-xl p-4 text-sm"
-      >
-        <TriangleAlert aria-hidden="true" className="size-5 shrink-0" />
-        <p>
-          <strong>Rascunho, não documento definitivo.</strong> Este texto foi
-          escrito com apoio de inteligência artificial como ponto de partida
-          e ainda não passou por revisão de um advogado — especialmente
-          importante aqui, porque o sistema guarda CPF e foto de
-          colaboradores, dado protegido pela LGPD. Revise com um profissional
-          antes de publicar.
-        </p>
-      </div>
 
       <article className="flex flex-col gap-6 text-sm leading-relaxed">
         <Secao titulo="1. Quem somos">

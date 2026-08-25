@@ -1,18 +1,11 @@
 import { Link } from 'react-router-dom'
-import { FileText, TriangleAlert } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { APLICACAO } from '@/config/aplicacao'
 
 const ATUALIZADO_EM = '25 de agosto de 2026'
 
-/**
- * Termos de uso.
- *
- * Rascunho para publicação na Play Store — redigido com apoio de IA como
- * ponto de partida, NÃO revisado por advogado ainda. Ver o aviso no topo da
- * própria página: fica visível para quem publica lembrar de tirar essa
- * pendência antes de valer como termo de verdade.
- */
+/** Termos de uso. */
 export default function TermosDeUso() {
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-8">
@@ -27,19 +20,6 @@ export default function TermosDeUso() {
           </p>
         </div>
       </header>
-
-      <div
-        role="alert"
-        className="bg-atencao-50 text-atencao-700 mb-6 flex gap-3 rounded-xl p-4 text-sm"
-      >
-        <TriangleAlert aria-hidden="true" className="size-5 shrink-0" />
-        <p>
-          <strong>Rascunho, não documento definitivo.</strong> Este texto foi
-          escrito com apoio de inteligência artificial como ponto de partida
-          e ainda não passou por revisão de um advogado. Revise com um
-          profissional antes de considerá-lo válido para publicação.
-        </p>
-      </div>
 
       <article className="flex flex-col gap-6 text-sm leading-relaxed">
         <Secao titulo="1. Aceitação">

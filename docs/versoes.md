@@ -64,6 +64,12 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.6 — 25/08/2026
+
+**Removido o aviso de rascunho de Termos de uso e Política de privacidade.**
+
+---
+
 ## 1.7.5 — 25/08/2026
 
 **Ordem corrigida: completar cadastro (foto/nickname) vem antes da
