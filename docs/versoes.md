@@ -64,6 +64,15 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.5 — 25/08/2026
+
+**Ordem corrigida: completar cadastro (foto/nickname) vem antes da
+confirmação de e-mail.** Estava ao contrário — quem precisava das duas
+coisas caía primeiro no bloqueio de e-mail, sem chance de terminar o
+cadastro.
+
+---
+
 ## 1.7.4 — 25/08/2026
 
 **Botão "Já confirmei" na tela de bloqueio de e-mail.**

@@ -76,6 +76,25 @@ export function RotaProtegida({
     )
   }
 
+  // Cadastro sem foto não entra. A regra vale para quem já usava o sistema
+  // antes dela existir, e não só para quem chega agora: a foto serve para
+  // identificar quem mexeu em cada peça, e um histórico onde metade das
+  // pessoas tem rosto e a outra metade não responde à pergunta pela metade.
+  //
+  // Vem ANTES da confirmação de e-mail de propósito: a pessoa acabou de
+  // criar a senha, é natural terminar o cadastro (foto, nickname) antes de
+  // qualquer outra coisa — só depois disso, se ainda faltar, é que aparece
+  // o bloqueio de confirmação.
+  //
+  // `=== null` de propósito, e não `== null`: antes da migração a coluna nem
+  // vem do banco e o campo chega AUSENTE. Ausente quer dizer "este sistema
+  // ainda não pede foto"; nulo quer dizer "pede, e esta pessoa não tem". Só
+  // o segundo caso barra — senão a empresa inteira ficaria trancada no
+  // instante em que o código subisse, antes de a migração ser aplicada.
+  if (perfil.foto_url === null && localizacao.pathname !== CAMINHO_CADASTRO) {
+    return <Navigate to={CAMINHO_CADASTRO} replace />
+  }
+
   // E-mail não confirmado não entra — só chega aqui quem se cadastrou SEM
   // passar pelo link do e-mail de convite (endereço digitado na mão, ou
   // "Criar minha empresa"). Quem veio do link já foi confirmado na hora,
@@ -89,20 +108,6 @@ export function RotaProtegida({
   // a outra, sem nunca ter recebido e-mail nenhum para confirmar.
   if (perfil.email_confirmado_em === null) {
     return <TelaConfirmarEmail email={perfil.email} sair={sair} />
-  }
-
-  // Cadastro sem foto não entra. A regra vale para quem já usava o sistema
-  // antes dela existir, e não só para quem chega agora: a foto serve para
-  // identificar quem mexeu em cada peça, e um histórico onde metade das
-  // pessoas tem rosto e a outra metade não responde à pergunta pela metade.
-  //
-  // `=== null` de propósito, e não `== null`: antes da migração a coluna nem
-  // vem do banco e o campo chega AUSENTE. Ausente quer dizer "este sistema
-  // ainda não pede foto"; nulo quer dizer "pede, e esta pessoa não tem". Só
-  // o segundo caso barra — senão a empresa inteira ficaria trancada no
-  // instante em que o código subisse, antes de a migração ser aplicada.
-  if (perfil.foto_url === null && localizacao.pathname !== CAMINHO_CADASTRO) {
-    return <Navigate to={CAMINHO_CADASTRO} replace />
   }
 
   if (papeisPermitidos && !papeisPermitidos.includes(perfil.papel)) {
