@@ -80,6 +80,9 @@ export interface Organizacao {
 
   logo_caminho: string | null
 
+  /** Só uma organização pode ser esta ao mesmo tempo — o catálogo central. */
+  eh_catalogo_central?: boolean
+
   ativo: boolean
   criado_em: string
   atualizado_em: string
@@ -163,8 +166,22 @@ export interface ModeloPerfil {
   preco_por_metro_centavos: number | null
   observacoes: string | null
   revisado: boolean
+  /** Quando a revisão (ou a mais recente delas) foi marcada. */
+  revisado_em?: string | null
+  /** Quem marcou a revisão (ou a mais recente delas). */
+  revisado_por?: string | null
   ativo: boolean
   criado_em: string
+  /**
+   * Rastreio do catálogo central — opcionais pelo mesmo motivo de sempre
+   * (coluna pode não existir ainda, se a migração não foi aplicada).
+   */
+  /** Só sobe em perfis da organização central, ao marcar uma NOVA revisão. */
+  revisao_catalogo?: number
+  /** Aponta pro perfil de origem no catálogo central, em perfis copiados de lá. */
+  origem_perfil_id?: string | null
+  /** A revisão central no momento da última cópia/atualização. */
+  origem_revisao_catalogo?: number | null
 }
 
 export interface Acabamento {

@@ -1,11 +1,15 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { Search, ZoomIn, ExternalLink, Pencil } from 'lucide-react'
+import { Search, ZoomIn, ExternalLink, Pencil, RefreshCw } from 'lucide-react'
 import {
   useModelosPerfil,
   useEditarModeloPerfil,
+  useMarcarRevisaoPerfil,
+  useSincronizarCatalogoCentral,
+  useRevisaoCentralAtual,
   type DadosModeloPerfil,
 } from '@/dados/modelosPerfil'
+import { useColaborador } from '@/dados/colaboradores'
 import { useDesenhosTecnicos } from '@/dados/desenhosTecnicos'
 import { useSobras } from '@/dados/sobras'
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
@@ -13,7 +17,10 @@ import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeGerenciarCadastros } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
 import { Modal } from '@/componentes/ui/Modal'
-import { FormularioModeloPerfil } from '@/componentes/perfil/FormularioModeloPerfil'
+import {
+  FormularioModeloPerfil,
+  ID_FORMULARIO_MODELO_PERFIL,
+} from '@/componentes/perfil/FormularioModeloPerfil'
 import type { ModeloPerfil } from '@/tipos/banco'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
@@ -23,6 +30,7 @@ import {
   formatarAreaSecao,
   formatarMedidasSecao,
 } from '@/dominio/secao'
+import { cn } from '@/lib/utilitarios'
 
 /**
  * Ficha do perfil: o que ele é, como é a seção, e quanto existe no depósito.
@@ -61,6 +69,46 @@ export default function PerfilDetalhe() {
   const [editando, setEditando] = useState(false)
   const [form, setForm] = useState<DadosModeloPerfil | null>(null)
   const [erroEdicao, setErroEdicao] = useState<string | null>(null)
+
+  // ── Revisão e sincronização com o catálogo central ─────────────────────
+  const modeloAtual = modelos?.find((m) => m.id === id)
+  const origemPerfilId = modeloAtual?.origem_perfil_id ?? null
+  const { data: revisaoCentralAtual } = useRevisaoCentralAtual(origemPerfilId)
+  const { data: revisor } = useColaborador(modeloAtual?.revisado_por ?? null)
+  const marcarRevisao = useMarcarRevisaoPerfil()
+  const sincronizar = useSincronizarCatalogoCentral()
+  const [mensagemCentral, setMensagemCentral] = useState<string | null>(null)
+  const [erroCentral, setErroCentral] = useState<string | null>(null)
+  const [detalheRevisaoAberto, setDetalheRevisaoAberto] = useState(false)
+
+  async function aoMarcarRevisao() {
+    if (!id) return
+    setErroCentral(null)
+    setMensagemCentral(null)
+
+    try {
+      await marcarRevisao.mutateAsync(id)
+      setMensagemCentral(
+        modeloAtual?.revisado
+          ? 'Nova revisão marcada — quem já copiou este perfil vai ver o aviso de atualização.'
+          : 'Perfil marcado como revisado.',
+      )
+    } catch (e) {
+      setErroCentral(e instanceof Error ? e.message : 'Não foi possível marcar a revisão.')
+    }
+  }
+
+  async function aoAtualizarDoCentral() {
+    setErroCentral(null)
+    setMensagemCentral(null)
+
+    try {
+      await sincronizar.mutateAsync()
+      setMensagemCentral('Perfil atualizado com os dados do catálogo central.')
+    } catch (e) {
+      setErroCentral(e instanceof Error ? e.message : 'Não foi possível atualizar.')
+    }
+  }
 
   const modelo = modelos?.find((m) => m.id === id)
 
@@ -139,13 +187,20 @@ export default function PerfilDetalhe() {
       altura_secao_mm: perfilAtual.altura_secao_mm ?? null,
       medida_3_secao_mm: perfilAtual.medida_3_secao_mm ?? null,
       medida_4_secao_mm: perfilAtual.medida_4_secao_mm ?? null,
-      revisado: perfilAtual.revisado ?? false,
     })
     setErroEdicao(null)
     setEditando(true)
   }
 
   const idDoPerfil = modelo.id
+
+  // Só compara quando as duas pontas existem: perfil veio de uma cópia
+  // (tem origem) e a leitura da revisão central já chegou.
+  const desatualizado =
+    modelo.origem_perfil_id != null &&
+    modelo.origem_revisao_catalogo != null &&
+    revisaoCentralAtual != null &&
+    revisaoCentralAtual > modelo.origem_revisao_catalogo
 
   async function salvarEdicao(evento: FormEvent) {
     evento.preventDefault()
@@ -168,20 +223,140 @@ export default function PerfilDetalhe() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <BotaoVoltar para={voltarPara} rotulo={rotuloVoltar} />
+      {/* Congelado no topo ao rolar: é o que orienta a pessoa a qualquer
+          altura da ficha — de onde voltar, se pode editar, e se o perfil já
+          foi conferido. O fundo próprio (`bg-fundo`, igual ao da página) e a
+          margem negativa cancelando o `px-5 py-6` do contêiner pai são o que
+          fazem a faixa "colar" sem deixar vão nem cortar a borda lateral. */}
+      <div className="bg-fundo sticky top-0 z-10 -mx-5 -mt-6 px-5 pt-6 pb-2">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <BotaoVoltar para={voltarPara} rotulo={rotuloVoltar} />
 
-        {/* Editar aqui, e não só no catálogo: quem chegou pela lista técnica
-            de um produto ou por uma sobra está justamente olhando o dado que
-            quer corrigir, e voltar ao catálogo para achá-lo de novo é
-            trabalho que a ficha pode poupar. */}
-        {podeEditar && (
-          <Botao variante="secundaria" onClick={() => abrirEdicao(modelo)}>
-            <Pencil aria-hidden="true" className="size-4" />
-            Editar
-          </Botao>
-        )}
+          {/* Editar aqui, e não só no catálogo: quem chegou pela lista técnica
+              de um produto ou por uma sobra está justamente olhando o dado que
+              quer corrigir, e voltar ao catálogo para achá-lo de novo é
+              trabalho que a ficha pode poupar. */}
+          {podeEditar && (
+            <Botao variante="secundaria" onClick={() => abrirEdicao(modelo)}>
+              <Pencil aria-hidden="true" className="size-4" />
+              Editar
+            </Botao>
+          )}
+        </div>
+
+        {/* Revisão: uma AÇÃO só, com o rótulo mudando conforme a situação —
+            antes eram dois lugares diferentes (o checkbox dentro de "Editar"
+            e o botão "Marcar nova revisão", só no catálogo central). "Nova
+            revisão" só aparece depois de uma primeira revisão já ter
+            acontecido; até lá, a mesma ação marca a primeira. Quem revisou e
+            quando fica escondido por padrão — é o dado que menos gente
+            precisa, então não paga espaço à toa. */}
+        <section
+          className={cn(
+            'rounded-lg px-3 py-1.5',
+            modelo.revisado ? 'bg-economia-50' : 'bg-atencao-50',
+          )}
+        >
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setDetalheRevisaoAberto((v) => !v)}
+              disabled={!modelo.revisado}
+              className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left disabled:cursor-default"
+            >
+              <span aria-hidden="true" className="shrink-0 text-2xl leading-none">
+                {modelo.revisado ? '✅' : '⚠️'}
+              </span>
+              <span className="flex min-w-0 flex-col">
+                <span
+                  className={cn(
+                    'truncate text-xs font-medium',
+                    modelo.revisado ? 'text-economia-700' : 'text-atencao-700',
+                  )}
+                >
+                  {modelo.revisado
+                    ? `Revisado${modelo.revisao_catalogo != null ? ` · rev. ${modelo.revisao_catalogo}` : ''}`
+                    : 'Ainda não revisado'}
+                </span>
+                <span
+                  className={cn(
+                    'truncate text-[0.7rem]',
+                    modelo.revisado
+                      ? 'text-economia-700/80'
+                      : 'text-atencao-700/80',
+                  )}
+                >
+                  {modelo.revisado
+                    ? 'Medidas e desenho conferidos'
+                    : 'Confirme medidas e desenho'}
+                </span>
+              </span>
+            </button>
+
+            {podeEditar && (
+              <Botao
+                variante="secundaria"
+                tamanho="pequeno"
+                onClick={() => void aoMarcarRevisao()}
+                carregando={marcarRevisao.isPending}
+                className="bg-economia-50 text-economia-700 hover:bg-economia-100 border-economia-500 shrink-0 border"
+              >
+                {modelo.revisado ? '✓ Nova revisão' : '✓ Marcar revisado'}
+              </Botao>
+            )}
+          </div>
+
+          {detalheRevisaoAberto && modelo.revisado && modelo.revisado_em && (
+            <p className="text-economia-700/80 mt-0.5 pb-1 pl-[1.375rem] text-xs">
+              {revisor && `${revisor.nome} · `}
+              {new Date(modelo.revisado_em).toLocaleDateString('pt-BR')} às{' '}
+              {new Date(modelo.revisado_em).toLocaleTimeString('pt-BR', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </p>
+          )}
+        </section>
       </div>
+
+      {/* Aparece só em perfil COPIADO do catálogo central, quando a
+          origem avançou de revisão desde a última cópia/atualização. */}
+      {desatualizado && (
+        <div className="border-destaque-borda bg-destaque text-destaque-texto mb-5 flex flex-col gap-2 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm">
+            Existe uma atualização deste perfil no catálogo central.
+          </p>
+          {podeEditar && (
+            <Botao
+              variante="secundaria"
+              onClick={() => void aoAtualizarDoCentral()}
+              carregando={sincronizar.isPending}
+              className="shrink-0"
+            >
+              <RefreshCw aria-hidden="true" className="size-4" />
+              Atualizar
+            </Botao>
+          )}
+        </div>
+      )}
+
+      {mensagemCentral && (
+        <p
+          role="status"
+          className="bg-superficie-2 mb-5 rounded-xl px-4 py-3 text-sm"
+        >
+          {mensagemCentral}
+        </p>
+      )}
+
+      {erroCentral && (
+        <p
+          role="alert"
+          className="bg-erro-50 text-erro-700 mb-5 rounded-xl px-4 py-3 text-sm"
+        >
+          {erroCentral}
+        </p>
+      )}
 
       <header className="mb-5">
         <p className="text-acao-600 font-mono text-lg font-bold">
@@ -422,6 +597,17 @@ export default function PerfilDetalhe() {
         aberto={editando && form !== null}
         aoFechar={() => setEditando(false)}
         titulo="Editar perfil"
+        acoes={
+          <Botao
+            type="submit"
+            form={ID_FORMULARIO_MODELO_PERFIL}
+            variante="secundaria"
+            tamanho="pequeno"
+            carregando={editar.isPending}
+          >
+            Salvar
+          </Botao>
+        }
       >
         {form && (
           <FormularioModeloPerfil

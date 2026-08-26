@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom'
 import {
   PackagePlus,
   Package,
-  Clock,
   Ruler,
   Layers,
   Boxes,
@@ -11,6 +10,7 @@ import {
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { useResumoEstoque } from '@/dados/sobras'
+import { useModelosPerfil } from '@/dados/modelosPerfil'
 import { useConfiguracoes } from '@/dados/configuracoes'
 import { useOrganizacao, useLogoOrganizacao } from '@/dados/organizacao'
 import { MarcaRePerfil } from '@/componentes/MarcaRePerfil'
@@ -24,6 +24,7 @@ export default function Inicio() {
   const { data: config } = useConfiguracoes()
   const { data: org } = useOrganizacao()
   const { data: logoUrl } = useLogoOrganizacao(org?.logo_caminho)
+  const { data: modelos, isPending: perfisCarregando } = useModelosPerfil()
 
   const metros =
     resumo === undefined
@@ -31,6 +32,13 @@ export default function Inicio() {
       : (resumo.milimetrosDisponiveis / 1000).toLocaleString('pt-BR', {
           maximumFractionDigits: 1,
         })
+
+  const totalPerfis = modelos?.length ?? 0
+  // `linha` é texto livre, sem tabela própria — a contagem é de valores
+  // distintos e não vazios entre os perfis cadastrados.
+  const totalLinhas = new Set(
+    (modelos ?? []).map((m) => m.linha).filter((l): l is string => Boolean(l)),
+  ).size
 
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
@@ -105,12 +113,18 @@ export default function Inicio() {
           valor={isPending ? '—' : (metros ?? '0')}
           para="/sobras"
         />
-        <Indicador
-          Icone={Clock}
-          rotulo="Reservadas"
-          valor={isPending ? '—' : String(resumo?.pecasReservadas ?? 0)}
-          para="/reservas"
-        />
+        <Link
+          to="/perfis"
+          className="bg-celula border-borda hover:bg-superficie-2 block rounded-xl border-2 p-4 text-center shadow-sm transition-colors"
+        >
+          <Layers aria-hidden="true" className="text-acao-600 mx-auto mb-1 size-5" />
+          <p className="text-xl font-bold tabular-nums">
+            {perfisCarregando ? '—' : totalPerfis}
+          </p>
+          <p className="text-texto-suave text-xs">
+            {perfisCarregando ? 'Perfis' : `Perfis · ${totalLinhas} linhas`}
+          </p>
+        </Link>
       </section>
 
       {/*

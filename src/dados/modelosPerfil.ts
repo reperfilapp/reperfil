@@ -25,7 +25,6 @@ export interface DadosModeloPerfil {
   altura_secao_mm: number | null
   medida_3_secao_mm: number | null
   medida_4_secao_mm: number | null
-  revisado: boolean
 }
 
 export const VAZIO: DadosModeloPerfil = {
@@ -44,7 +43,6 @@ export const VAZIO: DadosModeloPerfil = {
   altura_secao_mm: null,
   medida_3_secao_mm: null,
   medida_4_secao_mm: null,
-  revisado: false,
 }
 
 export function useModelosPerfil(incluirInativos = false) {
@@ -361,6 +359,91 @@ export function useExcluirModeloPerfil() {
     },
     onSuccess: () => {
       void cliente.invalidateQueries({ queryKey: chaves.modelosPerfil })
+    },
+  })
+}
+
+/**
+ * Marca a revisão de um perfil — mesma ação nas duas situações, só muda o
+ * que acontece por baixo:
+ *
+ * • Perfil ainda não revisado: vira revisado, com data e quem revisou.
+ * • Perfil já revisado (uma nova revisão, depois de editar de novo):
+ *   atualiza data e quem revisou, e — só quando o perfil é do catálogo
+ *   CENTRAL — avança a revisão do catálogo, avisando quem já copiou.
+ */
+export function useMarcarRevisaoPerfil() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (perfilId: string) => {
+      const { error } = await supabase.rpc('marcar_revisao_perfil', {
+        p_perfil_id: perfilId,
+      })
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.modelosPerfil })
+    },
+  })
+}
+
+export interface ResultadoSincronizacao {
+  perfis_novos: number
+  perfis_atualizados: number
+  imagens_novas: number
+}
+
+/**
+ * Traz perfis novos do catálogo central e atualiza os já copiados que
+ * ficaram para trás — os dois de uma vez. O botão "Atualizar" de um
+ * perfil só e o botão "Atualização geral" da lista chamam esta mesma
+ * função: sincronizar tudo de novo é inofensivo, e mais simples do que
+ * manter uma versão "só este perfil".
+ *
+ * Desenho técnico PREVALECE o do central numa atualização (apaga
+ * duplicado ou desatualizado e recoloca o de lá); foto só ACRESCENTA,
+ * nunca apaga — é a empresa quem fotografa a peça por conta própria.
+ */
+export function useSincronizarCatalogoCentral() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (): Promise<ResultadoSincronizacao> => {
+      const { data, error } = await supabase
+        .rpc('sincronizar_catalogo_central')
+        .single()
+
+      if (error) throw new Error(error.message)
+
+      return data as ResultadoSincronizacao
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.modelosPerfil })
+    },
+  })
+}
+
+/**
+ * A revisão ATUAL do perfil de origem, no catálogo central — para saber
+ * se uma cópia local ficou desatualizada. `null` quando o perfil não veio
+ * de lá (não foi copiado do catálogo central).
+ */
+export function useRevisaoCentralAtual(origemPerfilId: string | null) {
+  return useQuery({
+    queryKey: [...chaves.modelosPerfil, 'revisao-central', origemPerfilId],
+    enabled: origemPerfilId !== null,
+    queryFn: async (): Promise<number | null> => {
+      const { data, error } = await supabase
+        .from('modelos_perfil')
+        .select('revisao_catalogo')
+        .eq('id', origemPerfilId)
+        .maybeSingle<{ revisao_catalogo: number }>()
+
+      if (error) throw new Error(error.message)
+
+      return data?.revisao_catalogo ?? null
     },
   })
 }

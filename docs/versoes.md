@@ -80,6 +80,165 @@ esta consulta.
 
 ---
 
+## 1.7.25 — 27/08/2026
+
+**Cabeçalho da ficha do perfil congelado ao rolar.**
+
+Na tela de um perfil, a faixa com "Voltar"/"Editar" e o aviso de revisão
+agora fica fixa no topo da tela enquanto o resto (desenho, estoque, ficha
+técnica) rola por baixo — como no print enviado.
+
+---
+
+## 1.7.24 — 27/08/2026
+
+**Moldura padronizada em todos os botões "secundária" do app.**
+
+O botão "Editar" (e qualquer outro do mesmo estilo, em toda tela) não tinha
+moldura nenhuma — só o "Voltar" tinha. Acrescentei borda de 1px na mesma
+cor e intensidade do "Voltar" (`border-borda`) diretamente no componente
+`Botao`, então vale para o app inteiro de uma vez. O botão verde de
+revisão também ganhou uma borda mais forte — a anterior era clara demais
+para aparecer.
+
+---
+
+## 1.7.23 — 27/08/2026
+
+**Filtro de revisão (Todos/Revisados/Pendentes) não perde mais a seleção.**
+
+Entrar num perfil e voltar zerava o filtro de volta para "Todos" — vivia só
+num `useState`, que reinicia toda vez que a tela remonta. Passou a viver na
+URL, como o agrupamento por linha já fazia: sobrevive a entrar e voltar de
+um perfil, e só volta ao padrão se você sair de Modelos de perfil para
+outra parte do app.
+
+---
+
+## 1.7.22 — 27/08/2026
+
+**Moldura no botão de revisão.**
+
+---
+
+## 1.7.21 — 27/08/2026
+
+**Botão de revisão: símbolo ✓ no rótulo, fundo verde.**
+
+---
+
+## 1.7.20 — 27/08/2026
+
+**Correção: o "Salvar" do topo não aparecia de verdade.**
+
+A versão anterior colocava o botão no início do conteúdo que rola — ainda
+exigia rolar até lá para vê-lo. Agora fica no CABEÇALHO FIXO do modal, ao
+lado do título, sempre visível, não importa até onde a pessoa rolou.
+`Modal` ganhou um espaço reservado para isso (prop `acoes`), reaproveitável
+por qualquer outro formulário longo no futuro.
+
+---
+
+## 1.7.19 — 27/08/2026
+
+**Botão "Salvar" também no topo do formulário de editar perfil.**
+
+O formulário tem desenho técnico e fotos no meio — salvar exigia rolar até
+o fim mesmo já tendo terminado a edição lá em cima. O botão do fim continua
+como estava.
+
+---
+
+## 1.7.18 — 27/08/2026
+
+**Símbolo de revisão: emoji maior (✅/⚠️), centralizado com as duas
+linhas de texto.**
+
+---
+
+## 1.7.17 — 27/08/2026
+
+**Texto explicativo do card de revisão numa linha própria**, embaixo de
+"Revisado"/"Ainda não revisado", em vez de espremido na mesma linha (onde
+cortava antes de chegar ao fim). As duas linhas truncam exatamente até o
+limite do botão, sem passar por baixo dele.
+
+---
+
+## 1.7.16 — 27/08/2026
+
+**Card de revisão: cores, número da revisão, bem mais compacto.**
+
+- Verde quando revisado, amarelo claro quando ainda não — em vez de tudo
+  cinza. Botão em azul claro, separado do resto.
+- Mostra o número da revisão (o contador que cada "nova revisão" avança).
+- Reduzido a uma faixa fina de uma linha só; quem revisou e quando ficam
+  escondidos por padrão, aparecem ao tocar na linha.
+
+---
+
+## 1.7.15 — 27/08/2026
+
+**Revisão do perfil, unificada num lugar só.**
+
+Antes existiam dois controles separados: o checkbox "Perfil verificado e
+revisado" dentro do formulário de editar, e o botão "Marcar nova revisão",
+visível só na organização central. Viraram uma coisa só, na própria tela
+de exibição do perfil — o mesmo botão marca a primeira revisão ou uma
+nova, conforme a situação, com texto explicando o que significa e,
+quando já revisado, quem revisou e quando. "Marcar nova revisão" só
+aparece depois de uma primeira revisão já ter acontecido; nesse caso
+(e só em perfil do catálogo central), também avança a revisão que avisa
+quem já copiou. Precisa da migração
+`20260827300000_unificar_revisao_perfil.sql`.
+
+---
+
+## 1.7.14 — 27/08/2026
+
+**Desenho técnico passa a prevalecer o do catálogo central.**
+
+Ajuste na sincronização: numa atualização, desenho técnico agora é
+SUBSTITUÍDO pelo do catálogo central (apaga duplicado ou desatualizado e
+recoloca o de lá) — é dado de catálogo, deveria valer o mesmo que os
+campos de texto do perfil. Foto continua só acrescentando, nunca apagando
+— é a empresa quem fotografa a peça por conta própria, sem "versão
+central" para prevalecer sobre ela. Precisa da migração
+`20260827200000_desenho_tecnico_prevalece.sql`.
+
+---
+
+## 1.7.13 — 27/08/2026
+
+**Card "Reservadas" da tela inicial virou "Perfis · linhas".**
+
+Mostra agora o total de perfis cadastrados e, embaixo, quantas linhas
+distintas existem entre eles — e continua levando para "Modelos de
+perfil" ao tocar. Reservas continua alcançável pela barra de navegação
+inferior, como qualquer outra tela.
+
+---
+
+## 1.7.12 — 27/08/2026
+
+**Sistema de revisão do catálogo central.**
+
+- Botão **"Marcar nova revisão"** na ficha de um perfil — só aparece na
+  organização central, para sinalizar que algo mudou.
+- Aviso + botão **"Atualizar"** na ficha de um perfil desatualizado, em
+  qualquer empresa que já o tenha copiado.
+- Botão **"Atualização geral"** na tela de perfis — traz perfis novos do
+  catálogo central e atualiza os já copiados que mudaram, tudo de uma vez.
+- Campos reimportados na atualização: código, descrição, fabricante,
+  linha, categoria, aplicação, medidas de seção, código de barras,
+  comprimento de barra, peso por metro, observações, e as imagens novas do
+  central (sem apagar nenhuma que a empresa tenha adicionado por conta
+  própria). **Preço por metro e o "revisado" local nunca são tocados.**
+
+Precisa da migração `20260827100000_revisao_catalogo_central.sql`.
+
+---
+
 ## 1.7.10 — 26/08/2026
 
 **Base para o catálogo central da RePerfil.**

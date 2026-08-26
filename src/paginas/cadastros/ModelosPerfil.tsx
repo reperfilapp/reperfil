@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   Plus,
   Pencil,
@@ -10,6 +10,7 @@ import {
   Archive,
   ArchiveRestore,
   Trash2,
+  RefreshCw,
 } from 'lucide-react'
 import {
   useModelosPerfil,
@@ -17,11 +18,13 @@ import {
   useEditarModeloPerfil,
   useDesativarModeloPerfil,
   useExcluirModeloPerfil,
+  useSincronizarCatalogoCentral,
   filtrarModelos,
   agruparPorLinha,
   SEM_LINHA,
   type DadosModeloPerfil,
 } from '@/dados/modelosPerfil'
+import { useOrganizacao } from '@/dados/organizacao'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeGerenciarCadastros } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
@@ -30,7 +33,10 @@ import { AlternadorOrdenacao } from '@/componentes/ui/AlternadorOrdenacao'
 import { useNiveisNaUrl } from '@/componentes/useNiveisNaUrl'
 import { ORDENACAO_PADRAO } from '@/dominio/ordenacaoListas'
 import { Modal } from '@/componentes/ui/Modal'
-import { FormularioModeloPerfil } from '@/componentes/perfil/FormularioModeloPerfil'
+import {
+  FormularioModeloPerfil,
+  ID_FORMULARIO_MODELO_PERFIL,
+} from '@/componentes/perfil/FormularioModeloPerfil'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
@@ -67,7 +73,6 @@ const VAZIO: DadosModeloPerfil = {
   altura_secao_mm: null,
   medida_3_secao_mm: null,
   medida_4_secao_mm: null,
-  revisado: false,
 }
 
 export default function ModelosPerfil() {
@@ -81,6 +86,35 @@ export default function ModelosPerfil() {
   const editar = useEditarModeloPerfil()
   const desativar = useDesativarModeloPerfil()
   const excluir = useExcluirModeloPerfil()
+
+  // Sincronizar com o catálogo central: traz perfil novo e atualiza os já
+  // copiados que mudaram lá. Não faz sentido a própria organização central
+  // sincronizar consigo mesma.
+  const { data: organizacao } = useOrganizacao()
+  const podeSincronizar = podeEditar && Boolean(organizacao) && !organizacao?.eh_catalogo_central
+  const sincronizar = useSincronizarCatalogoCentral()
+  const [mensagemSincronizacao, setMensagemSincronizacao] = useState<
+    string | null
+  >(null)
+  const [erroSincronizacao, setErroSincronizacao] = useState<string | null>(
+    null,
+  )
+
+  async function aoSincronizar() {
+    setErroSincronizacao(null)
+    setMensagemSincronizacao(null)
+
+    try {
+      const resultado = await sincronizar.mutateAsync()
+      setMensagemSincronizacao(
+        `${resultado.perfis_novos} perfis novos, ${resultado.perfis_atualizados} atualizados.`,
+      )
+    } catch (e) {
+      setErroSincronizacao(
+        e instanceof Error ? e.message : 'Não foi possível sincronizar.',
+      )
+    }
+  }
   const { data: capas } = useCapasDesenhos()
   const { data: sobras } = useSobras()
   const { data: itensListaTecnica } = useListaTecnicaCompleta()
@@ -102,9 +136,35 @@ export default function ModelosPerfil() {
   const { nivel, abrir, voltarNivel } = useNiveisNaUrl(['linha'])
   const linhaAberta = nivel('linha')
   const [ordenacao, setOrdenacao] = useState(ORDENACAO_PADRAO)
-  const [filtroRevisao, setFiltroRevisao] = useState<
-    'todos' | 'revisados' | 'pendentes'
-  >('todos')
+  /*
+   * Também na URL, e não em estado — mas por um motivo diferente do
+   * `linha` acima: aqui não é para o "voltar" desfazer, é para o filtro
+   * SOBREVIVER a entrar num perfil e voltar (troca de tela de verdade,
+   * que zeraria um `useState`). `replace: true` ao trocar, então escolher
+   * o filtro não empilha histórico — só a navegação para dentro/fora do
+   * perfil é que deve. Sair para outro módulo do app (sem passar pelo
+   * "voltar" desta tela) volta ao padrão normalmente, porque chega aqui
+   * por um link sem esse parâmetro.
+   */
+  const [parametrosFiltro, definirParametrosFiltro] = useSearchParams()
+  const filtroRevisao =
+    (parametrosFiltro.get('revisao') as
+      | 'todos'
+      | 'revisados'
+      | 'pendentes'
+      | null) ?? 'todos'
+
+  function setFiltroRevisao(valor: 'todos' | 'revisados' | 'pendentes') {
+    const novos = new URLSearchParams(parametrosFiltro)
+
+    if (valor === 'todos') {
+      novos.delete('revisao')
+    } else {
+      novos.set('revisao', valor)
+    }
+
+    definirParametrosFiltro(novos, { replace: true })
+  }
   const [aberto, setAberto] = useState(false)
   const [editando, setEditando] = useState<ModeloPerfil | null>(null)
   const [form, setForm] = useState<DadosModeloPerfil>(VAZIO)
@@ -223,7 +283,6 @@ export default function ModelosPerfil() {
       altura_secao_mm: modelo.altura_secao_mm ?? null,
       medida_3_secao_mm: modelo.medida_3_secao_mm ?? null,
       medida_4_secao_mm: modelo.medida_4_secao_mm ?? null,
-      revisado: modelo.revisado ?? false,
     })
     setErro(null)
     setAberto(true)
@@ -269,13 +328,38 @@ export default function ModelosPerfil() {
                 O catálogo que as sobras, os orçamentos e as obras usam.
               </p>
             </div>
-            {podeEditar && (
-              <Botao onClick={abrirNovo}>
-                <Plus aria-hidden="true" className="size-5" />
-                Novo
-              </Botao>
-            )}
+            <div className="flex shrink-0 gap-2">
+              {podeSincronizar && (
+                <Botao
+                  variante="secundaria"
+                  onClick={() => void aoSincronizar()}
+                  carregando={sincronizar.isPending}
+                >
+                  <RefreshCw aria-hidden="true" className="size-5" />
+                  Atualização geral
+                </Botao>
+              )}
+              {podeEditar && (
+                <Botao onClick={abrirNovo}>
+                  <Plus aria-hidden="true" className="size-5" />
+                  Novo
+                </Botao>
+              )}
+            </div>
           </header>
+
+          {(mensagemSincronizacao || erroSincronizacao) && (
+            <p
+              role={erroSincronizacao ? 'alert' : 'status'}
+              className={
+                erroSincronizacao
+                  ? 'bg-erro-50 text-erro-700 mb-4 rounded-xl px-4 py-3 text-sm'
+                  : 'bg-superficie-2 mb-4 rounded-xl px-4 py-3 text-sm'
+              }
+            >
+              {erroSincronizacao ?? mensagemSincronizacao}
+            </p>
+          )}
 
           {/* Busca e atalho lado a lado, como no estoque e na escolha de perfil
           ao cadastrar: onde se procura uma peça, o app funciona igual. */}
@@ -541,6 +625,17 @@ export default function ModelosPerfil() {
         aberto={aberto}
         aoFechar={() => setAberto(false)}
         titulo={editando ? 'Editar perfil' : 'Novo perfil'}
+        acoes={
+          <Botao
+            type="submit"
+            form={ID_FORMULARIO_MODELO_PERFIL}
+            variante="secundaria"
+            tamanho="pequeno"
+            carregando={criar.isPending || editar.isPending}
+          >
+            Salvar
+          </Botao>
+        }
       >
         <FormularioModeloPerfil
           form={form}

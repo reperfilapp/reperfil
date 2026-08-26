@@ -45,6 +45,14 @@ const SUGESTOES_INICIAIS = [
 ] as const
 
 /**
+ * Id do `<form>`, para o botão "Salvar" do cabeçalho do modal — fora do
+ * formulário — poder submetê-lo mesmo assim (atributo `form` do HTML). Só
+ * um destes formulários abre por vez no app inteiro, então uma string fixa
+ * não colide.
+ */
+export const ID_FORMULARIO_MODELO_PERFIL = 'formulario-modelo-perfil'
+
+/**
  * Aceita vírgula: quem digita medida escreve 35,7, não 35.7. Zero e negativo
  * viram nulo — medida de perfil não é nem uma coisa nem outra, e guardar
  * zero faria a identificação por trena procurar um perfil de 0 mm.
@@ -123,7 +131,12 @@ export function FormularioModeloPerfil({
   const parecidos = codigosParecidos(catalogo ?? [], form.codigo, modelo?.id)
 
   return (
-    <form onSubmit={aoSalvar} className="flex flex-col gap-4" noValidate>
+    <form
+      id={ID_FORMULARIO_MODELO_PERFIL}
+      onSubmit={aoSalvar}
+      className="flex flex-col gap-4"
+      noValidate
+    >
       <div>
         <CampoTexto
           rotulo="Código interno"
@@ -313,26 +326,6 @@ export function FormularioModeloPerfil({
             <GaleriaDesenhos modelo={modelo} tipo="foto" />
           </div>
         </div>
-      )}
-
-      {modelo && (
-        <label className="bg-superficie-2 hover:bg-superficie-3 mt-2 flex cursor-pointer items-center gap-3 rounded-xl p-4 transition-colors">
-          <input
-            type="checkbox"
-            className="size-5 shrink-0"
-            checked={form.revisado}
-            onChange={(e) => aoMudar({ ...form, revisado: e.target.checked })}
-          />
-          <div className="flex flex-col">
-            <span className="text-texto-forte font-semibold">
-              Perfil verificado e revisado
-            </span>
-            <span className="text-texto-suave text-sm">
-              As informações estão validadas, medidas corretas e o desenho
-              corresponde.
-            </span>
-          </div>
-        </label>
       )}
 
       {erro && (

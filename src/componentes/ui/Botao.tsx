@@ -19,8 +19,11 @@ const estilos = cva(
       variante: {
         primaria:
           'bg-acao-600 text-white hover:bg-acao-700 focus-visible:outline-acao-600',
+        // Moldura na mesma intensidade do botão "Voltar" (`BotaoVoltar.tsx`):
+        // borda de 1px, cor `border-borda` — sem ela, este botão se
+        // confundia com o fundo de cartões e seções ao redor.
         secundaria:
-          'bg-superficie-2 text-texto hover:bg-borda focus-visible:outline-acao-600',
+          'bg-superficie-2 text-texto border border-borda hover:bg-borda focus-visible:outline-acao-600',
         contorno:
           'border-2 border-borda bg-transparent text-texto hover:bg-superficie-2',
         // Vermelho é reservado a erro e descarte — não usar para "salvar".
