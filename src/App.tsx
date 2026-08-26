@@ -36,6 +36,7 @@ import Colaboradores from '@/paginas/cadastros/Colaboradores'
 import ColaboradorDetalhe from '@/paginas/detalhes/ColaboradorDetalhe'
 import Produtos from '@/paginas/cadastros/Produtos'
 import ProdutoDetalhe from '@/paginas/detalhes/ProdutoDetalhe'
+import AcrescentarMaterial from '@/paginas/AcrescentarMaterial'
 import OQueProduzir from '@/paginas/OQueProduzir'
 import LotesRepetidos from '@/paginas/LotesRepetidos'
 import DadosEmpresa from '@/paginas/DadosEmpresa'
@@ -102,6 +103,10 @@ export default function App() {
                 <Route path="/perfis" element={<ModelosPerfil />} />
                 <Route path="/produtos" element={<Produtos />} />
                 <Route path="/produtos/:id" element={<ProdutoDetalhe />} />
+                <Route
+                  path="/produtos/:id/acrescentar-material"
+                  element={<AcrescentarMaterial />}
+                />
                 <Route path="/o-que-produzir" element={<OQueProduzir />} />
                 <Route path="/colaboradores" element={<Colaboradores />} />
                 <Route

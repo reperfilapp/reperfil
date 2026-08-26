@@ -99,7 +99,7 @@ export default function Produtos() {
       // tela de viabilidade só sabe dizer "sem lista" —, e quem cadastrou
       // uma janela acabou de pensar nos perfis dela. Voltar à lista de
       // produtos aqui é interromper o raciocínio no meio.
-      navegar(`/produtos/${novo.id}?montar=1`)
+      navegar(`/produtos/${novo.id}/acrescentar-material`)
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível salvar.')
     }

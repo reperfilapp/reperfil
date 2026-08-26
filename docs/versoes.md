@@ -64,6 +64,33 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.8 — 25/08/2026
+
+**Correção: botão "Voltar" esticado em "Acrescentar material".**
+
+Só na tela nova: sem perfil escolhido, o contêiner vira `flex-col` (para a
+lista de linhas crescer até a barra inferior), e isso esticava o botão —
+que é `inline-flex` — para a largura toda. Conferi as outras 29 telas que
+usam o mesmo botão: todas ficam dentro de um contêiner comum (bloco, não
+flex) e não tinham esse problema — era isolado a esta tela nova mesmo.
+
+---
+
+## 1.7.7 — 25/08/2026
+
+**"Acrescentar material" virou tela própria, com a mesma busca do Estoque.**
+
+O modal de acrescentar corte na lista técnica só tinha um campo de texto
+com sugestões — sem a busca por linha, código ou medida que a tela de
+Estoque já tem. Agora é uma tela dedicada (`/produtos/:id/acrescentar-material`),
+reaproveitando o mesmo seletor de perfil de Cadastrar estoque: escolhe a
+linha, entra nela, busca por código ou medida. Depois de escolher, o
+perfil fica fixo e dá para lançar vários cortes seguidos, sem escolher de
+novo a cada um. Corrigir um corte já lançado ("Alterar corte") continua
+sendo um modal simples, sem mudança.
+
+---
+
 ## 1.7.6 — 25/08/2026
 
 **Removido o aviso de rascunho de Termos de uso e Política de privacidade.**

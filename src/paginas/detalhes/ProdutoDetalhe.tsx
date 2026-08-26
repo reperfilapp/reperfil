@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   Plus,
   Trash2,
@@ -15,7 +15,6 @@ import {
 import {
   useProduto,
   useListaTecnica,
-  useAdicionarItemLista,
   useRemoverItemLista,
   useEditarItemLista,
   useReordenarLista,
@@ -65,6 +64,7 @@ import { APLICACAO } from '@/config/aplicacao'
 
 export default function ProdutoDetalhe() {
   const { id = null } = useParams()
+  const navegar = useNavigate()
   const { perfil } = useAutenticacao()
   const podeEditar = podeGerenciarCadastros(perfil)
 
@@ -78,7 +78,6 @@ export default function ProdutoDetalhe() {
   const { data: acabamentos } = useAcabamentos()
   const { data: config } = useConfiguracoes()
 
-  const adicionar = useAdicionarItemLista()
   const remover = useRemoverItemLista()
   const editarItem = useEditarItemLista()
   const reordenar = useReordenarLista()
@@ -90,9 +89,9 @@ export default function ProdutoDetalhe() {
 
   const [aberto, setAberto] = useState(false)
   /*
-   * O corte em correção, ou nulo para um corte novo. O mesmo formulário
-   * serve aos dois: são os mesmos três campos, e um segundo modal só para
-   * editar divergiria do primeiro na primeira mudança.
+   * O corte em correção. Acrescentar um corte novo mudou para uma tela
+   * própria (`AcrescentarMaterial.tsx`), com a mesma busca por linha da
+   * tela de Estoque — este modal ficou só para corrigir um já lançado.
    */
   const [itemEditando, setItemEditando] = useState<ItemListaTecnica | null>(
     null,
@@ -135,12 +134,6 @@ export default function ProdutoDetalhe() {
   const [mesmaCor, setMesmaCor] = useState(true)
   /** Acabamento fixado pela pessoa. Nulo = o sistema escolhe o que rende mais. */
   const [corEscolhida, setCorEscolhida] = useState<string | null>(null)
-
-  // `?montar=1` chega de quem acabou de cadastrar o produto: o formulário do
-  // primeiro corte já abre. O parâmetro sai da URL em seguida, senão
-  // recarregar a página — ou voltar a ela pelo histórico — reabriria o
-  // formulário sem ninguém ter pedido.
-  const [parametros, definirParametros] = useSearchParams()
 
   useEffect(() => {
     const foto = produto?.foto_url ?? null
@@ -242,13 +235,6 @@ export default function ProdutoDetalhe() {
     }
   }, [imprimindo])
 
-  useEffect(() => {
-    if (parametros.get('montar') !== '1') return
-
-    setAberto(true)
-    definirParametros({}, { replace: true })
-  }, [parametros, definirParametros])
-
   function abrirEdicao() {
     if (produto === null) return
 
@@ -347,38 +333,20 @@ export default function ProdutoDetalhe() {
       return
     }
 
-    if (id === null) return
+    if (id === null || itemEditando === null) return
 
     try {
-      if (itemEditando) {
-        await editarItem.mutateAsync({
-          id: itemEditando.id,
-          dados: {
-            modelo_perfil_id: form.modelo_perfil_id,
-            comprimento_mm: Math.round(comprimento),
-            quantidade,
-            observacao: itemEditando.observacao,
-          },
-        })
-
-        // Corrigir é uma tarefa que termina: o modal fecha. Acrescentar é
-        // uma tarefa que se repete, e por isso ele fica aberto.
-        fecharCorte()
-        return
-      }
-
-      await adicionar.mutateAsync({
-        produto_id: id,
-        modelo_perfil_id: form.modelo_perfil_id,
-        comprimento_mm: Math.round(comprimento),
-        quantidade,
-        observacao: null,
+      await editarItem.mutateAsync({
+        id: itemEditando.id,
+        dados: {
+          modelo_perfil_id: form.modelo_perfil_id,
+          comprimento_mm: Math.round(comprimento),
+          quantidade,
+          observacao: itemEditando.observacao,
+        },
       })
 
-      // Só o comprimento e a quantidade são zerados: montando uma receita,
-      // os cortes seguintes costumam ser do MESMO perfil, e reescolhê-lo a
-      // cada linha seria trabalho repetido.
-      setForm({ ...form, comprimento_mm: '', quantidade: '1' })
+      fecharCorte()
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível salvar.')
     }
@@ -806,10 +774,7 @@ export default function ProdutoDetalhe() {
 
         {podeEditar && (
           <Botao
-            onClick={() => {
-              setErro(null)
-              setAberto(true)
-            }}
+            onClick={() => navegar(`/produtos/${id}/acrescentar-material`)}
             className="mt-3 w-full"
           >
             <Plus aria-hidden="true" className="size-5" />
@@ -869,11 +834,7 @@ export default function ProdutoDetalhe() {
         )}
       </Modal>
 
-      <Modal
-        aberto={aberto}
-        aoFechar={fecharCorte}
-        titulo={itemEditando ? 'Alterar corte' : 'Acrescentar material'}
-      >
+      <Modal aberto={aberto} aoFechar={fecharCorte} titulo="Alterar corte">
         <form onSubmit={aoEnviar} className="flex flex-col gap-4" noValidate>
           {/* Campo de texto com sugestões, e não uma lista fechada: o
               catálogo passa de oitenta perfis, e rolar até achar o MN-007
@@ -924,17 +885,15 @@ export default function ProdutoDetalhe() {
               onClick={fecharCorte}
               className="flex-1"
             >
-              {/* "Fechar", e não "Cancelar": acrescentando, o que já foi
-                  lançado está gravado — não há o que cancelar. */}
-              {itemEditando ? 'Cancelar' : 'Fechar'}
+              Cancelar
             </Botao>
             <Botao
               type="submit"
-              carregando={adicionar.isPending || editarItem.isPending}
+              carregando={editarItem.isPending}
               className="flex-1"
             >
               <PackageCheck aria-hidden="true" className="size-5" />
-              {itemEditando ? 'Salvar' : 'Acrescentar'}
+              Salvar
             </Botao>
           </div>
         </form>
