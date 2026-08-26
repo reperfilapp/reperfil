@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Camera, ImagePlus, X, ChevronRight, Info } from 'lucide-react'
 import {
   useModelosPerfil,
+  useOrdemLinhas,
   agruparPorLinha,
   SEM_LINHA,
 } from '@/dados/modelosPerfil'
@@ -56,6 +57,7 @@ import type { ModeloPerfil } from '@/tipos/banco'
 export default function IdentificarPerfil() {
   const { data: modelos } = useModelosPerfil()
   const { data: capas } = useCapasDesenhos('imagem')
+  const { data: ordemLinhas } = useOrdemLinhas()
 
   /*
    * Quem chegou aqui pelo atalho da câmera, no meio de um cadastro, volta
@@ -126,7 +128,7 @@ export default function IdentificarPerfil() {
     Number.isFinite(pesoG) && pesoG > 0 && comprimentoMm !== null
   const medido = pesouPeca ? pesoPorMetroDePeca(pesoG, comprimentoMm!) : null
 
-  const linhas = agruparPorLinha(modelos ?? [])
+  const linhas = agruparPorLinha(modelos ?? [], ordemLinhas)
     .map((g) => g.linha)
     .filter((l) => l !== SEM_LINHA)
 

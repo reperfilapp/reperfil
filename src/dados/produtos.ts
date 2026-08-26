@@ -240,6 +240,31 @@ export function useDesativarProduto() {
   })
 }
 
+/**
+ * Apaga o produto de verdade — não desativa.
+ *
+ * Diferente de perfil, um produto não precisa de confirmação sobre estar
+ * "em uso": a lista técnica é dele, ninguém mais referencia (`on delete
+ * cascade`), e não há estoque físico atrelado ao PRODUTO em si (o estoque é
+ * dos perfis que a lista técnica consome). Apagar o produto some com a
+ * receita junto — é o esperado, e não motivo para recusar o apagamento.
+ */
+export function useExcluirProduto() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('produtos').delete().eq('id', id)
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.produtos })
+      void cliente.invalidateQueries({ queryKey: chaves.listaTecnica })
+    },
+  })
+}
+
 export interface DadosItemLista {
   produto_id: string
   modelo_perfil_id: string

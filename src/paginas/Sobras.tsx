@@ -15,7 +15,7 @@ import { AmostraCor } from '@/componentes/ui/AmostraCor'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { formatarComprimento } from '@/dominio/medidas'
-import { SEM_LINHA } from '@/dados/modelosPerfil'
+import { SEM_LINHA, useOrdemLinhas } from '@/dados/modelosPerfil'
 import { duplicadosNoEstoque } from '@/dominio/duplicidade'
 import {
   resumirPorLinha,
@@ -29,7 +29,7 @@ import { filtrarPerfis } from '@/dominio/buscaPerfil'
 
 import { AlternadorOrdenacao } from '@/componentes/ui/AlternadorOrdenacao'
 import { useNiveisNaUrl } from '@/componentes/useNiveisNaUrl'
-import { ORDENACAO_PADRAO } from '@/dominio/ordenacaoListas'
+import { ORDENACAO_PADRAO, compararPorOrdemLinha } from '@/dominio/ordenacaoListas'
 /*
  * Carregamento tardio: o leitor de QR traz a biblioteca de decodificação e a
  * etiqueta traz a de geração — juntas, boa parte do JavaScript da aplicação.
@@ -111,6 +111,7 @@ function combina(
 
 export default function Sobras() {
   const { data: sobras, isPending, error, refetch } = useSobras()
+  const { data: ordemLinhas } = useOrdemLinhas()
   const { data: capas } = useCapasDesenhos()
   const { perfil } = useAutenticacao()
   const [busca, setBusca] = useState('')
@@ -180,13 +181,7 @@ export default function Sobras() {
       if (a.linha === SEM_LINHA) return 1
       if (b.linha === SEM_LINHA) return -1
 
-      const porTamanho = maiorPrimeiro(a.resumo, b.resumo)
-
-      // Alfabético só no empate — entre duas linhas sem estoque disponível,
-      // o nome é a única ordem que não parece aleatória.
-      return porTamanho !== 0
-        ? porTamanho
-        : a.linha.localeCompare(b.linha, 'pt-BR')
+      return compararPorOrdemLinha(a.linha, b.linha, ordemLinhas ?? new Map())
     })
 
   const daLinha =

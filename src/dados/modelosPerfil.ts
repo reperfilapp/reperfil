@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { chaves } from '@/lib/consultas'
 import { filtrarPerfis } from '@/dominio/buscaPerfil'
+import { compararPorOrdemLinha } from '@/dominio/ordenacaoListas'
+import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import type { ModeloPerfil } from '@/tipos/banco'
 
 export interface DadosModeloPerfil {
@@ -46,10 +48,23 @@ export const VAZIO: DadosModeloPerfil = {
 }
 
 export function useModelosPerfil(incluirInativos = false) {
+  const { perfil } = useAutenticacao()
+  const organizacaoId = perfil?.organizacao_id ?? null
+
   return useQuery({
-    queryKey: [...chaves.modelosPerfil, { incluirInativos }],
+    queryKey: [...chaves.modelosPerfil, { incluirInativos, organizacaoId }],
+    // Desde que a organização central passou a ficar visível por RLS (para
+    // quem sincroniza o catálogo), o RLS sozinho não basta mais para isolar
+    // "meus perfis" — sem o `.eq` explícito, esta consulta trazia também os
+    // perfis do catálogo central inteiro, dobrando a contagem para quem já
+    // copiou boa parte dele.
+    enabled: organizacaoId !== null,
     queryFn: async (): Promise<ModeloPerfil[]> => {
-      let consulta = supabase.from('modelos_perfil').select('*').order('codigo')
+      let consulta = supabase
+        .from('modelos_perfil')
+        .select('*')
+        .eq('organizacao_id', organizacaoId as string)
+        .order('codigo')
 
       if (!incluirInativos) {
         consulta = consulta.eq('ativo', true)
@@ -78,12 +93,17 @@ export type CampoSugerivel = 'aplicacao' | 'linha' | 'fabricante'
  * que é o que permite a lista crescer.
  */
 export function useValoresUsados(campo: CampoSugerivel) {
+  const { perfil } = useAutenticacao()
+  const organizacaoId = perfil?.organizacao_id ?? null
+
   return useQuery({
-    queryKey: [...chaves.modelosPerfil, 'valores-usados', campo],
+    queryKey: [...chaves.modelosPerfil, 'valores-usados', campo, organizacaoId],
+    enabled: organizacaoId !== null,
     queryFn: async (): Promise<string[]> => {
       const { data, error } = await supabase
         .from('modelos_perfil')
         .select(campo)
+        .eq('organizacao_id', organizacaoId as string)
         .not(campo, 'is', null)
 
       if (error) throw new Error(error.message)
@@ -109,8 +129,13 @@ export function useValoresUsados(campo: CampoSugerivel) {
  */
 export const SEM_LINHA = 'Sem linha'
 
+/**
+ * `ordemLinhas`, quando informada, é a ordem manual que o administrador
+ * definiu em "Linhas e sistemas" — sem ela, cai no alfabético de sempre.
+ */
 export function agruparPorLinha(
   modelos: readonly ModeloPerfil[],
+  ordemLinhas?: ReadonlyMap<string, number>,
 ): { linha: string; modelos: ModeloPerfil[] }[] {
   const grupos = new Map<string, ModeloPerfil[]>()
 
@@ -128,8 +153,66 @@ export function agruparPorLinha(
       // "Sem linha" por último: é o resto, não uma linha de verdade.
       if (a.linha === SEM_LINHA) return 1
       if (b.linha === SEM_LINHA) return -1
-      return a.linha.localeCompare(b.linha, 'pt-BR')
+
+      return ordemLinhas
+        ? compararPorOrdemLinha(a.linha, b.linha, ordemLinhas)
+        : a.linha.localeCompare(b.linha, 'pt-BR')
     })
+}
+
+/**
+ * Ordem manual de cada linha, definida arrastando em "Linhas e sistemas" —
+ * a base de toda ordenação por linha no app (a lista de linhas em si; não
+ * mexe na ordem dos perfis dentro de uma linha já aberta).
+ */
+export function useOrdemLinhas() {
+  return useQuery({
+    queryKey: ['ordem-linhas'],
+    queryFn: async (): Promise<Map<string, number>> => {
+      const { data, error } = await supabase
+        .from('linhas_ordem')
+        .select('linha, ordem')
+
+      if (error) {
+        // Antes da migração a tabela nem existe: cai no alfabético, que já
+        // era o comportamento de sempre.
+        if (error.code === '42P01') return new Map()
+        throw new Error(error.message)
+      }
+
+      return new Map(
+        (data as { linha: string; ordem: number }[]).map((r) => [
+          r.linha,
+          r.ordem,
+        ]),
+      )
+    },
+    staleTime: 60_000,
+  })
+}
+
+/**
+ * Grava a nova sequência de linhas, ao mover uma com as setas. Reescreve a
+ * posição de TODAS as linhas passadas, e não só da que moveu — mas num
+ * pedido só (upsert em lote), não um por linha: é o que faz isto responder
+ * na hora mesmo num catálogo com muitas linhas.
+ */
+export function useReordenarLinhas() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (linhasNaOrdem: readonly string[]) => {
+      const { error } = await supabase.from('linhas_ordem').upsert(
+        linhasNaOrdem.map((linha, indice) => ({ linha, ordem: indice + 1 })),
+        { onConflict: 'organizacao_id,linha' },
+      )
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: ['ordem-linhas'] })
+    },
+  })
 }
 
 /**
@@ -406,13 +489,21 @@ export interface ResultadoSincronizacao {
  * duplicado ou desatualizado e recoloca o de lá); foto só ACRESCENTA,
  * nunca apaga — é a empresa quem fotografa a peça por conta própria.
  */
+/**
+ * `linha` omitida (ou `undefined`) sincroniza o catálogo inteiro — o botão
+ * "Atualização geral". Informada, sincroniza só aquela linha: tanto para
+ * atualizar uma que já existe localmente quanto para importar uma que a
+ * empresa ainda não tem nenhum perfil.
+ */
 export function useSincronizarCatalogoCentral() {
   const cliente = useQueryClient()
 
   return useMutation({
-    mutationFn: async (): Promise<ResultadoSincronizacao> => {
+    mutationFn: async (
+      linha?: string,
+    ): Promise<ResultadoSincronizacao> => {
       const { data, error } = await supabase
-        .rpc('sincronizar_catalogo_central')
+        .rpc('sincronizar_catalogo_central', { p_linha: linha ?? null })
         .single()
 
       if (error) throw new Error(error.message)
@@ -421,6 +512,218 @@ export function useSincronizarCatalogoCentral() {
     },
     onSuccess: () => {
       void cliente.invalidateQueries({ queryKey: chaves.modelosPerfil })
+    },
+  })
+}
+
+/**
+ * Uma linha do catálogo central e se a MINHA organização está liberada
+ * para ela — o que `disponivel` significa depende de quem pergunta: para
+ * a organização central, é sempre `true` (ela é a dona); para as demais,
+ * é a liberação específica daquela empresa.
+ */
+export interface LinhaCatalogoCentral {
+  linha: string
+  disponivel: boolean
+}
+
+/**
+ * Linhas que existem hoje no catálogo central, com a liberação de cada
+ * uma para a MINHA organização — alimenta o seletor de "sincronizar esta
+ * linha" nas demais empresas.
+ */
+export function useLinhasCatalogoCentral() {
+  return useQuery({
+    queryKey: ['linhas-catalogo-central'],
+    queryFn: async (): Promise<LinhaCatalogoCentral[]> => {
+      const { data, error } = await supabase.rpc('linhas_do_catalogo_central')
+
+      if (error) throw new Error(error.message)
+
+      return data as LinhaCatalogoCentral[]
+    },
+    staleTime: 60_000,
+  })
+}
+
+/** Uma empresa e se está liberada para uma linha específica do catálogo. */
+export interface OrganizacaoLiberacaoLinha {
+  organizacao_id: string
+  nome_fantasia: string
+  liberada: boolean
+}
+
+/**
+ * As empresas (menos a própria central) e se cada uma está liberada para
+ * `linha` — alimenta a lista dentro de "Editar linha", em Linhas e
+ * sistemas. Só quem administra a organização central chama isto de
+ * verdade (a função recusa qualquer outra).
+ */
+export function useOrganizacoesParaLiberacao(linha: string | null) {
+  return useQuery({
+    queryKey: ['organizacoes-liberacao-linha', linha],
+    enabled: linha !== null,
+    queryFn: async (): Promise<OrganizacaoLiberacaoLinha[]> => {
+      const { data, error } = await supabase.rpc('organizacoes_para_liberacao', {
+        p_linha: linha,
+      })
+
+      if (error) throw new Error(error.message)
+
+      return data as OrganizacaoLiberacaoLinha[]
+    },
+  })
+}
+
+/** Liga ou desliga UMA empresa para UMA linha. Só a organização central chama. */
+export function useDefinirLiberacaoLinha() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      linha,
+      organizacaoId,
+      liberada,
+    }: {
+      linha: string
+      organizacaoId: string
+      liberada: boolean
+    }) => {
+      const { error } = await supabase.rpc('definir_liberacao_linha', {
+        p_linha: linha,
+        p_organizacao_id: organizacaoId,
+        p_liberada: liberada,
+      })
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_dados, variaveis) => {
+      void cliente.invalidateQueries({
+        queryKey: ['organizacoes-liberacao-linha', variaveis.linha],
+      })
+      void cliente.invalidateQueries({ queryKey: ['linhas-catalogo-central'] })
+      // A mesma liberação também aparece agrupada por empresa, em
+      // "Administrar linhas por empresa" — as duas telas leem e escrevem a
+      // mesma tabela, então uma mudança aqui precisa aparecer lá também.
+      void cliente.invalidateQueries({ queryKey: ['linhas-organizacao'] })
+    },
+  })
+}
+
+/**
+ * Liga ou desliga TODAS as empresas de uma vez, para UMA linha — o atalho
+ * "liberar/bloquear para todas" dentro de "Editar linha".
+ */
+export function useDefinirLiberacaoLinhaTodas() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      linha,
+      liberada,
+    }: {
+      linha: string
+      liberada: boolean
+    }) => {
+      const { error } = await supabase.rpc('definir_liberacao_linha_todas', {
+        p_linha: linha,
+        p_liberada: liberada,
+      })
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_dados, variaveis) => {
+      void cliente.invalidateQueries({
+        queryKey: ['organizacoes-liberacao-linha', variaveis.linha],
+      })
+      void cliente.invalidateQueries({ queryKey: ['linhas-catalogo-central'] })
+      void cliente.invalidateQueries({ queryKey: ['linhas-organizacao'] })
+    },
+  })
+}
+
+/** Uma empresa que pode receber linhas do catálogo central. */
+export interface EmpresaParaAdministrarLinhas {
+  organizacao_id: string
+  nome_fantasia: string
+}
+
+/**
+ * As empresas (menos a própria central) para a tela "Administrar linhas
+ * por empresa" — o outro ângulo da mesma liberação de `useOrganizacoesParaLiberacao`,
+ * agora por empresa em vez de por linha.
+ */
+export function useEmpresasParaAdministrarLinhas() {
+  return useQuery({
+    queryKey: ['empresas-administrar-linhas'],
+    queryFn: async (): Promise<EmpresaParaAdministrarLinhas[]> => {
+      const { data, error } = await supabase.rpc(
+        'empresas_para_administrar_linhas',
+      )
+
+      if (error) throw new Error(error.message)
+
+      return data as EmpresaParaAdministrarLinhas[]
+    },
+  })
+}
+
+/** Uma linha do catálogo central e se está liberada para UMA empresa específica. */
+export interface LinhaParaOrganizacao {
+  linha: string
+  liberada: boolean
+}
+
+/**
+ * Todas as linhas do catálogo central, com a liberação de UMA empresa —
+ * alimenta a lista de linhas dentro de "Administrar linhas por empresa",
+ * depois de escolher a empresa.
+ */
+export function useLinhasParaOrganizacao(organizacaoId: string | null) {
+  return useQuery({
+    queryKey: ['linhas-organizacao', organizacaoId],
+    enabled: organizacaoId !== null,
+    queryFn: async (): Promise<LinhaParaOrganizacao[]> => {
+      const { data, error } = await supabase.rpc('linhas_para_organizacao', {
+        p_organizacao_id: organizacaoId,
+      })
+
+      if (error) throw new Error(error.message)
+
+      return data as LinhaParaOrganizacao[]
+    },
+  })
+}
+
+/**
+ * Liga ou desliga TODAS as linhas de uma vez, para UMA empresa — o atalho
+ * "Liberar/Bloquear todas as linhas" dentro de "Administrar linhas por
+ * empresa".
+ */
+export function useDefinirLiberacaoTodasLinhasOrganizacao() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      organizacaoId,
+      liberada,
+    }: {
+      organizacaoId: string
+      liberada: boolean
+    }) => {
+      const { error } = await supabase.rpc(
+        'definir_liberacao_todas_linhas_organizacao',
+        { p_organizacao_id: organizacaoId, p_liberada: liberada },
+      )
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_dados, variaveis) => {
+      void cliente.invalidateQueries({
+        queryKey: ['linhas-organizacao', variaveis.organizacaoId],
+      })
+      void cliente.invalidateQueries({ queryKey: ['organizacoes-liberacao-linha'] })
+      void cliente.invalidateQueries({ queryKey: ['linhas-catalogo-central'] })
     },
   })
 }

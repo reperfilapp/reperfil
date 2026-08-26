@@ -40,7 +40,8 @@ export default function Acabamentos() {
   // erro ensina a pessoa a desconfiar da tela inteira.
   const podeEditar = podeGerenciarCadastros(perfil)
 
-  const { data: acabamentos, isPending } = useAcabamentos(true)
+  const [mostrarInativos, setMostrarInativos] = useState(false)
+  const { data: acabamentos, isPending } = useAcabamentos(mostrarInativos)
   const criar = useCriarAcabamento()
   const editar = useEditarAcabamento()
   const desativar = useDesativarAcabamento()
@@ -119,6 +120,17 @@ export default function Acabamentos() {
 
           {isPending && <p className="text-texto-suave">Carregando…</p>}
         </>
+      }
+      rodape={
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setMostrarInativos((v) => !v)}
+            className="text-acao-600 text-sm font-medium hover:underline"
+          >
+            {mostrarInativos ? 'Ocultar inativos' : 'Exibir inativos'}
+          </button>
+        </div>
       }
     >
       {acabamentos?.length === 0 && (

@@ -36,7 +36,8 @@ export default function ModelosAcessorio() {
   const { perfil } = useAutenticacao()
   const podeEditar = podeGerenciarCadastros(perfil)
 
-  const { data: modelos, isPending } = useModelosAcessorio(true)
+  const [mostrarInativos, setMostrarInativos] = useState(false)
+  const { data: modelos, isPending } = useModelosAcessorio(mostrarInativos)
   const { data: lotes } = useLotesAcessorio()
   const criar = useCriarModeloAcessorio()
   const editar = useEditarModeloAcessorio()
@@ -150,6 +151,17 @@ export default function ModelosAcessorio() {
 
           {isPending && <p className="text-texto-suave">Carregando…</p>}
         </>
+      }
+      rodape={
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setMostrarInativos((v) => !v)}
+            className="text-acao-600 text-sm font-medium hover:underline"
+          >
+            {mostrarInativos ? 'Ocultar inativos' : 'Exibir inativos'}
+          </button>
+        </div>
       }
     >
       {!isPending && encontrados.length === 0 && (

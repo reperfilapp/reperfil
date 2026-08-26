@@ -45,7 +45,8 @@ export default function Clientes() {
   // erro ensina a pessoa a desconfiar da tela inteira.
   const podeEditar = podeGerenciarCadastros(perfil)
 
-  const { data: clientes, isPending } = useClientes(true)
+  const [mostrarInativos, setMostrarInativos] = useState(false)
+  const { data: clientes, isPending } = useClientes(mostrarInativos)
   const criar = useCriarCliente()
   const editar = useEditarCliente()
   const desativar = useDesativarCliente()
@@ -143,6 +144,17 @@ export default function Clientes() {
 
           {isPending && <p className="text-texto-suave">Carregando…</p>}
         </>
+      }
+      rodape={
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setMostrarInativos((v) => !v)}
+            className="text-acao-600 text-sm font-medium hover:underline"
+          >
+            {mostrarInativos ? 'Ocultar inativos' : 'Exibir inativos'}
+          </button>
+        </div>
       }
     >
       {!isPending && visiveis.length === 0 && (

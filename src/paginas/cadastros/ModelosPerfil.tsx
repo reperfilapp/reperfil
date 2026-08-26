@@ -19,6 +19,8 @@ import {
   useDesativarModeloPerfil,
   useExcluirModeloPerfil,
   useSincronizarCatalogoCentral,
+  useLinhasCatalogoCentral,
+  useOrdemLinhas,
   filtrarModelos,
   agruparPorLinha,
   SEM_LINHA,
@@ -31,7 +33,7 @@ import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { AlternadorOrdenacao } from '@/componentes/ui/AlternadorOrdenacao'
 import { useNiveisNaUrl } from '@/componentes/useNiveisNaUrl'
-import { ORDENACAO_PADRAO } from '@/dominio/ordenacaoListas'
+import { ORDENACAO_PADRAO, compararPorOrdemLinha } from '@/dominio/ordenacaoListas'
 import { Modal } from '@/componentes/ui/Modal'
 import {
   FormularioModeloPerfil,
@@ -81,7 +83,9 @@ export default function ModelosPerfil() {
   // erro ensina a pessoa a desconfiar da tela inteira.
   const podeEditar = podeGerenciarCadastros(perfil)
 
-  const { data: modelos, isPending } = useModelosPerfil(true)
+  const [mostrarInativos, setMostrarInativos] = useState(false)
+  const { data: modelos, isPending } = useModelosPerfil(mostrarInativos)
+  const { data: ordemLinhas } = useOrdemLinhas()
   const criar = useCriarModeloPerfil()
   const editar = useEditarModeloPerfil()
   const desativar = useDesativarModeloPerfil()
@@ -93,6 +97,8 @@ export default function ModelosPerfil() {
   const { data: organizacao } = useOrganizacao()
   const podeSincronizar = podeEditar && Boolean(organizacao) && !organizacao?.eh_catalogo_central
   const sincronizar = useSincronizarCatalogoCentral()
+  const { data: linhasCentral } = useLinhasCatalogoCentral()
+  const [linhaParaSincronizar, setLinhaParaSincronizar] = useState('')
   const [mensagemSincronizacao, setMensagemSincronizacao] = useState<
     string | null
   >(null)
@@ -100,14 +106,16 @@ export default function ModelosPerfil() {
     null,
   )
 
-  async function aoSincronizar() {
+  async function aoSincronizar(linha?: string) {
     setErroSincronizacao(null)
     setMensagemSincronizacao(null)
 
     try {
-      const resultado = await sincronizar.mutateAsync()
+      const resultado = await sincronizar.mutateAsync(linha)
       setMensagemSincronizacao(
-        `${resultado.perfis_novos} perfis novos, ${resultado.perfis_atualizados} atualizados.`,
+        linha
+          ? `"${linha}": ${resultado.perfis_novos} perfis novos, ${resultado.perfis_atualizados} atualizados.`
+          : `${resultado.perfis_novos} perfis novos, ${resultado.perfis_atualizados} atualizados.`,
       )
     } catch (e) {
       setErroSincronizacao(
@@ -212,11 +220,7 @@ export default function ModelosPerfil() {
       if (a.linha === SEM_LINHA) return 1
       if (b.linha === SEM_LINHA) return -1
 
-      const porTamanho = maiorPrimeiro(a.resumo, b.resumo)
-
-      return porTamanho !== 0
-        ? porTamanho
-        : a.linha.localeCompare(b.linha, 'pt-BR')
+      return compararPorOrdemLinha(a.linha, b.linha, ordemLinhas ?? new Map())
     })
 
   // Buscando: mostra o resultado, venha de que linha vier. Senão, respeita
@@ -321,32 +325,66 @@ export default function ModelosPerfil() {
         <>
           <BotaoVoltar para="/mais" rotulo="Mais" className="mb-4" />
 
-          <header className="mb-5 flex items-start justify-between gap-4">
-            <div>
+          <header className="mb-3 flex items-start justify-between gap-4">
+            <div className="min-w-0">
               <h1 className="text-2xl font-bold">Modelos de perfil</h1>
               <p className="text-texto-suave mt-1">
                 O catálogo que as sobras, os orçamentos e as obras usam.
               </p>
             </div>
-            <div className="flex shrink-0 gap-2">
-              {podeSincronizar && (
-                <Botao
-                  variante="secundaria"
-                  onClick={() => void aoSincronizar()}
-                  carregando={sincronizar.isPending}
-                >
-                  <RefreshCw aria-hidden="true" className="size-5" />
-                  Atualização geral
-                </Botao>
-              )}
-              {podeEditar && (
-                <Botao onClick={abrirNovo}>
-                  <Plus aria-hidden="true" className="size-5" />
-                  Novo
-                </Botao>
-              )}
-            </div>
+            {podeEditar && (
+              <Botao onClick={abrirNovo} className="shrink-0">
+                <Plus aria-hidden="true" className="size-5" />
+                Novo
+              </Botao>
+            )}
           </header>
+
+          {/* Linha própria, abaixo do cabeçalho: ao lado do título e do
+              "Novo", "Atualização geral" espremia o texto explicativo em
+              telas estreitas — o celular é justamente onde este botão mais
+              se usa. */}
+          {podeSincronizar && (
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <Botao
+                variante="secundaria"
+                tamanho="pequeno"
+                onClick={() => void aoSincronizar()}
+                carregando={sincronizar.isPending && linhaParaSincronizar === ''}
+              >
+                <RefreshCw aria-hidden="true" className="size-4" />
+                Atualização geral
+              </Botao>
+
+              {/* Sincronizar uma linha só, em vez do catálogo inteiro — serve
+                  tanto para atualizar uma linha que a empresa já tem quanto
+                  para importar uma que ainda não tem nenhum perfil. Só lista
+                  as linhas que a central liberou. */}
+              <select
+                value={linhaParaSincronizar}
+                onChange={(e) => setLinhaParaSincronizar(e.target.value)}
+                className="border-borda bg-superficie hover:bg-superficie-2 min-h-10 max-w-40 flex-1 rounded-xl border-2 px-3 text-sm outline-none"
+              >
+                <option value="">Sincronizar uma linha…</option>
+                {linhasCentral
+                  ?.filter((l) => l.disponivel)
+                  .map((l) => (
+                    <option key={l.linha} value={l.linha}>
+                      {l.linha}
+                    </option>
+                  ))}
+              </select>
+              <Botao
+                variante="secundaria"
+                tamanho="pequeno"
+                disabled={linhaParaSincronizar === ''}
+                carregando={sincronizar.isPending && linhaParaSincronizar !== ''}
+                onClick={() => void aoSincronizar(linhaParaSincronizar)}
+              >
+                Atualizar
+              </Botao>
+            </div>
+          )}
 
           {(mensagemSincronizacao || erroSincronizacao) && (
             <p
@@ -421,15 +459,24 @@ export default function ModelosPerfil() {
         </>
       }
       rodape={
-        !isPending && mostrandoLinhas && grupos.length > 0 ? (
+        <div className="flex items-center justify-center gap-4">
+          {!isPending && mostrandoLinhas && grupos.length > 0 && (
+            <button
+              type="button"
+              onClick={() => abrir({ linha: TODAS })}
+              className="text-acao-600 text-sm font-medium hover:underline"
+            >
+              Ver todos os perfis
+            </button>
+          )}
           <button
             type="button"
-            onClick={() => abrir({ linha: TODAS })}
-            className="text-acao-600 mx-auto block shrink-0 pb-2 text-sm font-medium hover:underline"
+            onClick={() => setMostrarInativos((v) => !v)}
+            className="text-acao-600 text-sm font-medium hover:underline"
           >
-            Ver todos os perfis
+            {mostrarInativos ? 'Ocultar inativos' : 'Exibir inativos'}
           </button>
-        ) : undefined
+        </div>
       }
     >
       {/* Lista de linhas: a porta de entrada do catálogo. */}

@@ -41,7 +41,8 @@ export default function Localizacoes() {
   // erro ensina a pessoa a desconfiar da tela inteira.
   const podeEditar = podeGerenciarCadastros(perfil)
 
-  const { data: locais, isPending } = useLocalizacoes(true)
+  const [mostrarInativos, setMostrarInativos] = useState(false)
+  const { data: locais, isPending } = useLocalizacoes(mostrarInativos)
   const criar = useCriarLocalizacao()
   const editar = useEditarLocalizacao()
   const desativar = useDesativarLocalizacao()
@@ -119,6 +120,17 @@ export default function Localizacoes() {
 
           {isPending && <p className="text-texto-suave">Carregando…</p>}
         </>
+      }
+      rodape={
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setMostrarInativos((v) => !v)}
+            className="text-acao-600 text-sm font-medium hover:underline"
+          >
+            {mostrarInativos ? 'Ocultar inativos' : 'Exibir inativos'}
+          </button>
+        </div>
       }
     >
       {locais?.length === 0 && (

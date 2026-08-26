@@ -221,6 +221,17 @@ export default function Colaboradores() {
           {isPending && <p className="text-texto-suave">Carregando…</p>}
         </>
       }
+      rodape={
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setMostrarInativos((v) => !v)}
+            className="text-acao-600 text-sm font-medium hover:underline"
+          >
+            {mostrarInativos ? 'Ocultar inativos' : 'Exibir inativos'}
+          </button>
+        </div>
+      }
     >
       {convites && convites.length > 0 && (
         <section className="mb-4">
@@ -326,14 +337,6 @@ export default function Colaboradores() {
           )
         })}
       </ul>
-
-      {/* No fim da lista, e não no cabeçalho: desligado é exceção, e quem
-          procura por um já leu a lista inteira sem achar. */}
-      <div className="mt-3 flex justify-center">
-        <Botao variante="texto" onClick={() => setMostrarInativos((v) => !v)}>
-          {mostrarInativos ? 'Ocultar inativos' : 'Exibir inativos'}
-        </Botao>
-      </div>
 
       <Modal
         aberto={aberto}

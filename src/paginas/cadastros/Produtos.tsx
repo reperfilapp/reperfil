@@ -1,12 +1,19 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Pencil, Archive, ArchiveRestore } from 'lucide-react'
+import {
+  Plus,
+  Pencil,
+  Archive,
+  ArchiveRestore,
+  Trash2,
+} from 'lucide-react'
 import {
   useProdutos,
   useCapasProdutos,
   useCriarProduto,
   useEditarProduto,
   useDesativarProduto,
+  useExcluirProduto,
   type DadosProduto,
 } from '@/dados/produtos'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
@@ -36,11 +43,13 @@ export default function Produtos() {
   const { perfil } = useAutenticacao()
   const podeEditar = podeGerenciarCadastros(perfil)
 
-  const { data: produtos, isPending } = useProdutos(true)
+  const [mostrarInativos, setMostrarInativos] = useState(false)
+  const { data: produtos, isPending } = useProdutos(mostrarInativos)
   const { data: capas } = useCapasProdutos()
   const criar = useCriarProduto()
   const editar = useEditarProduto()
   const desativar = useDesativarProduto()
+  const excluir = useExcluirProduto()
 
   const navegar = useNavigate()
 
@@ -50,6 +59,8 @@ export default function Produtos() {
   const [erro, setErro] = useState<string | null>(null)
   /** Produto cujo desenho está aberto em tela cheia. */
   const [ampliado, setAmpliado] = useState<Produto | null>(null)
+  const [apagando, setApagando] = useState<Produto | null>(null)
+  const [erroApagar, setErroApagar] = useState<string | null>(null)
 
   function abrirNovo() {
     setEditando(null)
@@ -129,6 +140,17 @@ export default function Produtos() {
 
           {isPending && <p className="text-texto-suave">Carregando…</p>}
         </>
+      }
+      rodape={
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setMostrarInativos((v) => !v)}
+            className="text-acao-600 text-sm font-medium hover:underline"
+          >
+            {mostrarInativos ? 'Ocultar inativos' : 'Exibir inativos'}
+          </button>
+        </div>
       }
     >
       {produtos?.length === 0 && (
@@ -223,6 +245,20 @@ export default function Produtos() {
                         <ArchiveRestore aria-hidden="true" className="size-4" />
                       )}
                     </Botao>
+
+                    <Botao
+                      tamanho="icone_pequeno"
+                      variante="contorno"
+                      onClick={() => {
+                        setApagando(produto)
+                        setErroApagar(null)
+                      }}
+                      aria-label={`Apagar ${produto.nome}`}
+                      title="Apagar"
+                      className="border-erro-200 text-erro-600 hover:bg-erro-50 hover:border-erro-300 hover:text-erro-700"
+                    >
+                      <Trash2 aria-hidden="true" className="size-4" />
+                    </Botao>
                   </div>
                 )}
               </div>
@@ -230,6 +266,60 @@ export default function Produtos() {
           </li>
         ))}
       </ul>
+
+      <Modal
+        aberto={apagando !== null}
+        aoFechar={() => setApagando(null)}
+        titulo="Apagar produto"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm">
+            Apagar <strong>{apagando?.nome}</strong> de vez — a lista técnica
+            dele some junto. Diferente de desativar, não há como desfazer.
+          </p>
+
+          {erroApagar && (
+            <p
+              role="alert"
+              className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm"
+            >
+              {erroApagar}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <Botao
+              variante="contorno"
+              onClick={() => setApagando(null)}
+              className="flex-1"
+            >
+              Cancelar
+            </Botao>
+            <Botao
+              variante="destrutiva"
+              carregando={excluir.isPending}
+              onClick={async () => {
+                if (!apagando) return
+
+                setErroApagar(null)
+
+                try {
+                  await excluir.mutateAsync(apagando.id)
+                  setApagando(null)
+                } catch (e) {
+                  setErroApagar(
+                    e instanceof Error ? e.message : 'Não foi possível apagar.',
+                  )
+                }
+              }}
+              className="flex-1"
+            >
+              <Trash2 aria-hidden="true" className="size-4" />
+              Apagar
+            </Botao>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         aberto={aberto}

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { Search, ChevronRight, Layers, Camera } from 'lucide-react'
 import {
   useModelosPerfil,
+  useOrdemLinhas,
   filtrarModelos,
   agruparPorLinha,
   SEM_LINHA,
@@ -22,7 +23,7 @@ import { VisualizadorImagem } from './ui/VisualizadorImagem'
 import { BotaoVoltar } from './ui/BotaoVoltar'
 import { AlternadorOrdenacao } from './ui/AlternadorOrdenacao'
 import { useNiveisNaUrl } from './useNiveisNaUrl'
-import { ORDENACAO_PADRAO } from '@/dominio/ordenacaoListas'
+import { ORDENACAO_PADRAO, compararPorOrdemLinha } from '@/dominio/ordenacaoListas'
 
 import type { ModeloPerfil } from '@/tipos/banco'
 
@@ -54,6 +55,7 @@ export function SeletorPerfil({
   const navegar = useNavigate()
   const local = useLocation()
   const { data: modelos, isPending } = useModelosPerfil()
+  const { data: ordemLinhas } = useOrdemLinhas()
   const { data: capas } = useCapasDesenhos('imagem')
   const { data: sobras } = useSobras()
   const [busca, setBusca] = useState('')
@@ -101,11 +103,7 @@ export function SeletorPerfil({
       if (a.linha === SEM_LINHA) return 1
       if (b.linha === SEM_LINHA) return -1
 
-      const porTamanho = maiorPrimeiro(a.resumo, b.resumo)
-
-      return porTamanho !== 0
-        ? porTamanho
-        : a.linha.localeCompare(b.linha, 'pt-BR')
+      return compararPorOrdemLinha(a.linha, b.linha, ordemLinhas ?? new Map())
     })
 
   const visiveis =

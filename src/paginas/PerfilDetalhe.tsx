@@ -103,7 +103,7 @@ export default function PerfilDetalhe() {
     setMensagemCentral(null)
 
     try {
-      await sincronizar.mutateAsync()
+      await sincronizar.mutateAsync(undefined)
       setMensagemCentral('Perfil atualizado com os dados do catálogo central.')
     } catch (e) {
       setErroCentral(e instanceof Error ? e.message : 'Não foi possível atualizar.')

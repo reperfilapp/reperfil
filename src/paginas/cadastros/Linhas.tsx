@@ -1,12 +1,25 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { Pencil, Layers, ChevronRight, AlertTriangle } from 'lucide-react'
+import {
+  Pencil,
+  Layers,
+  ChevronRight,
+  AlertTriangle,
+  ChevronUp,
+  ChevronDown,
+} from 'lucide-react'
 import {
   useModelosPerfil,
   useRenomearLinha,
+  useOrganizacoesParaLiberacao,
+  useDefinirLiberacaoLinha,
+  useDefinirLiberacaoLinhaTodas,
+  useOrdemLinhas,
+  useReordenarLinhas,
   agruparPorLinha,
   SEM_LINHA,
 } from '@/dados/modelosPerfil'
+import { useOrganizacao } from '@/dados/organizacao'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeGerenciarCadastros } from '@/autenticacao/contexto'
 import { useSobras } from '@/dados/sobras'
@@ -19,10 +32,14 @@ import {
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { AlternadorOrdenacao } from '@/componentes/ui/AlternadorOrdenacao'
-import { ORDENACAO_PADRAO } from '@/dominio/ordenacaoListas'
+import {
+  compararPorOrdemLinha,
+  type EstadoOrdenacaoLista,
+} from '@/dominio/ordenacaoListas'
 import { CampoSugestao } from '@/componentes/ui/CampoSugestao'
 import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
+import { cn } from '@/lib/utilitarios'
 
 /**
  * Revisão das linhas (ou sistemas) usadas pelos perfis.
@@ -53,11 +70,32 @@ export default function Linhas() {
   const { data: sobras } = useSobras()
   const renomear = useRenomearLinha()
 
+  // Liberação por empresa: só existe de verdade na organização central —
+  // é ela quem decide, linha a linha, quem mais pode importar/atualizar.
+  const { data: organizacao } = useOrganizacao()
+  const souCentral = Boolean(organizacao?.eh_catalogo_central)
+
   const [editando, setEditando] = useState<string | null>(null)
   const [novoNome, setNovoNome] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [resultado, setResultado] = useState<string | null>(null)
-  const [ordenacao, setOrdenacao] = useState(ORDENACAO_PADRAO)
+
+  const { data: organizacoesLiberacao } = useOrganizacoesParaLiberacao(
+    souCentral ? editando : null,
+  )
+  const liberar = useDefinirLiberacaoLinha()
+  const liberarTodas = useDefinirLiberacaoLinhaTodas()
+
+  // 'manual' é o padrão: a ordem que o administrador definiu arrastando,
+  // aqui mesmo. Os dois botões de ordenar continuam existindo, mas como
+  // troca TEMPORÁRIA — o estado vive só nesta tela (`useState`), então sair
+  // e voltar restaura a ordem manual sozinho.
+  const [ordenacao, setOrdenacao] = useState<EstadoOrdenacaoLista>({
+    criterio: 'manual',
+    decrescente: false,
+  })
+  const { data: ordemLinhas } = useOrdemLinhas()
+  const reordenar = useReordenarLinhas()
 
   // Mesma ordem do resto do app: quem tem mais estoque primeiro. Aqui a
   // lista serve para faxina de nomes repetidos, e a linha com material é a
@@ -78,17 +116,55 @@ export default function Linhas() {
         return ordenacao.decrescente ? -porNome : porNome
       }
 
-      const porTamanho = maiorPrimeiro(a.resumo, b.resumo)
-      const porEstoque = ordenacao.decrescente ? porTamanho : -porTamanho
+      if (ordenacao.criterio === 'estoque') {
+        const porTamanho = maiorPrimeiro(a.resumo, b.resumo)
+        const porEstoque = ordenacao.decrescente ? porTamanho : -porTamanho
 
-      return porEstoque !== 0
-        ? porEstoque
-        : a.linha.localeCompare(b.linha, 'pt-BR')
+        return porEstoque !== 0
+          ? porEstoque
+          : a.linha.localeCompare(b.linha, 'pt-BR')
+      }
+
+      // 'manual': a ordem definida pelas setas de mover.
+      return compararPorOrdemLinha(a.linha, b.linha, ordemLinhas ?? new Map())
     })
   // "Sem linha" não é uma linha: é a ausência dela. Renomear ali significaria
   // atribuir linha a perfis que não têm, que é trabalho do cadastro do
   // perfil, um a um, com o desenho à vista.
   const renomeaveis = grupos.filter((g) => g.linha !== SEM_LINHA)
+
+  /*
+   * Mover sempre define uma ordem manual nova, mesmo que a tela esteja
+   * temporariamente mostrando por nome ou por estoque — o clique grava a
+   * sequência atual (a que se está vendo), com a linha já na posição
+   * nova, como a nova ordem manual, e a tela volta a mostrá-la sozinha
+   * (troca de volta para 'manual').
+   *
+   * Setas em vez de arrastar: arrastar exige medir a posição de cada linha
+   * e acompanhar o dedo em tempo real, o que fica frágil dentro de uma
+   * lista que já rola por conta própria (esta tela usa `PaginaLista`) — em
+   * celular de verdade, os dois gestos disputam o toque. Duas setas não
+   * têm ambiguidade nenhuma: um toque, uma troca, sempre — mas suba de
+   * pouco em pouco não ajuda quem precisa levar a linha 100 para a
+   * primeira posição. O seletor de posição, entre as duas setas, resolve
+   * esse salto grande num toque só.
+   */
+  function moverLinhaPara(indiceAtual: number, destino: number) {
+    if (destino < 0 || destino >= renomeaveis.length || destino === indiceAtual)
+      return
+
+    const ordem = renomeaveis.map((g) => g.linha)
+    const [linha] = ordem.splice(indiceAtual, 1)
+    if (linha === undefined) return
+    ordem.splice(destino, 0, linha)
+
+    setOrdenacao({ criterio: 'manual', decrescente: false })
+    void reordenar.mutateAsync(ordem)
+  }
+
+  function moverLinha(indice: number, direcao: -1 | 1) {
+    moverLinhaPara(indice, indice + direcao)
+  }
 
   const nomesExistentes = new Set(renomeaveis.map((g) => g.linha))
   const alvo = novoNome.trim()
@@ -162,6 +238,19 @@ export default function Linhas() {
             />
           </header>
 
+          {/* Outro ângulo da mesma liberação de "Editar linha": aqui se
+              escolhe a EMPRESA e se decide quais linhas ela vê; lá se
+              escolhe a LINHA e se decide quais empresas veem. Só faz
+              sentido para quem administra o catálogo central. */}
+          {souCentral && (
+            <Link
+              to="/linhas/empresas"
+              className="border-borda bg-superficie hover:bg-superficie-2 mb-4 flex min-h-12 items-center justify-center gap-2 rounded-xl border-2 text-sm font-semibold"
+            >
+              Administrar linhas por empresa
+            </Link>
+          )}
+
           {resultado && (
             <p
               role="status"
@@ -183,11 +272,70 @@ export default function Linhas() {
       )}
 
       <ul className="flex flex-col gap-2">
-        {renomeaveis.map(({ linha, modelos: daLinha, resumo }) => (
+        {renomeaveis.map(({ linha, modelos: daLinha, resumo }, indice) => (
           <li
             key={linha}
-            className="bg-celula border-borda flex items-center gap-3 rounded-xl border-2 p-4 shadow-sm"
+            className="bg-celula border-borda flex items-center gap-2 rounded-xl border-2 p-4 shadow-sm"
           >
+            {podeEditar && (
+              <div className="flex shrink-0 flex-col items-center gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => moverLinha(indice, -1)}
+                  disabled={indice === 0 || reordenar.isPending}
+                  aria-label={`Mover ${linha} para cima`}
+                  title="Mover para cima"
+                  className="text-acao-700 hover:text-acao-800 flex h-3.5 w-6 items-center justify-center disabled:opacity-30"
+                >
+                  <ChevronUp aria-hidden="true" className="size-4" strokeWidth={2.5} />
+                </button>
+
+                {/* Pular direto para uma posição — as setas resolvem mover
+                    uma casa, mas levar a linha 100 para a primeira não devia
+                    exigir 99 toques. O `<select>` de verdade cobre a
+                    pílula INTEIRA (transparente, por cima do número e da
+                    setinha) — clicar em qualquer ponto dela abre a roda de
+                    seleção do sistema; número e seta são só o desenho por
+                    baixo, sem clique próprio (`pointer-events-none`). Sem
+                    isso, só clicar exatamente sobre o número abria. */}
+                <div className="bg-acao-100 relative flex items-center gap-0.5 rounded-full px-1.5 py-0.5">
+                  <select
+                    value={indice + 1}
+                    onChange={(e) =>
+                      moverLinhaPara(indice, Number(e.target.value) - 1)
+                    }
+                    disabled={reordenar.isPending}
+                    aria-label={`Posição de ${linha} na lista, de ${renomeaveis.length}`}
+                    className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0 disabled:cursor-default"
+                  >
+                    {renomeaveis.map((_, i) => (
+                      <option key={i} value={i + 1}>
+                        {i + 1}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-acao-800 pointer-events-none w-5 text-center text-[0.65rem] leading-none font-semibold">
+                    {indice + 1}
+                  </span>
+                  <ChevronDown
+                    aria-hidden="true"
+                    className="text-acao-700 pointer-events-none size-2.5 shrink-0"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => moverLinha(indice, 1)}
+                  disabled={indice === renomeaveis.length - 1 || reordenar.isPending}
+                  aria-label={`Mover ${linha} para baixo`}
+                  title="Mover para baixo"
+                  className="text-acao-700 hover:text-acao-800 flex h-3.5 w-6 items-center justify-center disabled:opacity-30"
+                >
+                  <ChevronDown aria-hidden="true" className="size-4" strokeWidth={2.5} />
+                </button>
+              </div>
+            )}
+
             <Layers
               aria-hidden="true"
               className="text-acao-600 size-5 shrink-0"
@@ -196,7 +344,7 @@ export default function Linhas() {
             <div className="min-w-0 flex-1">
               <Link
                 to={`/perfis?linha=${encodeURIComponent(linha)}`}
-                className="block truncate text-lg font-medium hover:underline"
+                className="block text-lg font-medium hover:underline"
               >
                 {linha}
               </Link>
@@ -210,7 +358,7 @@ export default function Linhas() {
               <Botao
                 variante="secundaria"
                 onClick={() => abrirEdicao(linha)}
-                aria-label={`Renomear ${linha}`}
+                aria-label={`Editar ${linha}`}
               >
                 <Pencil aria-hidden="true" className="size-4" />
               </Botao>
@@ -237,7 +385,7 @@ export default function Linhas() {
       <Modal
         aberto={editando !== null}
         aoFechar={() => setEditando(null)}
-        titulo="Renomear linha"
+        titulo="Editar linha"
       >
         <form onSubmit={aoEnviar} className="flex flex-col gap-4" noValidate>
           {/* Sugere as outras linhas: para juntar duas, escolher da lista é
@@ -294,6 +442,88 @@ export default function Linhas() {
             </Botao>
           </div>
         </form>
+
+        {/* Só a organização central negocia isto — quais empresas podem
+            importar/atualizar esta linha do catálogo central. Fora daqui,
+            uma linha nova ou uma empresa nova começam SEM liberação: quem
+            administra o central decide caso a caso. */}
+        {souCentral && editando && (
+          <div className="border-borda mt-5 border-t pt-4">
+            <p className="font-medium">Liberada para</p>
+            <p className="text-texto-suave mt-0.5 mb-3 text-sm">
+              Quais empresas podem importar ou atualizar esta linha do
+              catálogo central.
+            </p>
+
+            <div className="mb-3 flex gap-2">
+              <Botao
+                variante="secundaria"
+                tamanho="pequeno"
+                onClick={() =>
+                  void liberarTodas.mutateAsync({
+                    linha: editando,
+                    liberada: true,
+                  })
+                }
+                carregando={liberarTodas.isPending}
+                className="flex-1"
+              >
+                Liberar para todas
+              </Botao>
+              <Botao
+                variante="secundaria"
+                tamanho="pequeno"
+                onClick={() =>
+                  void liberarTodas.mutateAsync({
+                    linha: editando,
+                    liberada: false,
+                  })
+                }
+                carregando={liberarTodas.isPending}
+                className="flex-1"
+              >
+                Bloquear todas
+              </Botao>
+            </div>
+
+            <ul className="flex max-h-56 flex-col gap-1.5 overflow-y-auto">
+              {organizacoesLiberacao?.map((o) => (
+                <li
+                  key={o.organizacao_id}
+                  className="bg-superficie-2 flex items-center justify-between gap-2 rounded-lg px-3 py-2"
+                >
+                  <span className="min-w-0 flex-1 truncate text-sm">
+                    {o.nome_fantasia}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void liberar.mutateAsync({
+                        linha: editando,
+                        organizacaoId: o.organizacao_id,
+                        liberada: !o.liberada,
+                      })
+                    }
+                    disabled={liberar.isPending}
+                    className={cn(
+                      'shrink-0 rounded-full px-2.5 py-1 text-xs font-medium',
+                      o.liberada
+                        ? 'bg-economia-50 text-economia-700 hover:bg-economia-100'
+                        : 'bg-atencao-50 text-atencao-700 hover:bg-atencao-100',
+                    )}
+                  >
+                    {o.liberada ? 'Liberada' : 'Bloqueada'}
+                  </button>
+                </li>
+              ))}
+              {organizacoesLiberacao?.length === 0 && (
+                <li className="text-texto-suave text-sm">
+                  Nenhuma outra empresa cadastrada ainda.
+                </li>
+              )}
+            </ul>
+          </div>
+        )}
       </Modal>
     </PaginaLista>
   )

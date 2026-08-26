@@ -78,6 +78,259 @@ servindo do cache por esse tempo, agora com os dados errados. Corrigido
 limpando todo o cache ao sair — fecha essa brecha pela raiz, não só para
 esta consulta.
 
+## 1.7.41 — 28/08/2026
+
+**Ícone da barra inferior voltou a ser a tesoura.**
+
+As duas tentativas de desenhar uma serra do zero (disco dentado, depois
+serra de bancada) não ficaram parecidas com o que você tinha em mente.
+Voltou a tesoura original em "Utilizar" — você vai construir o ícone
+certo e mandar para eu aplicar.
+
+---
+
+## 1.7.40 — 28/08/2026
+
+**Corrigido: "Administrar linhas por empresa" ficava em branco depois da
+migração anterior.**
+
+A migração 1.7.39 quebrou essa tela — a lista de linhas, depois de
+escolher a empresa, não aparecia. Causa: a função `linhas_para_organizacao`
+é escrita em PL/pgSQL, e declara uma coluna de saída chamada `linha`; uma
+sub-consulta interna referenciava `modelos_perfil.linha` sem qualificar
+com o nome da tabela, e o Postgres não sabia se era a coluna ou a
+variável da própria função — erro "column reference is ambiguous".
+Corrigido qualificando toda referência. Testado direto no navegador antes
+de mandar, chamando a função pelo cliente Supabase da própria página.
+
+---
+
+## 1.7.39 — 28/08/2026
+
+**Corrigido: ordem manual não valia dentro de "Administrar linhas por
+empresa" nem no seletor de sincronizar uma linha.**
+
+Essas duas listas (linhas do catálogo central) ainda ordenavam só por
+alfabeto, ignorando a ordem manual definida em "Linhas e sistemas". Agora
+respeitam — a ordem manual é da organização central (é o catálogo dela
+sendo mostrado nos dois casos), então é a dela que vale, em qualquer tela
+que liste essas linhas. Precisa da migração.
+
+---
+
+## 1.7.38 — 28/08/2026
+
+**Redesenhado o controle de posição em "Linhas e sistemas" + ícone de
+serra na barra inferior.**
+
+As setas de mover para cima/baixo agora ficam SOLTAS, fora da pílula —
+azul forte, sem fundo. A pílula azul clara envolve só o número da posição,
+com uma setinha pequena ao lado indicando que é clicável (abre a lista de
+posições). Tudo isso cabe na mesma altura de cartão que já existia, sem
+esticar nada — conferido direto no navegador desta vez.
+
+Corrigido também: clicar bem em cima da setinha não abria a lista, só
+clicando exatamente sobre o número — o `<select>` de verdade só cobria a
+área do número, a setinha ao lado era só um desenho separado. Agora o
+`<select>` (invisível) cobre a pílula inteira, incluindo a seta; o que se
+vê (número + seta) é só o desenho por baixo.
+
+E o nome da linha deixou de cortar com "..." quando não cabia numa linha
+só — agora quebra em duas linhas (ou mais) e mostra o nome inteiro
+sempre, mesmo que o cartão cresça um pouco para acomodar.
+
+Na barra de navegação, a tesoura de "Utilizar" virou um disco de serra —
+o lucide-react não tem um ícone de serra pronto (só machado, furadeira,
+martelo), então desenhei um do zero no mesmo traço dos demais ícones do
+app. Fica mais fiel ao que o app faz: cortar perfil de alumínio.
+
+---
+
+## 1.7.37 — 28/08/2026
+
+**Seletor de posição entre as setas — pula direto para qualquer lugar da
+lista.**
+
+As setas resolvem mover uma linha uma casa por vez, mas levar a última
+posição de uma lista de 100 linhas para a primeira exigiria 99 toques.
+Agora, entre as duas setas, um número mostra a posição atual — toque nele
+e escolhe direto qualquer posição da lista. É um `select` nativo: no
+celular abre a roda de seleção do próprio sistema, que já rola sozinha
+mesmo com muitas linhas, sem nada extra para construir.
+
+---
+
+## 1.7.36 — 28/08/2026
+
+**Trocado arrastar-e-soltar por setas de mover, em "Linhas e sistemas".**
+
+O arrastar era lento pra gravar e às vezes precisava de várias tentativas
+para "pegar" — dois problemas de causas diferentes:
+
+1. Cada arrasto gravava a lista inteira em N pedidos separados ao banco,
+   um por linha, em vez de um pedido só. Corrigido: agora é um upsert em
+   lote, um pedido só, não importa quantas linhas existam.
+2. O gesto de arrastar em si é frágil dentro de uma lista que já rola
+   sozinha — celular de verdade tenta interpretar o mesmo toque como
+   arrastar E como rolar a tela, e um vence o outro por sorte.
+
+Em vez de tentar afinar o arrasto, troquei por duas setinhas em cada
+linha (subir/descer uma posição por toque), sem ambiguidade nenhuma. Não
+precisa de migração — mesma tabela e mesma mutação de antes, só a tela
+mudou.
+
+---
+
+## 1.7.35 — 28/08/2026
+
+**Rodapé das listas: "Ver todos" e "Exibir inativos" na mesma linha, mais
+compacto.**
+
+Em Modelos de perfil, os dois links do rodapé ficavam empilhados com um
+vão grande entre eles — o botão de "Exibir inativos" usava um componente
+com bem mais preenchimento que o link "Ver todos os perfis" ao lado.
+Agora os dois ficam na mesma linha, com a mesma fonte (tamanho, peso, cor)
+e só o espaço de uma linha de altura. Mesma correção nas demais telas com
+"Exibir inativos" no rodapé: Produtos, Equipe, Clientes, Cores e
+acabamentos, Localizações e Acessórios.
+
+---
+
+## 1.7.34 — 28/08/2026
+
+**Ordem manual das linhas — arraste para reordenar em "Linhas e sistemas".**
+
+Nova alça de arrastar (ícone ⋮⋮) em cada linha, em "Linhas e sistemas".
+A sequência que você definir vira a ordem PADRÃO em toda tela do app que
+agrupa por linha — catálogo, seletor de perfil, estoque, identificar
+perfil. Os dois botões de ordenar (nome/estoque) continuam lá, mas agora
+são uma troca temporária: escolher um deles só vale enquanto você está
+na tela; sair e voltar restaura a ordem manual. Linha nova (ainda sem
+posição definida) entra depois de todas as ordenadas, em ordem alfabética.
+
+Precisa da migração.
+
+---
+
+## 1.7.33 — 27/08/2026
+
+**"Exibir inativos" padronizado em todas as telas de cadastro.**
+
+O botão vivia dentro do quadro principal da lista (às vezes sobrando
+sozinho num espaço vazio, como em Produtos). Agora fica sempre no rodapé
+fixo da tela, fora do quadro — igual já era em "Ver todos os perfis".
+Mudou em Produtos, Equipe, Modelos de perfil, Clientes, Cores e
+acabamentos, Localizações e Acessórios.
+
+De quebra, quatro dessas telas (Clientes, Acabamentos, Localizações,
+Modelos de perfil) nunca tinham esse filtro — misturavam ativos e
+inativos direto na lista, sem opção de esconder. Agora escondem os
+inativos por padrão, como as demais.
+
+---
+
+## 1.7.32 — 27/08/2026
+
+**Nova tela "Administrar linhas por empresa" (catálogo central).**
+
+Em "Linhas e sistemas", logo abaixo do texto explicativo, um novo botão
+"Administrar linhas por empresa" (só para quem administra o catálogo
+central) abre uma tela onde se escolhe a EMPRESA primeiro, e depois quais
+linhas ela pode importar/atualizar — com atalho "Liberar/Bloquear todas as
+linhas" de uma vez. É o mesmo mecanismo de "Editar linha" (que escolhe a
+linha primeiro), só que pelo ângulo contrário; os dois mexem na mesma
+liberação por trás, então uma mudança num lugar aparece automaticamente
+no outro.
+
+Confirmado também: bloquear uma linha para uma empresa nunca apaga o que
+ela já copiou — só impede importar perfil novo ou receber atualização
+daquela linha dali para frente. O catálogo que a empresa já trouxe
+continua exatamente como estava.
+
+---
+
+## 1.7.31 — 27/08/2026
+
+**Liberação de linha refeita: por empresa, não mais geral.**
+
+O bloqueio "Disponível"/"Bloqueada" que apareceu ontem em "Modelos de
+perfil" saiu de lá. Agora vive dentro de "Editar linha" (renomeado de
+"Renomear linha"), em Linhas e sistemas — só visível para quem administra
+o catálogo central. Em vez de ligar/desligar a linha para todo mundo de
+uma vez, dá para liberar empresa por empresa (com um atalho "Liberar para
+todas"/"Bloquear todas" quando fizer sentido). Precisa da migração —
+substitui o mecanismo anterior por completo.
+
+---
+
+## 1.7.30 — 27/08/2026
+
+**Corrigido: "Apagar produto" não apagava de verdade.**
+
+Faltava a política de segurança que permite o comando de apagar de fato —
+sem ela, o pedido rodava sem erro nenhum, mas o banco recusava
+silenciosamente (zero linhas afetadas), e o produto voltava a aparecer na
+lista. Precisa da migração.
+
+---
+
+## 1.7.29 — 27/08/2026
+
+**Apagar produto, e arquivados escondidos por padrão.**
+
+A tela de Produtos só tinha "desativar". Agora tem também "Apagar" de
+verdade (some com a lista técnica junto — sem como desfazer, com
+confirmação). Produtos desativados deixaram de aparecer na lista por
+padrão; um botão "Exibir inativos" no fim da lista mostra-os quando
+precisar, igual já funciona em Colaboradores e Modelos de perfil.
+
+---
+
+## 1.7.28 — 27/08/2026
+
+**Cabeçalho de "Modelos de perfil" reorganizado + sincronização por linha.**
+
+O botão "Atualização geral" espremia o título e o texto explicativo em
+telas estreitas — agora ele (e o novo seletor de linha) ficam numa faixa
+própria, abaixo do cabeçalho.
+
+Além da atualização geral, agora dá para sincronizar (atualizar ou
+importar) **uma linha só** do catálogo central, em vez do catálogo
+inteiro. E quem administra a organização central ganhou um botão
+"Disponível"/"Bloqueada" em cada linha, na lista de linhas — decide,
+linha a linha, se ela pode ser importada pelas demais empresas (é
+negociação comercial, não trava nada por padrão: toda linha começa
+disponível).
+
+---
+
+## 1.7.27 — 27/08/2026
+
+**Corrigido: "Atualização geral" quebrava na Alumifort com erro de código
+duplicado.**
+
+O catálogo central nasceu de uma cópia feita a partir da própria Alumifort,
+mas o vínculo com o central só ficou marcado do lado de quem recebeu — os
+368 perfis originais da Alumifort não sabiam que já tinham par lá. A
+sincronização tratava todos eles como "perfil novo" e tentava recriar,
+batendo no código que ela mesma já usava. A função agora nunca tenta
+recriar um código já existente na organização (protege qualquer empresa de
+travar por isso), e um script à parte vincula retroativamente os perfis da
+Alumifort ao catálogo central.
+
+---
+
+## 1.7.26 — 27/08/2026
+
+**Corrigido: reenviar convite invalidava o link de e-mail anterior.**
+
+Reenviar um convite recriava a linha com um id novo — quem tinha recebido
+o e-mail de convite ORIGINAL (de verdade, mas com o id antigo) ficava
+travado na tela "Confirme seu e-mail" no cadastro, mesmo tendo entrado por
+um link legítimo. Agora o reenvio mantém o mesmo id de sempre: qualquer
+e-mail de convite já mandado para aquele endereço, deste envio ou de
+reenvios anteriores, confirma o cadastro na hora.
+
 ---
 
 ## 1.7.25 — 27/08/2026

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import {
   obterLinksTemporarios,
   apagarImagem,
@@ -165,12 +166,21 @@ export function useRemoverDesenho() {
  * lote inteiro de imagens.
  */
 export function useCapasDesenhos(tipo: TipoImagemPerfil = 'imagem') {
+  const { perfil } = useAutenticacao()
+  const organizacaoId = perfil?.organizacao_id ?? null
+
   return useQuery({
-    queryKey: ['capas-perfil', tipo],
+    queryKey: ['capas-perfil', tipo, organizacaoId],
+    enabled: organizacaoId !== null,
     queryFn: async (): Promise<Map<string, string>> => {
+      // `.eq('organizacao_id', ...)` explícito pelo mesmo motivo de
+      // `useModelosPerfil`: o catálogo central ficou visível por RLS para
+      // quem sincroniza, e sem isto esta consulta trazia também as imagens
+      // de lá, misturadas com as da própria organização.
       const { data, error } = await supabase
         .from('arquivos_vetoriais')
         .select('modelo_perfil_id, arquivo_url, ordem')
+        .eq('organizacao_id', organizacaoId as string)
         .eq('tipo', tipo)
         .order('ordem')
 
