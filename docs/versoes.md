@@ -78,6 +78,33 @@ servindo do cache por esse tempo, agora com os dados errados. Corrigido
 limpando todo o cache ao sair — fecha essa brecha pela raiz, não só para
 esta consulta.
 
+## 1.7.43 — 28/08/2026
+
+**Botões de sincronizar na mesma linha, em Modelos de perfil.**
+
+"Atualização geral", o seletor "Sincronizar uma linha" e "Atualizar"
+quebravam para uma segunda linha em telas estreitas, e o seletor tinha
+uma largura fixa fora do padrão dos botões ao lado. Agora os três dividem
+a linha igualmente (mesma largura), com fonte um pouco menor para caber.
+
+---
+
+## 1.7.42 — 28/08/2026
+
+**Corrigido: a ordem das linhas era por empresa, e devia ser só da
+central.**
+
+A ordem manual (arrastar/setas) tinha uma cópia por organização — em
+teoria, qualquer empresa podia definir a própria, desconectada da
+central. Não devia: é o catálogo central quem manda no que qualquer
+empresa vê, sempre. Agora `linhas_ordem` é uma ordem ÚNICA e global (sem
+`organizacao_id`), definida só pela organização central; as demais
+empresas passam a herdar essa ordem automaticamente, e as setas/pílula de
+mover somem da tela para quem não é a central — só dá pra olhar, não pra
+mudar. Precisa da migração.
+
+---
+
 ## 1.7.41 — 28/08/2026
 
 **Ícone da barra inferior voltou a ser a tesoura.**

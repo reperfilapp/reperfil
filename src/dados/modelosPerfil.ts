@@ -161,9 +161,12 @@ export function agruparPorLinha(
 }
 
 /**
- * Ordem manual de cada linha, definida arrastando em "Linhas e sistemas" —
- * a base de toda ordenação por linha no app (a lista de linhas em si; não
- * mexe na ordem dos perfis dentro de uma linha já aberta).
+ * Ordem manual GLOBAL das linhas — só a organização central define (em
+ * "Linhas e sistemas"), e vale para o catálogo de qualquer empresa. Não é
+ * "a minha ordem", é "a ordem do catálogo"; por isso a tabela não tem
+ * `organizacao_id` nenhum. Base de toda ordenação por linha no app (a
+ * lista de linhas em si; não mexe na ordem dos perfis dentro de uma linha
+ * já aberta).
  */
 export function useOrdemLinhas() {
   return useQuery({
@@ -204,7 +207,7 @@ export function useReordenarLinhas() {
     mutationFn: async (linhasNaOrdem: readonly string[]) => {
       const { error } = await supabase.from('linhas_ordem').upsert(
         linhasNaOrdem.map((linha, indice) => ({ linha, ordem: indice + 1 })),
-        { onConflict: 'organizacao_id,linha' },
+        { onConflict: 'linha' },
       )
 
       if (error) throw new Error(error.message)

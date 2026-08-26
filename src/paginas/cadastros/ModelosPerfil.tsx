@@ -345,27 +345,29 @@ export default function ModelosPerfil() {
               telas estreitas — o celular é justamente onde este botão mais
               se usa. */}
           {podeSincronizar && (
-            <div className="mb-4 flex flex-wrap items-center gap-2">
+            <div className="mb-4 flex items-center gap-1.5">
               <Botao
                 variante="secundaria"
                 tamanho="pequeno"
                 onClick={() => void aoSincronizar()}
                 carregando={sincronizar.isPending && linhaParaSincronizar === ''}
+                className="min-w-0 flex-1 px-2 text-xs"
               >
-                <RefreshCw aria-hidden="true" className="size-4" />
-                Atualização geral
+                <RefreshCw aria-hidden="true" className="size-3.5 shrink-0" />
+                <span className="truncate">Atualização geral</span>
               </Botao>
 
               {/* Sincronizar uma linha só, em vez do catálogo inteiro — serve
                   tanto para atualizar uma linha que a empresa já tem quanto
                   para importar uma que ainda não tem nenhum perfil. Só lista
-                  as linhas que a central liberou. */}
+                  as linhas que a central liberou. Mesma largura dos botões
+                  ao lado (flex-1), não uma largura fixa à parte. */}
               <select
                 value={linhaParaSincronizar}
                 onChange={(e) => setLinhaParaSincronizar(e.target.value)}
-                className="border-borda bg-superficie hover:bg-superficie-2 min-h-10 max-w-40 flex-1 rounded-xl border-2 px-3 text-sm outline-none"
+                className="border-borda bg-superficie hover:bg-superficie-2 min-h-10 min-w-0 flex-1 rounded-xl border-2 px-2 text-xs outline-none"
               >
-                <option value="">Sincronizar uma linha…</option>
+                <option value="">Sincronizar linha…</option>
                 {linhasCentral
                   ?.filter((l) => l.disponivel)
                   .map((l) => (
@@ -380,6 +382,7 @@ export default function ModelosPerfil() {
                 disabled={linhaParaSincronizar === ''}
                 carregando={sincronizar.isPending && linhaParaSincronizar !== ''}
                 onClick={() => void aoSincronizar(linhaParaSincronizar)}
+                className="min-w-0 flex-1 px-2 text-xs"
               >
                 Atualizar
               </Botao>

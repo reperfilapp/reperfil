@@ -277,7 +277,12 @@ export default function Linhas() {
             key={linha}
             className="bg-celula border-borda flex items-center gap-2 rounded-xl border-2 p-4 shadow-sm"
           >
-            {podeEditar && (
+            {/* Só a organização central define a ordem — ela vale para o
+                catálogo de todas as empresas, e só faria sentido uma
+                empresa comum reordenar o PRÓPRIO catálogo se a ordem
+                fosse dela. Não é: é do catálogo central, então só quem o
+                administra decide. */}
+            {souCentral && podeEditar && (
               <div className="flex shrink-0 flex-col items-center gap-0.5">
                 <button
                   type="button"
