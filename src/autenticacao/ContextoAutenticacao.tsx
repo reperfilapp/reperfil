@@ -7,12 +7,14 @@ import {
   type ReactNode,
 } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { registrarAcesso } from '@/dados/colaboradores'
 import type { PerfilUsuario } from '@/tipos/banco'
 import { ContextoAutenticacao, type EstadoAutenticacao } from './contexto'
 
 export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
+  const clienteConsultas = useQueryClient()
   const [sessao, setSessao] = useState<Session | null>(null)
   const [perfil, setPerfil] = useState<PerfilUsuario | null>(null)
   const [carregando, setCarregando] = useState(true)
@@ -108,6 +110,17 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
           perfilAtual.current = null
           setPerfil(null)
           setSemAcesso(false)
+
+          // Sem isto, dado de uma empresa vaza para a próxima que entrar
+          // NA MESMA aba: o React Query guarda cada consulta por uma
+          // chave fixa (ex.: "a organização"), sem saber que a sessão por
+          // trás mudou de gente. Uma consulta com `staleTime` alto (como
+          // os dados da empresa, que "mudam raramente") continua sendo
+          // servida do cache por minutos — agora seriam os dados de uma
+          // empresa diferente da que acabou de entrar. Limpar tudo ao
+          // sair fecha essa brecha pela raiz, em vez de caçar cada
+          // consulta que algum dia ganhar um `staleTime`.
+          clienteConsultas.clear()
         }
       },
     )
@@ -116,7 +129,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
       ativo = false
       assinatura.subscription.unsubscribe()
     }
-  }, [buscarPerfil])
+  }, [buscarPerfil, clienteConsultas])
 
   const entrar = useCallback(
     async (email: string, senha: string) => {

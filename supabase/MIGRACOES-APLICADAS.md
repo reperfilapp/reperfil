@@ -12,7 +12,7 @@ quando o usuário confirmar explicitamente que rodou no Supabase — nunca
 antes, mesmo que a sintaxe já tenha sido validada com `npm run banco:validar`
 (validar sintaxe não é a mesma coisa que já estar aplicada).
 
-## Status em 25/08/2026: três pendentes (confirmacao_envio_convite, expiracao_convite, confirmacao_via_convite)
+## Status em 26/08/2026: quatro pendentes (confirmacao_envio_convite, expiracao_convite, confirmacao_via_convite, catalogo_central)
 
 - [x] 20260815120000_fundacao.sql
 - [x] 20260815120100_cadastros.sql
@@ -59,3 +59,4 @@ antes, mesmo que a sintaxe já tenha sido validada com `npm run banco:validar`
 - [x] 20260825800000_serralheiro_cadastra_estoque.sql
 - [ ] 20260825900000_expiracao_convite.sql — pendente
 - [ ] 20260826100000_confirmacao_via_convite.sql — pendente
+- [ ] 20260826200000_catalogo_central.sql — pendente

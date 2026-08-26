@@ -64,6 +64,36 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.11 — 26/08/2026
+
+**Correção séria: dados de uma empresa vazavam para a próxima, na mesma aba.**
+
+Trocar de conta sem fechar o navegador (sair da RePerfil, entrar como
+Alumifort) mostrava o estoque e a equipe certos, mas o nome da empresa e a
+logo continuavam sendo os da conta anterior. Causa: o React Query guarda
+cada consulta numa "gaveta" fixa (ex.: "a organização"), sem saber que a
+sessão por trás mudou de gente — e a consulta de dados da empresa tem um
+`staleTime` de 5 minutos (porque "muda raramente"), então continuava
+servindo do cache por esse tempo, agora com os dados errados. Corrigido
+limpando todo o cache ao sair — fecha essa brecha pela raiz, não só para
+esta consulta.
+
+---
+
+## 1.7.10 — 26/08/2026
+
+**Base para o catálogo central da RePerfil.**
+
+Coluna `eh_catalogo_central` em organizações (só uma pode ser a central por
+vez), função para achar essa organização, e política de Storage liberando
+a leitura das imagens dela (fotos de perfil, desenhos técnicos, imagens de
+produto) para qualquer empresa autenticada — necessário para o passo
+seguinte, que move de verdade os arquivos da Alumifort para a pasta da
+RePerfil sem duplicar. Só schema e um script auxiliar (`scripts/mover-
+arquivos-catalogo-central.mjs`); nenhuma tela do app mudou ainda.
+
+---
+
 ## 1.7.9 — 25/08/2026
 
 **"Já confirmei" agora insiste antes de desistir.**
