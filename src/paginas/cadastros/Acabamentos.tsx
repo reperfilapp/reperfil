@@ -24,6 +24,7 @@ import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import { AmostraCor } from '@/componentes/ui/AmostraCor'
 import type { Acabamento, TipoAcabamento } from '@/tipos/banco'
+import { disparar } from '@/lib/avisoErro'
 
 const VAZIO: DadosAcabamento = {
   codigo: '',
@@ -184,10 +185,12 @@ export default function Acabamentos() {
                 <Botao
                   variante="contorno"
                   onClick={() =>
-                    void desativar.mutateAsync({
-                      id: acabamento.id,
-                      ativo: !acabamento.ativo,
-                    })
+                    disparar(
+                      desativar.mutateAsync({
+                        id: acabamento.id,
+                        ativo: !acabamento.ativo,
+                      }),
+                    )
                   }
                   aria-label={`${acabamento.ativo ? 'Desativar' : 'Reativar'} ${acabamento.nome}`}
                   title={acabamento.ativo ? 'Desativar' : 'Reativar'}

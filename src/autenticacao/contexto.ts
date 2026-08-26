@@ -23,8 +23,20 @@ export interface EstadoAutenticacao {
    * Usuário autenticado mas sem linha em `perfis_usuario`, ou com o cadastro
    * desativado. Não é erro de programação: acontece quando o administrador
    * ainda não vinculou a conta a uma organização, ou desligou o acesso.
+   *
+   * NÃO é o que acontece quando a busca do perfil FALHA — para isso existe
+   * `erroPerfil`. "Não achei" e "não consegui procurar" são coisas
+   * diferentes, e tratá-las igual acusava de falta de acesso quem só tinha
+   * perdido a rede por um instante.
    */
   semAcesso: boolean
+  /**
+   * Motivo pelo qual a busca do perfil falhou — rede caiu, servidor
+   * recusou. Diferente de `semAcesso`: aqui não se sabe se a pessoa tem
+   * acesso, porque a pergunta não chegou a ser respondida. A tela oferece
+   * tentar de novo em vez de mandar procurar o administrador.
+   */
+  erroPerfil: string | null
   entrar: (email: string, senha: string) => Promise<void>
   sair: () => Promise<void>
   /** Retorna o perfil recém-buscado, para checar o resultado sem esperar

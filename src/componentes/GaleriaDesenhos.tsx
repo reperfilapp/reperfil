@@ -11,6 +11,7 @@ import { CampoFoto } from './ui/CampoFoto'
 import { Botao } from './ui/Botao'
 import { cn } from '@/lib/utilitarios'
 import type { ModeloPerfil } from '@/tipos/banco'
+import { disparar } from '@/lib/avisoErro'
 
 /** Textos e comportamento de cada tipo de imagem. */
 const CONFIGURACAO = {
@@ -127,12 +128,14 @@ export function GaleriaDesenhos({
                 <button
                   type="button"
                   onClick={() =>
-                    void remover.mutateAsync({
-                      id: desenho.id,
-                      caminho: desenho.arquivo_url,
-                      modeloPerfilId: modelo.id,
-                      tipo,
-                    })
+                    disparar(
+                      remover.mutateAsync({
+                        id: desenho.id,
+                        caminho: desenho.arquivo_url,
+                        modeloPerfilId: modelo.id,
+                        tipo,
+                      }),
+                    )
                   }
                   aria-label="Remover desenho"
                   className="text-erro-600 hover:bg-erro-50 rounded p-1.5"

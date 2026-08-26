@@ -5,6 +5,7 @@ import { ProvedorAutenticacao } from '@/autenticacao/ContextoAutenticacao'
 import { RotaProtegida } from '@/autenticacao/RotaProtegida'
 import { LayoutApp } from '@/componentes/LayoutApp'
 import { AvisoNovaVersao } from '@/componentes/AvisoNovaVersao'
+import { AvisoErroOperacao } from '@/componentes/AvisoErroOperacao'
 import { clienteConsultas } from '@/lib/consultas'
 import Entrar from '@/paginas/Entrar'
 import RecuperarSenha from '@/paginas/RecuperarSenha'
@@ -138,10 +139,7 @@ export default function App() {
                 <Route path="/configuracoes" element={<Configuracoes />} />
                 <Route path="/empresa" element={<DadosEmpresa />} />
                 <Route path="/acessorios" element={<ModelosAcessorio />} />
-                <Route
-                  path="/estoque-acessorios"
-                  element={<Acessorios />}
-                />
+                <Route path="/estoque-acessorios" element={<Acessorios />} />
                 <Route
                   path="/estoque-acessorios/:id"
                   element={<AcessorioDetalhe />}
@@ -162,6 +160,7 @@ export default function App() {
             </Routes>
 
             <AvisoNovaVersao />
+            <AvisoErroOperacao />
           </BrowserRouter>
         </ProvedorAutenticacao>
       </QueryClientProvider>

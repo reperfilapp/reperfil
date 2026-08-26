@@ -29,6 +29,7 @@ import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import type { ModeloAcessorio } from '@/tipos/banco'
+import { disparar } from '@/lib/avisoErro'
 
 const UNIDADES = ['peça', 'metro', 'kg', 'conjunto', 'par', 'caixa']
 
@@ -122,8 +123,7 @@ export default function ModelosAcessorio() {
             <div>
               <h1 className="text-2xl font-bold">Acessórios</h1>
               <p className="text-texto-suave mt-1">
-                Dobradiça, roldana, puxador, borracha — o catálogo, sem
-                estoque.
+                Dobradiça, roldana, puxador, borracha — o catálogo, sem estoque.
               </p>
             </div>
             {podeEditar && (
@@ -233,19 +233,18 @@ export default function ModelosAcessorio() {
                             tamanho="icone_pequeno"
                             variante="contorno"
                             onClick={() =>
-                              void desativar.mutateAsync({
-                                id: modelo.id,
-                                ativo: !modelo.ativo,
-                              })
+                              disparar(
+                                desativar.mutateAsync({
+                                  id: modelo.id,
+                                  ativo: !modelo.ativo,
+                                }),
+                              )
                             }
                             aria-label={`${modelo.ativo ? 'Desativar' : 'Reativar'} ${modelo.codigo}`}
                             title={modelo.ativo ? 'Desativar' : 'Reativar'}
                           >
                             {modelo.ativo ? (
-                              <Archive
-                                aria-hidden="true"
-                                className="size-4"
-                              />
+                              <Archive aria-hidden="true" className="size-4" />
                             ) : (
                               <ArchiveRestore
                                 aria-hidden="true"

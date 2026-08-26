@@ -78,6 +78,185 @@ servindo do cache por esse tempo, agora com os dados errados. Corrigido
 limpando todo o cache ao sair — fecha essa brecha pela raiz, não só para
 esta consulta.
 
+## 1.7.48 — 28/08/2026
+
+**Botão voltar em Cadastrar e Reservas + busca de CEP nos dados da empresa.**
+
+**Voltar nas duas telas que não tinham.** Havia uma regra no projeto que
+excluía de propósito as telas da barra inferior, com o argumento de que
+elas "chegam de lugares diferentes". O argumento estava certo sobre o
+fato e errado sobre a conclusão: é justamente por chegar de lugares
+diferentes que o botão ajuda — ele volta para o lugar de VERDADE de onde
+a pessoa veio, coisa que a barra inferior não sabe fazer. Quem entrava em
+"Cadastrar" no meio de outra tarefa tinha que lembrar sozinho onde
+estava. A regra foi reescrita junto com a mudança, para a documentação
+não continuar dizendo o contrário do código.
+
+Na prática: vindo de outra tela, o botão diz "Voltar" e devolve para ela;
+abrindo o app direto ali (atalho no celular), diz "Início".
+
+**CNPJ virou CNPJ/CPF.** O campo sempre aceitou os dois — a máscara troca
+de formato conforme o tamanho. Só o rótulo é que dizia o contrário, e
+serralheria de bairro muitas vezes é MEI ou pessoa física.
+
+**CEP preenche o endereço sozinho.** Digitou os 8 dígitos, o app busca e
+preenche rua, bairro, cidade e estado. Sem botão "buscar": quem digitou o
+CEP inteiro já disse o que queria. O campo subiu para o topo da seção —
+embaixo, como estava, quem seguia a ordem da tela digitava tudo à mão e
+só então chegava ao campo que teria feito esse trabalho.
+
+Falha não atrapalha: sem rede ou CEP inexistente, aparece "preencha à
+mão" e **o que já estava escrito não é apagado**. Número e complemento
+nunca são tocados — o CEP não os conhece.
+
+---
+
+## 1.7.47 — 28/08/2026
+
+**Acessório: agora dá para corrigir a quantidade e registrar perda.**
+
+O estoque de acessório só tinha um jeito de diminuir — **Usar**, que quer
+dizer "foi para uma janela". Faltavam as outras duas situações, e cada
+uma conta uma história diferente no histórico:
+
+**Corrigir** — o número cadastrado está errado. Digitou 100 onde eram 10;
+nada saiu do estoque, o registro é que nunca esteve certo. Antes, a única
+saída era "usar" as 90 sobrando, o que fazia o relatório de consumo
+contar 90 dobradiças que nunca chegaram a obra nenhuma. E, no sentido
+inverso, quem cadastrou 10 onde eram 100 não tinha o que fazer — "Usar"
+não aumenta.
+
+**Descartar** — a peça existiu e se perdeu: quebrou, sumiu, molhou. Sai do
+estoque sem virar produto. O tipo "Descartado" já estava previsto no
+banco e na tela desde a criação do módulo, mas nada nunca gravou —
+ficou pela metade.
+
+**Por que são duas telas, e não uma com seletor de motivo:** os campos são
+o inverso um do outro. Descartar pergunta *quantas saíram* ("quebrei 5");
+corrigir pergunta *quantas ficam* ("o certo é 15"). Num formulário só, o
+mesmo campo mudaria de significado conforme a escolha — e digitar 5
+querendo dizer "perdi 5" onde se espera "restaram 5" zeraria quase o lote
+inteiro em silêncio. Cada tela tem o texto e o exemplo do seu caso, e a
+de descarte mostra quanto sobra enquanto você digita.
+
+Nas duas, a justificativa é obrigatória e fica no histórico junto com o
+número antigo e o novo — é o que, meses depois, distingue quebra de
+montagem, chuva no depósito e furto.
+
+Precisa da migração.
+
+---
+
+## 1.7.46 — 28/08/2026
+
+**Zero `any` no código de produção — e um trecho morto que ele escondia.**
+
+Fechando as últimas pendências da revisão. Nada muda na tela; o que muda
+é que o TypeScript volta a conferir trechos onde estava desligado.
+
+**Os três `any` foram embora.** O maior deles dizia "tipo flexível para
+aceitar as junções do Supabase" — mas a junção já vinha tipada, e o `any`
+só desligava a checagem sem ganhar nada: um campo renomeado na consulta
+passaria batido e a medida sumiria da tela em silêncio.
+
+**Um deles escondia código morto.** Ao tirar o `as any[]` de uma condição
+na tela de Procurar, o TypeScript apontou na hora: a segunda metade da
+condição nunca decidia nada — enquanto a consulta está carregando, a
+lista é sempre vazia por definição. O cast mascarava isso desde sempre.
+
+**Asserções trocadas por checagem de verdade.** Um bloco tratava o mesmo
+valor de dois jeitos ao mesmo tempo — defensivo ao gravar, assertivo ao
+escrever a mensagem. Se chegasse vazio, a reserva iria ao banco sem o
+comprimento E a mensagem quebraria logo depois: a peça ficaria reservada
+e a tela mostraria um erro de programação. Agora há uma checagem no
+começo, e o valor formatado é calculado uma vez só.
+
+**Filtro da URL agora é validado.** `?revisao=qualquercoisa` produzia um
+valor que o TypeScript jurava ser válido e não era. Funcionava por
+acidente; agora confere de fato.
+
+**Renomear linha ficou explícito sobre a empresa.** O comando dizia
+"renomeie esta linha" quando queria dizer "renomeie esta linha DA MINHA
+empresa". O banco já barrava o resto — mas desde que o catálogo passou a
+ser lido entre organizações, essa frase larga demais dependia de uma
+política distante para estar certa.
+
+---
+
+## 1.7.45 — 28/08/2026
+
+**Faxina depois da revisão: lint 100% limpo, código morto removido, mais
+testes.**
+
+Fechando os itens de baixa gravidade da revisão. Nada disso muda o que se
+vê na tela — é manutenção para o próximo defeito ser mais fácil de achar.
+
+**Lint sem nenhum aviso, pela primeira vez.** O único aviso restante
+apontava um `useEffect` na ficha do produto que usava `produto` sem
+declará-lo. A correção "óbvia" (declarar) causaria um defeito PIOR: o
+React Query devolve um objeto novo a cada revalidação, e o efeito
+reabriria o diálogo de impressão sozinho no meio de uma impressão. Usei
+um espelho (`ref`) — o efeito lê o produto atual sem reagir a ele.
+
+**Código morto removido:** `EMPRESA_PADRAO` (substituído pela tabela
+`organizacoes` desde a Fase 1) e `versaoResumida()` (cada tela monta o
+texto da versão do próprio jeito). Provado por varredura: nenhuma
+referência em nenhum arquivo.
+
+**Um "código morto" que NÃO foi removido:** `useAjustarQuantidadeAcessorio`
+também não é chamado por tela nenhuma — mas a função existe no banco, com
+histórico e justificativa, e a mesma capacidade já é oferecida para
+sobras. Acessório é o lado que ficou pela metade: quem digitar 100 onde
+eram 10 não tem como corrigir, só consumindo o excedente — o que sujaria
+o histórico com uma saída que nunca existiu. Ficou documentado, esperando
+a tela.
+
+**Testes:** 25 novos, cobrindo três módulos de cálculo que estavam com
+zero cobertura — a ordem manual das linhas, o filtro de estoque que
+alimenta "O que dá para produzir", e a formatação de medida/nome de
+arquivo do produto. Cobertura do domínio subiu de 90,9% para 95,6%.
+
+---
+
+## 1.7.44 — 28/08/2026
+
+**Revisão do código: três falhas silenciosas corrigidas.**
+
+Uma revisão completa (tipos, lint, 271 testes, build, dependências)
+encontrou três padrões em que o app errava sem contar a ninguém. Todos
+corrigidos:
+
+**1. Queda de rede virava "Acesso ainda não liberado".** Quando a busca
+do seu perfil falhava — sinal caindo no depósito, servidor demorando —, o
+app tratava isso como "esta conta não tem acesso" e mandava procurar o
+administrador, sem forma de tentar de novo a não ser sair e entrar. Agora
+"não achei" e "não consegui procurar" são coisas diferentes: falha de
+rede mostra uma tela própria, explica que provavelmente é a conexão, e
+oferece **Tentar de novo**.
+
+**2. "Não foi possível carregar os dados da empresa" que não se
+resolvia.** Mesmo problema, outro lugar: um erro na consulta era engolido
+e a tela ficava travada nessa mensagem — só o F5 resolvia, porque o app
+achava que a consulta tinha dado certo. Agora o erro é reconhecido e a
+tentativa automática entra em ação sozinha.
+
+**3. Botões de ação que falhavam em silêncio.** 23 botões pelo app
+(desativar, reativar, mover linha de posição, liberar linha para empresa,
+remover item da lista técnica) disparavam a operação sem tratar erro
+nenhum. Falhando — permissão negada, rede caindo —, **nada acontecia na
+tela**: nem mensagem, nem pista. A pessoa tocava de novo, e de novo.
+Agora toda falha dessas aparece num aviso claro no rodapé.
+
+**Bônus — corte maior que a barra.** As duas telas de lista técnica
+(Acrescentar material e edição de corte) faziam a própria conta de
+comprimento, sem passar pela regra do sistema. Dava para cadastrar um
+corte de 50 metros num perfil de barra de 6, e nada reclamava — o produto
+virava impossível de fabricar sem explicar por quê. Agora as duas telas
+validam contra a barra do perfil escolhido, e o banco recusa como última
+linha de defesa. Precisa da migração.
+
+---
+
 ## 1.7.43 — 28/08/2026
 
 **Botões de sincronizar na mesma linha, em Modelos de perfil.**

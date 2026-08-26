@@ -25,27 +25,15 @@ export const APLICACAO = {
   moeda: 'BRL',
 } as const
 
-/**
- * Dados da empresa que usa o sistema. Estes valores são apenas o padrão
- * inicial da instalação — a partir da Fase 1 cada organização guarda os
- * seus próprios dados na tabela `organizacoes`, e o que vale é o do banco.
+/*
+ * `EMPRESA_PADRAO` viveu aqui até 28/08/2026, com os dados iniciais da
+ * instalação. Removida por já não ser lida em lugar nenhum: desde que
+ * cada organização passou a guardar os próprios dados em `organizacoes`
+ * (tabela criada na Fase 1), quem responde "qual é a empresa?" é o banco,
+ * via `useOrganizacao`. O que restava aqui era um molde vazio que ninguém
+ * consultava — e um molde vazio que sobrevive vira, mais cedo ou mais
+ * tarde, o valor que alguém copia achando que ainda vale.
  */
-export const EMPRESA_PADRAO = {
-  nomeFantasia: 'Sua Empresa',
-  razaoSocial: '',
-  cnpj: '',
-  telefone: '',
-  email: '',
-  site: '',
-  endereco: {
-    logradouro: '',
-    numero: '',
-    bairro: '',
-    cidade: '',
-    estado: '',
-    cep: '',
-  },
-} as const
 
 /**
  * Unidades aceitas na entrada de medidas. O armazenamento é SEMPRE em

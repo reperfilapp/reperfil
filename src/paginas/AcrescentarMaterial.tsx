@@ -6,6 +6,10 @@ import { SeletorPerfil } from '@/componentes/SeletorPerfil'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
+import {
+  interpretarMedidaDigitada,
+  validarComprimento,
+} from '@/dominio/medidas'
 import { cn } from '@/lib/utilitarios'
 import type { ModeloPerfil } from '@/tipos/banco'
 
@@ -44,11 +48,33 @@ export default function AcrescentarMaterial() {
       return
     }
 
-    const comprimento = Number(comprimentoMm.replace(',', '.'))
+    /*
+     * Pelo domínio de medidas, não à mão.
+     *
+     * Esta tela fazia o próprio `Number(texto.replace(',','.'))` +
+     * `Math.round()`, sem passar por `interpretarMedidaDigitada` nem por
+     * `validarComprimento` — as duas únicas telas que gravam corte de
+     * lista técnica eram, justamente, as que ignoravam a regra do
+     * sistema. O resultado: dava para cadastrar um corte de 50 metros num
+     * perfil de barra de 6, e nada reclamava. O produto virava
+     * impossível de fabricar sem que a tela de viabilidade soubesse
+     * explicar por quê.
+     *
+     * O limite é o comprimento da barra DESTE perfil: um corte não pode
+     * ser maior do que a peça de onde ele sai.
+     */
+    const comprimento = interpretarMedidaDigitada(comprimentoMm, 'mm')
     const qtd = Number(quantidade)
 
-    if (!Number.isFinite(comprimento) || comprimento <= 0) {
+    if (comprimento === null) {
       setErro('Informe o comprimento do corte, em milímetros.')
+      return
+    }
+
+    const validacao = validarComprimento(comprimento, modelo.comprimento_barra_mm)
+
+    if (!validacao.valido) {
+      setErro(validacao.mensagem)
       return
     }
 
@@ -63,16 +89,14 @@ export default function AcrescentarMaterial() {
       await adicionar.mutateAsync({
         produto_id: id,
         modelo_perfil_id: modelo.id,
-        comprimento_mm: Math.round(comprimento),
+        comprimento_mm: comprimento,
         quantidade: qtd,
         observacao: null,
       })
 
       // Só o comprimento e a quantidade são zerados: o perfil escolhido
       // normalmente se repete no próximo corte da mesma receita.
-      setUltimoAdicionado(
-        `${modelo.codigo} — ${Math.round(comprimento)} mm × ${qtd}`,
-      )
+      setUltimoAdicionado(`${modelo.codigo} — ${comprimento} mm × ${qtd}`)
       setComprimentoMm('')
       setQuantidade('1')
     } catch (e) {

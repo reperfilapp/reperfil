@@ -121,9 +121,18 @@ export default function Inicio() {
           <p className="text-xl font-bold tabular-nums">
             {perfisCarregando ? '—' : totalPerfis}
           </p>
-          <p className="text-texto-suave text-xs">
-            {perfisCarregando ? 'Perfis' : `Perfis · ${totalLinhas} linhas`}
-          </p>
+          {/* "Perfis" e a contagem de linhas em DUAS linhas de texto, com a
+              segunda entre parênteses.
+
+              Antes era "Perfis · 25 linhas" numa linha só, que quebrava
+              sozinha no meio em tela estreita e virava "Perfis · 25" /
+              "linhas" — lido assim, o 25 parecia qualificar o número
+              grande logo acima. Separado e entre parênteses, não há como
+              confundir: 363 perfis, distribuídos em 25 linhas. */}
+          <p className="text-texto-suave text-xs">Perfis</p>
+          {!perfisCarregando && (
+            <p className="text-texto-suave text-xs">({totalLinhas} linhas)</p>
+          )}
         </Link>
       </section>
 

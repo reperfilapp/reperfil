@@ -11,6 +11,7 @@ import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import { cn } from '@/lib/utilitarios'
+import { disparar } from '@/lib/avisoErro'
 
 /**
  * O outro ângulo da mesma liberação de linha criada em "Editar linha"
@@ -26,15 +27,18 @@ export default function AdministrarLinhasEmpresas() {
   const { data: organizacao } = useOrganizacao()
   const souCentral = Boolean(organizacao?.eh_catalogo_central)
 
-  const { data: empresas, isPending, error } = useEmpresasParaAdministrarLinhas()
+  const {
+    data: empresas,
+    isPending,
+    error,
+  } = useEmpresasParaAdministrarLinhas()
   const [empresaSelecionada, setEmpresaSelecionada] = useState<{
     id: string
     nome: string
   } | null>(null)
 
-  const { data: linhas, isPending: linhasCarregando } = useLinhasParaOrganizacao(
-    empresaSelecionada?.id ?? null,
-  )
+  const { data: linhas, isPending: linhasCarregando } =
+    useLinhasParaOrganizacao(empresaSelecionada?.id ?? null)
   const liberarLinha = useDefinirLiberacaoLinha()
   const liberarTodas = useDefinirLiberacaoTodasLinhasOrganizacao()
 
@@ -89,10 +93,12 @@ export default function AdministrarLinhasEmpresas() {
                 variante="secundaria"
                 tamanho="pequeno"
                 onClick={() =>
-                  void liberarTodas.mutateAsync({
-                    organizacaoId: empresaSelecionada.id,
-                    liberada: true,
-                  })
+                  disparar(
+                    liberarTodas.mutateAsync({
+                      organizacaoId: empresaSelecionada.id,
+                      liberada: true,
+                    }),
+                  )
                 }
                 carregando={liberarTodas.isPending}
                 className="flex-1"
@@ -103,10 +109,12 @@ export default function AdministrarLinhasEmpresas() {
                 variante="secundaria"
                 tamanho="pequeno"
                 onClick={() =>
-                  void liberarTodas.mutateAsync({
-                    organizacaoId: empresaSelecionada.id,
-                    liberada: false,
-                  })
+                  disparar(
+                    liberarTodas.mutateAsync({
+                      organizacaoId: empresaSelecionada.id,
+                      liberada: false,
+                    }),
+                  )
                 }
                 carregando={liberarTodas.isPending}
                 className="flex-1"
@@ -142,7 +150,10 @@ export default function AdministrarLinhasEmpresas() {
                 }
                 className="bg-celula hover:bg-superficie-2 border-borda flex min-h-16 w-full items-center gap-3 rounded-xl border-2 p-4 text-left shadow-sm"
               >
-                <Building2 aria-hidden="true" className="text-acao-600 size-5 shrink-0" />
+                <Building2
+                  aria-hidden="true"
+                  className="text-acao-600 size-5 shrink-0"
+                />
                 <span className="min-w-0 flex-1 truncate font-medium">
                   {empresa.nome_fantasia}
                 </span>
@@ -169,11 +180,13 @@ export default function AdministrarLinhasEmpresas() {
               <button
                 type="button"
                 onClick={() =>
-                  void liberarLinha.mutateAsync({
-                    linha: l.linha,
-                    organizacaoId: empresaSelecionada.id,
-                    liberada: !l.liberada,
-                  })
+                  disparar(
+                    liberarLinha.mutateAsync({
+                      linha: l.linha,
+                      organizacaoId: empresaSelecionada.id,
+                      liberada: !l.liberada,
+                    }),
+                  )
                 }
                 disabled={liberarLinha.isPending}
                 className={cn(

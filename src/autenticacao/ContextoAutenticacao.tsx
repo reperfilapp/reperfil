@@ -19,6 +19,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
   const [perfil, setPerfil] = useState<PerfilUsuario | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [semAcesso, setSemAcesso] = useState(false)
+  const [erroPerfil, setErroPerfil] = useState<string | null>(null)
 
   // Espelho do perfil para ser lido DENTRO de `buscarPerfil` sem entrar nas
   // dependências dela. Como estado, obrigaria a recriar a função a cada
@@ -61,17 +62,27 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
         .eq('ativo', true)
         .maybeSingle<PerfilUsuario>()
 
+      // Falha ao PERGUNTAR não é o mesmo que "não tem acesso".
+      //
+      // Antes, qualquer erro aqui virava `semAcesso = true`, e a tela
+      // acusava "sua conta não está vinculada a uma empresa — peça ao
+      // administrador". Uma queda de rede de um segundo, no depósito,
+      // bastava para dizer isso a quem tem acesso há meses. Pior: não
+      // havia como tentar de novo, só sair e entrar.
+      //
+      // Agora o erro fica em `erroPerfil`, e a tela oferece "Tentar de
+      // novo". `semAcesso` continua reservado ao caso real: perguntei,
+      // o banco respondeu, e não existe perfil ativo.
       if (error) {
         console.error('Falha ao carregar o perfil do usuário:', error.message)
-        perfilAtual.current = null
-        setPerfil(null)
-        setSemAcesso(true)
+        setErroPerfil(error.message)
         return
       }
 
       perfilAtual.current = data
       setPerfil(data)
       setSemAcesso(data === null)
+      setErroPerfil(null)
 
       return data
     } finally {
@@ -110,6 +121,7 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
           perfilAtual.current = null
           setPerfil(null)
           setSemAcesso(false)
+          setErroPerfil(null)
 
           // Sem isto, dado de uma empresa vaza para a próxima que entrar
           // NA MESMA aba: o React Query guarda cada consulta por uma
@@ -177,11 +189,21 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
       perfil,
       carregando,
       semAcesso,
+      erroPerfil,
       entrar,
       sair,
       recarregarPerfil,
     }),
-    [sessao, perfil, carregando, semAcesso, entrar, sair, recarregarPerfil],
+    [
+      sessao,
+      perfil,
+      carregando,
+      semAcesso,
+      erroPerfil,
+      entrar,
+      sair,
+      recarregarPerfil,
+    ],
   )
 
   return (

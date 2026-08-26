@@ -271,6 +271,16 @@ export default function CadastrarSobra() {
           '-mb-[5.5rem] flex h-[calc(100dvh-5.5rem)] flex-col py-4 md:mb-0 md:h-auto md:py-6',
       )}
     >
+      {/* `self-start`: sem perfil escolhido o contêiner vira `flex-col`
+          (para a lista de linhas crescer até a barra inferior), e um filho
+          `inline-flex` ali estica para a largura toda — o mesmo cuidado
+          que `AcrescentarMaterial` já tomava. */}
+      <BotaoVoltar
+        para="/"
+        rotulo="Início"
+        className="mb-4 shrink-0 self-start"
+      />
+
       <header className="mb-6 flex shrink-0 items-center gap-3">
         <PackagePlus aria-hidden="true" className="text-acao-600 size-7" />
         <h1 className="text-2xl font-bold">Cadastrar estoque</h1>

@@ -7,7 +7,7 @@ import {
   PackageCheck,
   Scissors,
 } from 'lucide-react'
-import { useSobras } from '@/dados/sobras'
+import { useSobras, type SobraDetalhada } from '@/dados/sobras'
 import { useAcabamentos } from '@/dados/acabamentos'
 import { useConfiguracoes, paraConfiguracaoCorte } from '@/dados/configuracoes'
 import { useReservarSobra } from '@/dados/reservas'
@@ -55,7 +55,15 @@ interface CandidataComDados extends CandidataSobra {
   modeloCodigo: string
   modeloDescricao: string
   modeloLinha: string | null
-  modeloObj: any // Tipo flexível para aceitar as junções do Supabase
+  /*
+   * O perfil inteiro, para `formatarMedidasSecao` ler as cotas da seção.
+   *
+   * Era `any`, "para aceitar as junções do Supabase" — mas a junção já vem
+   * tipada em `SobraDetalhada`, e o `any` só desligava a checagem sem
+   * ganhar nada: um campo renomeado no `select` passaria batido e a medida
+   * sumiria da tela em silêncio.
+   */
+  modeloObj: SobraDetalhada['modelo']
   acabamentoNome: string
   acabamentoCor: string | null
   quantidadeTotal: number
@@ -154,6 +162,17 @@ export default function PesquisarSobras() {
         )
       : []
 
+  /*
+   * O corte formatado, uma vez só.
+   *
+   * Dentro do `.map` dos achados, `corteMm` é garantidamente não-nulo — a
+   * lista só tem itens quando `podePesquisar`, que exige isso. Mas essa
+   * garantia mora vinte linhas acima, e cada uso repetia um `!` pedindo
+   * que quem lê fosse conferir lá. Resolvido aqui, perto da causa: com
+   * lista vazia o texto nem chega a ser usado.
+   */
+  const corteFormatado = corteMm === null ? '' : formatarComprimento(corteMm)
+
   async function reservarPeca(
     loteId: string,
     codigo: string,
@@ -161,20 +180,39 @@ export default function PesquisarSobras() {
   ) {
     setErro(null)
 
+    /*
+     * Uma checagem no começo, em vez de duas versões da mesma dúvida.
+     *
+     * Este bloco tratava `corteMm` de dois jeitos ao mesmo tempo:
+     * `corteMm ?? null` ao gravar (defensivo) e `corteMm!` na mensagem
+     * (assertivo). Se algum dia chegasse nulo aqui, a reserva iria ao
+     * banco sem o comprimento E a mensagem quebraria na linha seguinte —
+     * a peça ficaria reservada e a tela mostraria um erro de programação.
+     *
+     * Na prática não chega: o botão só existe com `podePesquisar`. Mas
+     * essa garantia mora noutra parte do arquivo, e o `!` obrigava quem
+     * lesse a ir conferir lá. Um `return` explícito diz a mesma coisa
+     * aqui mesmo.
+     */
+    if (corteMm === null) {
+      setErro('Informe o comprimento do corte antes de reservar.')
+      return
+    }
+
     try {
       await reservar.mutateAsync({
         loteId,
         // Reserva apenas as peças físicas necessárias do lote, não a quantidade de cortes.
         quantidade: pecasNecessarias,
-        comprimentoCorteMm: corteMm ?? null,
+        comprimentoCorteMm: corteMm,
         quantidadeCortes,
       })
       setReservadaCodigo(codigo)
       // Mensagem clara: quantos cortes de que tamanho, usando quantas peças.
       setReservadaInfo(
         pecasNecessarias === 1
-          ? `${quantidadeCortes} ${quantidadeCortes === 1 ? 'corte' : 'cortes'} de ${formatarComprimento(corteMm!)} a partir de 1 peça do lote ${codigo}`
-          : `${quantidadeCortes} ${quantidadeCortes === 1 ? 'corte' : 'cortes'} de ${formatarComprimento(corteMm!)} a partir de ${pecasNecessarias} peças do lote ${codigo}`,
+          ? `${quantidadeCortes} ${quantidadeCortes === 1 ? 'corte' : 'cortes'} de ${formatarComprimento(corteMm)} a partir de 1 peça do lote ${codigo}`
+          : `${quantidadeCortes} ${quantidadeCortes === 1 ? 'corte' : 'cortes'} de ${formatarComprimento(corteMm)} a partir de ${pecasNecessarias} peças do lote ${codigo}`,
       )
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível reservar.')
@@ -213,7 +251,12 @@ export default function PesquisarSobras() {
               Selecione uma ou mais linhas. Deixe em branco para procurar em
               todas.
             </p>
-            {isPending && (!sobras || (sobras as any[]).length === 0) ? (
+            {/* Era `isPending && (!sobras || (sobras as any[]).length === 0)`.
+                O cast escondia que a segunda metade nunca decidia nada: o
+                React Query garante `data === undefined` enquanto
+                `isPending`, então `!sobras` já era sempre verdadeiro ali.
+                Tirado o `any`, o próprio TypeScript apontou o trecho morto. */}
+            {isPending ? (
               <p className="text-texto-suave mt-2 text-sm">
                 Carregando estoque...
               </p>
@@ -475,8 +518,8 @@ export default function PesquisarSobras() {
                     />
                     <span>
                       {resultado.pecasNecessarias === 1
-                        ? `1 peça deste lote basta para ${quantidadeCortes} ${quantidadeCortes === 1 ? 'corte' : 'cortes'} de ${formatarComprimento(corteMm!)}`
-                        : `${resultado.pecasNecessarias} peças deste lote para ${quantidadeCortes} cortes de ${formatarComprimento(corteMm!)}`}
+                        ? `1 peça deste lote basta para ${quantidadeCortes} ${quantidadeCortes === 1 ? 'corte' : 'cortes'} de ${corteFormatado}`
+                        : `${resultado.pecasNecessarias} peças deste lote para ${quantidadeCortes} cortes de ${corteFormatado}`}
                     </span>
                   </div>
 
@@ -524,8 +567,8 @@ export default function PesquisarSobras() {
                     }
                   >
                     {resultado.pecasNecessarias === 1
-                      ? `Reservar 1 peça (${quantidadeCortes} ${quantidadeCortes === 1 ? 'corte' : 'cortes'} de ${formatarComprimento(corteMm!)})`
-                      : `Reservar ${resultado.pecasNecessarias} peças (${quantidadeCortes} cortes de ${formatarComprimento(corteMm!)})`}
+                      ? `Reservar 1 peça (${quantidadeCortes} ${quantidadeCortes === 1 ? 'corte' : 'cortes'} de ${corteFormatado})`
+                      : `Reservar ${resultado.pecasNecessarias} peças (${quantidadeCortes} cortes de ${corteFormatado})`}
                   </Botao>
                 </li>
               )

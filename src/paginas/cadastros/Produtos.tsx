@@ -1,12 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import {
-  Plus,
-  Pencil,
-  Archive,
-  ArchiveRestore,
-  Trash2,
-} from 'lucide-react'
+import { Plus, Pencil, Archive, ArchiveRestore, Trash2 } from 'lucide-react'
 import {
   useProdutos,
   useCapasProdutos,
@@ -27,6 +21,7 @@ import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
 import { formatarMedidaProduto } from '@/dominio/produto'
 import type { Produto } from '@/tipos/banco'
+import { disparar } from '@/lib/avisoErro'
 
 const VAZIO: DadosProduto = {
   codigo: '',
@@ -231,10 +226,12 @@ export default function Produtos() {
                       tamanho="icone_pequeno"
                       variante="contorno"
                       onClick={() =>
-                        void desativar.mutateAsync({
-                          id: produto.id,
-                          ativo: !produto.ativo,
-                        })
+                        disparar(
+                          desativar.mutateAsync({
+                            id: produto.id,
+                            ativo: !produto.ativo,
+                          }),
+                        )
                       }
                       aria-label={`${produto.ativo ? 'Desativar' : 'Reativar'} ${produto.nome}`}
                       title={produto.ativo ? 'Desativar' : 'Reativar'}

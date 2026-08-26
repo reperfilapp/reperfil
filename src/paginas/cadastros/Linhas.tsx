@@ -40,6 +40,7 @@ import { CampoSugestao } from '@/componentes/ui/CampoSugestao'
 import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import { cn } from '@/lib/utilitarios'
+import { disparar } from '@/lib/avisoErro'
 
 /**
  * Revisão das linhas (ou sistemas) usadas pelos perfis.
@@ -159,7 +160,7 @@ export default function Linhas() {
     ordem.splice(destino, 0, linha)
 
     setOrdenacao({ criterio: 'manual', decrescente: false })
-    void reordenar.mutateAsync(ordem)
+    disparar(reordenar.mutateAsync(ordem))
   }
 
   function moverLinha(indice: number, direcao: -1 | 1) {
@@ -292,7 +293,11 @@ export default function Linhas() {
                   title="Mover para cima"
                   className="text-acao-700 hover:text-acao-800 flex h-3.5 w-6 items-center justify-center disabled:opacity-30"
                 >
-                  <ChevronUp aria-hidden="true" className="size-4" strokeWidth={2.5} />
+                  <ChevronUp
+                    aria-hidden="true"
+                    className="size-4"
+                    strokeWidth={2.5}
+                  />
                 </button>
 
                 {/* Pular direto para uma posição — as setas resolvem mover
@@ -331,12 +336,18 @@ export default function Linhas() {
                 <button
                   type="button"
                   onClick={() => moverLinha(indice, 1)}
-                  disabled={indice === renomeaveis.length - 1 || reordenar.isPending}
+                  disabled={
+                    indice === renomeaveis.length - 1 || reordenar.isPending
+                  }
                   aria-label={`Mover ${linha} para baixo`}
                   title="Mover para baixo"
                   className="text-acao-700 hover:text-acao-800 flex h-3.5 w-6 items-center justify-center disabled:opacity-30"
                 >
-                  <ChevronDown aria-hidden="true" className="size-4" strokeWidth={2.5} />
+                  <ChevronDown
+                    aria-hidden="true"
+                    className="size-4"
+                    strokeWidth={2.5}
+                  />
                 </button>
               </div>
             )}
@@ -456,8 +467,8 @@ export default function Linhas() {
           <div className="border-borda mt-5 border-t pt-4">
             <p className="font-medium">Liberada para</p>
             <p className="text-texto-suave mt-0.5 mb-3 text-sm">
-              Quais empresas podem importar ou atualizar esta linha do
-              catálogo central.
+              Quais empresas podem importar ou atualizar esta linha do catálogo
+              central.
             </p>
 
             <div className="mb-3 flex gap-2">
@@ -465,10 +476,12 @@ export default function Linhas() {
                 variante="secundaria"
                 tamanho="pequeno"
                 onClick={() =>
-                  void liberarTodas.mutateAsync({
-                    linha: editando,
-                    liberada: true,
-                  })
+                  disparar(
+                    liberarTodas.mutateAsync({
+                      linha: editando,
+                      liberada: true,
+                    }),
+                  )
                 }
                 carregando={liberarTodas.isPending}
                 className="flex-1"
@@ -479,10 +492,12 @@ export default function Linhas() {
                 variante="secundaria"
                 tamanho="pequeno"
                 onClick={() =>
-                  void liberarTodas.mutateAsync({
-                    linha: editando,
-                    liberada: false,
-                  })
+                  disparar(
+                    liberarTodas.mutateAsync({
+                      linha: editando,
+                      liberada: false,
+                    }),
+                  )
                 }
                 carregando={liberarTodas.isPending}
                 className="flex-1"
@@ -503,11 +518,13 @@ export default function Linhas() {
                   <button
                     type="button"
                     onClick={() =>
-                      void liberar.mutateAsync({
-                        linha: editando,
-                        organizacaoId: o.organizacao_id,
-                        liberada: !o.liberada,
-                      })
+                      disparar(
+                        liberar.mutateAsync({
+                          linha: editando,
+                          organizacaoId: o.organizacao_id,
+                          liberada: !o.liberada,
+                        }),
+                      )
                     }
                     disabled={liberar.isPending}
                     className={cn(

@@ -253,6 +253,8 @@ export function filtrarModelos(
  */
 export function useRenomearLinha() {
   const cliente = useQueryClient()
+  const { perfil } = useAutenticacao()
+  const organizacaoId = perfil?.organizacao_id ?? null
 
   return useMutation({
     mutationFn: async ({
@@ -266,9 +268,30 @@ export function useRenomearLinha() {
 
       if (novo === '') throw new Error('O nome da linha não pode ficar vazio.')
 
+      if (organizacaoId === null) {
+        throw new Error('Sessão expirada. Entre novamente.')
+      }
+
+      /*
+       * O `.eq('organizacao_id', ...)` não é redundante.
+       *
+       * O RLS já barra escrita fora da própria organização — sem ele, esta
+       * consulta ainda assim não conseguiria renomear a linha de ninguém.
+       * Mas o `update ... where linha = 'X'`, sem mais nada, é uma frase
+       * larga demais para o que ela quer dizer: "renomeie esta linha DA
+       * MINHA empresa". Quem ler o código precisa ir conferir a política
+       * no banco para ter certeza, e uma política mexida por engano numa
+       * migração futura transformaria isto num renomeador global sem que
+       * nada aqui mudasse.
+       *
+       * Vale mais ainda desde que `modelos_perfil` ganhou leitura
+       * cross-organização (catálogo central): a tabela deixou de ser
+       * "só a minha empresa" por natureza.
+       */
       const { data, error } = await supabase
         .from('modelos_perfil')
         .update({ linha: novo })
+        .eq('organizacao_id', organizacaoId as string)
         .eq('linha', de)
         .select('id')
 

@@ -20,6 +20,12 @@ import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoMascarado } from '@/componentes/ui/CampoMascarado'
+import {
+  buscarEnderecoPorCep,
+  cepCompleto,
+  formatarCep,
+} from '@/lib/cep'
+import { disparar } from '@/lib/avisoErro'
 import { LogoEmpresa } from '@/componentes/LogoEmpresa'
 import { Modal } from '@/componentes/ui/Modal'
 
@@ -79,6 +85,8 @@ export default function DadosEmpresa() {
 
   const [form, setForm] = useState<DadosOrganizacao>(VAZIO)
   const [salvo, setSalvo] = useState(false)
+  const [buscandoCep, setBuscandoCep] = useState(false)
+  const [cepNaoEncontrado, setCepNaoEncontrado] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
   const zerarEstoque = useZerarEstoqueOrganizacao()
@@ -121,6 +129,45 @@ export default function DadosEmpresa() {
   ) {
     setSalvo(false)
     setForm((atual) => ({ ...atual, [campo]: valor }))
+  }
+
+  /*
+   * Preenche o endereço pelo CEP.
+   *
+   * Dispara sozinho ao completar os 8 dígitos, sem botão "buscar": quem
+   * digitou o CEP inteiro já disse o que queria, e um botão a mais seria
+   * um toque a mais para a mesma intenção.
+   *
+   * NÃO apaga o que já está preenchido quando a busca falha, e não mexe em
+   * número nem complemento — que o CEP não conhece. Endereço já digitado
+   * à mão sobrevive a alguém conferir o CEP depois.
+   */
+  async function preencherPeloCep(cepDigitado: string) {
+    if (!cepCompleto(cepDigitado)) return
+
+    setBuscandoCep(true)
+    setCepNaoEncontrado(false)
+
+    const endereco = await buscarEnderecoPorCep(cepDigitado)
+
+    setBuscandoCep(false)
+
+    if (endereco === null) {
+      setCepNaoEncontrado(true)
+      return
+    }
+
+    setSalvo(false)
+    setForm((atual) => ({
+      ...atual,
+      // `||` e não `??`: o ViaCEP devolve string vazia para o que não sabe
+      // (em cidade de CEP único, por exemplo, não há logradouro), e vazio
+      // não pode apagar o que a pessoa já tinha escrito.
+      logradouro: endereco.logradouro || atual.logradouro,
+      bairro: endereco.bairro || atual.bairro,
+      cidade: endereco.cidade || atual.cidade,
+      estado: endereco.estado || atual.estado,
+    }))
   }
 
   async function aoEnviar(evento: FormEvent) {
@@ -313,8 +360,12 @@ export default function DadosEmpresa() {
             onChange={(e) => alterar('razao_social', e.target.value)}
           />
           <div className="grid grid-cols-2 gap-4">
+            {/* "CNPJ/CPF", não só CNPJ: serralheria de bairro muitas vezes
+                é MEI ou pessoa física, e o campo sempre aceitou os dois —
+                a máscara `cpf_cnpj` troca de formato conforme o tamanho.
+                Só o rótulo é que dizia o contrário. */}
             <CampoMascarado
-              rotulo="CNPJ"
+              rotulo="CNPJ/CPF"
               tipo="cpf_cnpj"
               value={form.cnpj}
               onChange={(valor) => alterar('cnpj', valor)}
@@ -366,6 +417,39 @@ export default function DadosEmpresa() {
         {/* ── Endereço ──────────────────────────────────────────────────── */}
         <section className="bg-superficie flex flex-col gap-4 rounded-xl p-5 shadow-sm">
           <h2 className="font-semibold">Endereço</h2>
+
+          {/* O CEP vem PRIMEIRO porque preenche o resto.
+              Embaixo, como estava, quem seguia a ordem da tela digitava
+              rua, bairro e cidade à mão e só então chegava ao campo que
+              teria feito esse trabalho. */}
+          <div>
+            <CampoTexto
+              rotulo="CEP"
+              value={form.cep}
+              onChange={(e) => {
+                const formatado = formatarCep(e.target.value)
+
+                alterar('cep', formatado)
+                setCepNaoEncontrado(false)
+
+                // Busca ao completar os 8 dígitos, sem botão: quem digitou
+                // o CEP inteiro já disse o que queria.
+                if (cepCompleto(formatado)) {
+                  disparar(preencherPeloCep(formatado))
+                }
+              }}
+              placeholder="00000-000"
+              inputMode="numeric"
+              autoComplete="postal-code"
+              ajuda={
+                buscandoCep
+                  ? 'Buscando endereço…'
+                  : cepNaoEncontrado
+                    ? 'CEP não encontrado — preencha o endereço à mão.'
+                    : 'Preenche rua, bairro e cidade sozinho.'
+              }
+            />
+          </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div className="col-span-2">
@@ -426,14 +510,6 @@ export default function DadosEmpresa() {
             </div>
           </div>
 
-          <CampoTexto
-            rotulo="CEP"
-            value={form.cep}
-            onChange={(e) => alterar('cep', e.target.value)}
-            placeholder="00000-000"
-            inputMode="numeric"
-            autoComplete="postal-code"
-          />
         </section>
 
         {/* ── Feedback e salvar ─────────────────────────────────────────── */}

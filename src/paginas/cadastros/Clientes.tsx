@@ -25,6 +25,7 @@ import { CampoMascarado } from '@/componentes/ui/CampoMascarado'
 import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import type { Cliente } from '@/tipos/banco'
+import { disparar } from '@/lib/avisoErro'
 
 const VAZIO: DadosCliente = {
   nome: '',
@@ -210,10 +211,12 @@ export default function Clientes() {
                 <Botao
                   variante="contorno"
                   onClick={() =>
-                    void desativar.mutateAsync({
-                      id: cliente.id,
-                      ativo: !cliente.ativo,
-                    })
+                    disparar(
+                      desativar.mutateAsync({
+                        id: cliente.id,
+                        ativo: !cliente.ativo,
+                      }),
+                    )
                   }
                   aria-label={`${cliente.ativo ? 'Desativar' : 'Reativar'} ${cliente.nome}`}
                   title={cliente.ativo ? 'Desativar' : 'Reativar'}

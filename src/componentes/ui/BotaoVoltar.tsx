@@ -18,13 +18,26 @@ type PropsBotaoVoltar =
 /**
  * Botão de voltar, em todo lugar do app com a mesma cara.
  *
- * CONVENÇÃO DO PROJETO: toda tela que tem uma origem única e genuína — uma
- * ficha de detalhe ou um cadastro dentro de "Mais" — mostra um jeito de
- * voltar para essa origem, visível no topo, sem depender de gesto do
- * navegador. Não é para as 5 telas da navegação inferior (Início,
- * Procurar, Cadastrar, Reservas, Mais): essas não têm uma única tela
- * anterior — chegam de lugares diferentes — e a barra inferior já leva a
- * qualquer uma delas a qualquer momento.
+ * CONVENÇÃO DO PROJETO: toda tela mostra um jeito de voltar, visível no
+ * topo, sem depender de gesto do navegador. A única exceção é INÍCIO, que
+ * é o próprio destino de "voltar" — pôr o botão lá seria um caminho para
+ * onde já se está.
+ *
+ * ── ISTO MUDOU EM 28/08/2026 ─────────────────────────────────────────────
+ *
+ * A regra antiga excluía as cinco telas da barra inferior (Início,
+ * Procurar, Cadastrar, Reservas, Mais), com o argumento de que elas
+ * "chegam de lugares diferentes" e a barra já leva a qualquer uma. O
+ * argumento estava certo sobre o destino e errado sobre a conclusão: é
+ * justamente por chegar de lugares diferentes que o botão ajuda — ele
+ * volta para o lugar de VERDADE de onde a pessoa veio (`navigate(-1)`,
+ * ver abaixo), coisa que a barra inferior não sabe fazer. Quem entrou em
+ * "Cadastrar" no meio de outra tarefa era obrigado a lembrar sozinho onde
+ * estava.
+ *
+ * `para="/"` nessas telas é só a rede de segurança de quem abriu o app
+ * direto ali (atalho da tela inicial do celular, link salvo) — aí não há
+ * histórico, e Início é o lugar certo.
  *
  * ── `para` É UM DESTINO DE RESERVA, NÃO O DESTINO DE VERDADE ─────────────
  *

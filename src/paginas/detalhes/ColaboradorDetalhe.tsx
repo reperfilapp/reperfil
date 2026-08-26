@@ -47,6 +47,7 @@ import {
 import { formatarCpfCnpj, formatarTelefone } from '@/dominio/documentos'
 import { apelidoValido } from '@/dominio/apelido'
 import type { PapelUsuario } from '@/tipos/banco'
+import { disparar } from '@/lib/avisoErro'
 
 export default function ColaboradorDetalhe() {
   const { id = null } = useParams()
@@ -253,10 +254,12 @@ export default function ColaboradorDetalhe() {
                   <Botao
                     variante="contorno"
                     onClick={() =>
-                      void ativar.mutateAsync({
-                        id: pessoa.id,
-                        ativo: !pessoa.ativo,
-                      })
+                      disparar(
+                        ativar.mutateAsync({
+                          id: pessoa.id,
+                          ativo: !pessoa.ativo,
+                        }),
+                      )
                     }
                   >
                     {pessoa.ativo ? (
@@ -280,7 +283,10 @@ export default function ColaboradorDetalhe() {
                     variante="contorno"
                     onClick={() => setPromovendo(true)}
                   >
-                    <ShieldCheck aria-hidden="true" className="size-4 shrink-0" />
+                    <ShieldCheck
+                      aria-hidden="true"
+                      className="size-4 shrink-0"
+                    />
                     Tornar admin
                   </Botao>
                 )}
@@ -360,10 +366,12 @@ export default function ColaboradorDetalhe() {
                   : 'Trocar o cargo redefine as permissões pelo padrão dele.'
               }
               onChange={(e) =>
-                void trocarCargo.mutateAsync({
-                  id: pessoa.id,
-                  papel: e.target.value as PapelUsuario,
-                })
+                disparar(
+                  trocarCargo.mutateAsync({
+                    id: pessoa.id,
+                    papel: e.target.value as PapelUsuario,
+                  }),
+                )
               }
             >
               {CARGOS_ATIVOS.map((papel) => (
@@ -401,10 +409,12 @@ export default function ColaboradorDetalhe() {
                         checked={efetivas[chave]}
                         disabled={souEu || ajustar.isPending}
                         onChange={(e) =>
-                          void ajustar.mutateAsync({
-                            id: pessoa.id,
-                            permissoes: { [chave]: e.target.checked },
-                          })
+                          disparar(
+                            ajustar.mutateAsync({
+                              id: pessoa.id,
+                              permissoes: { [chave]: e.target.checked },
+                            }),
+                          )
                         }
                       />
                       <span className="min-w-0 flex-1">
@@ -538,9 +548,9 @@ export default function ColaboradorDetalhe() {
             Zona de perigo
           </h2>
           <p className="text-erro-700 text-sm">
-            Apaga seu nome, telefone, CPF, foto e nickname, e desliga seu
-            acesso ao sistema. O histórico do que você já cadastrou ou
-            movimentou continua existindo, sem o seu nome nele.
+            Apaga seu nome, telefone, CPF, foto e nickname, e desliga seu acesso
+            ao sistema. O histórico do que você já cadastrou ou movimentou
+            continua existindo, sem o seu nome nele.
           </p>
           <Botao
             type="button"
@@ -600,14 +610,14 @@ export default function ColaboradorDetalhe() {
         <div className="flex flex-col gap-4">
           <p className="text-erro-700 bg-erro-50 rounded-xl p-3 text-sm font-medium">
             Isto apaga seu nome, telefone, CPF, foto e nickname, desliga seu
-            acesso e libera este e-mail. Não pode ser desfeito por você —
-            seus dados pessoais já teriam sido apagados. Para voltar a
-            trabalhar com este e-mail depois, peça a um administrador da
-            empresa um novo convite.
+            acesso e libera este e-mail. Não pode ser desfeito por você — seus
+            dados pessoais já teriam sido apagados. Para voltar a trabalhar com
+            este e-mail depois, peça a um administrador da empresa um novo
+            convite.
           </p>
 
           <CampoTexto
-            rotulo='Digite EXCLUIR para prosseguir'
+            rotulo="Digite EXCLUIR para prosseguir"
             value={confirmacaoExcluir}
             onChange={(e) => setConfirmacaoExcluir(e.target.value)}
             autoComplete="off"

@@ -33,6 +33,7 @@ import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import type { ConviteColaborador, PapelUsuario } from '@/tipos/banco'
+import { disparar } from '@/lib/avisoErro'
 
 const VAZIO = {
   nome: '',
@@ -172,12 +173,11 @@ export default function Colaboradores() {
           {convidado && (
             <div className="bg-superficie-2 mb-4 rounded-xl p-4 text-sm">
               <p className="font-medium">
-                Convite registrado — um e-mail já foi enviado para{' '}
-                {convidado}.
+                Convite registrado — um e-mail já foi enviado para {convidado}.
               </p>
               <p className="text-texto-suave mt-1">
-                Se não chegar (foi para o spam ou o e-mail estava errado),
-                use o botão de reenviar na lista abaixo.
+                Se não chegar (foi para o spam ou o e-mail estava errado), use o
+                botão de reenviar na lista abaixo.
               </p>
             </div>
           )}
@@ -265,7 +265,7 @@ export default function Colaboradores() {
 
                 <Botao
                   variante="contorno"
-                  onClick={() => void cancelar.mutateAsync(convite.id)}
+                  onClick={() => disparar(cancelar.mutateAsync(convite.id))}
                   aria-label={`Cancelar convite de ${convite.nome}`}
                   title="Cancelar convite"
                 >
@@ -319,10 +319,12 @@ export default function Colaboradores() {
                 variante="contorno"
                 disabled={souEu}
                 onClick={() =>
-                  void ativar.mutateAsync({
-                    id: pessoa.id,
-                    ativo: !pessoa.ativo,
-                  })
+                  disparar(
+                    ativar.mutateAsync({
+                      id: pessoa.id,
+                      ativo: !pessoa.ativo,
+                    }),
+                  )
                 }
                 aria-label={`${pessoa.ativo ? 'Tirar o acesso de' : 'Devolver o acesso a'} ${pessoa.nome}`}
                 title={pessoa.ativo ? 'Tirar o acesso' : 'Devolver o acesso'}

@@ -33,10 +33,12 @@ export const VERSAO = {
   dataBuild: __DATA_BUILD__,
 } as const
 
-/** "0.5.0 · build 20260815.1432" — o suficiente na maioria das telas. */
-export function versaoResumida(): string {
-  return `${VERSAO.numero} · build ${VERSAO.build}`
-}
+/*
+ * `versaoResumida()` — "0.5.0 · build 20260815.1432" — viveu aqui até
+ * 28/08/2026. Removida por não ser chamada em lugar nenhum: as telas que
+ * mostram a versão (`SeloVersao`, Sobre) montam o texto por conta
+ * própria, porque cada uma quebra a linha de um jeito.
+ */
 
 /** Data e hora do build, no formato brasileiro. */
 export function dataBuildFormatada(): string {

@@ -50,11 +50,20 @@ export function useOrganizacao() {
       if (!user) return null
 
       // Busca o organizacao_id do perfil do usuário...
-      const { data: perfil } = await supabase
+      //
+      // O `error` é checado, e não ignorado: engolindo-o, uma falha de
+      // rede virava `perfil = null` e a consulta terminava "com sucesso"
+      // devolvendo nulo — a tela de dados da empresa dizia "não foi
+      // possível carregar" e ficava assim, porque o React Query não
+      // repete uma consulta que não falhou. Lançando, o `retry` do
+      // cliente entra em ação e o F5 deixa de ser a única saída.
+      const { data: perfil, error: erroPerfil } = await supabase
         .from('perfis_usuario')
         .select('organizacao_id')
         .eq('id', user.id)
         .single<{ organizacao_id: string }>()
+
+      if (erroPerfil) throw new Error(erroPerfil.message)
 
       if (!perfil) return null
 

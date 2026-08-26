@@ -19,6 +19,7 @@ import { useConfiguracoes, paraConfiguracaoCorte } from '@/dados/configuracoes'
 import { Botao } from '@/componentes/ui/Botao'
 import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
+import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { AmostraCor } from '@/componentes/ui/AmostraCor'
 import { CampoMedida } from '@/componentes/ui/CampoMedida'
 import { EstadoConsulta } from '@/componentes/EstadoConsulta'
@@ -32,6 +33,7 @@ import {
   CONFIGURACAO_CORTE_PADRAO,
 } from '@/dominio/corte'
 import type { UnidadeMedida } from '@/config/aplicacao'
+import { disparar } from '@/lib/avisoErro'
 
 /**
  * Reservas em aberto e o encerramento do ciclo.
@@ -101,7 +103,9 @@ export default function Reservas() {
    */
   const pecasNosGrupos = grupos.reduce((total, g) => total + g.pecas, 0)
   const restosPorPeca =
-    cortando !== null && pecasNosGrupos === cortando.quantidade && grupos.length > 1
+    cortando !== null &&
+    pecasNosGrupos === cortando.quantidade &&
+    grupos.length > 1
       ? grupos.map((g) => ({
           comprimento_mm: g.restoMm,
           quantidade: g.pecas,
@@ -247,10 +251,14 @@ export default function Reservas() {
   return (
     <PaginaLista
       cabecalho={
-        <header className="mb-5 flex items-center gap-3">
-          <Clock aria-hidden="true" className="text-acao-600 size-7" />
-          <h1 className="text-2xl font-bold">Reservas</h1>
-        </header>
+        <>
+          <BotaoVoltar para="/" rotulo="Início" className="mb-4" />
+
+          <header className="mb-5 flex items-center gap-3">
+            <Clock aria-hidden="true" className="text-acao-600 size-7" />
+            <h1 className="text-2xl font-bold">Reservas</h1>
+          </header>
+        </>
       }
     >
       {resultado && (
@@ -341,7 +349,7 @@ export default function Reservas() {
               {reserva.status === 'ativa' && (
                 <Botao
                   variante="secundaria"
-                  onClick={() => void retirar.mutateAsync(reserva.id)}
+                  onClick={() => disparar(retirar.mutateAsync(reserva.id))}
                   className="flex-1"
                 >
                   <PackageOpen aria-hidden="true" className="size-4" />
@@ -470,7 +478,9 @@ export default function Reservas() {
                         {grupo.destinoResto === 'sobra' ? (
                           <>
                             sobra{' '}
-                            <strong>{formatarComprimento(grupo.restoMm)}</strong>
+                            <strong>
+                              {formatarComprimento(grupo.restoMm)}
+                            </strong>
                           </>
                         ) : grupo.destinoResto === 'descarte' ? (
                           <span className="text-atencao-700">

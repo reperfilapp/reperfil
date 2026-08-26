@@ -33,7 +33,10 @@ import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { AlternadorOrdenacao } from '@/componentes/ui/AlternadorOrdenacao'
 import { useNiveisNaUrl } from '@/componentes/useNiveisNaUrl'
-import { ORDENACAO_PADRAO, compararPorOrdemLinha } from '@/dominio/ordenacaoListas'
+import {
+  ORDENACAO_PADRAO,
+  compararPorOrdemLinha,
+} from '@/dominio/ordenacaoListas'
 import { Modal } from '@/componentes/ui/Modal'
 import {
   FormularioModeloPerfil,
@@ -54,9 +57,28 @@ import {
 } from '@/dominio/estoqueResumo'
 import { formatarMedidasSecao } from '@/dominio/secao'
 import type { ModeloPerfil } from '@/tipos/banco'
+import { disparar } from '@/lib/avisoErro'
 
 /** Valor de `linhaAberta` que significa "ignorar o agrupamento". */
 const TODAS = '__todas__'
+
+type FiltroRevisao = 'todos' | 'revisados' | 'pendentes'
+
+/**
+ * Converte o que veio da URL num filtro de verdade.
+ *
+ * O filtro vive na URL (para sobreviver a entrar num perfil e voltar), e
+ * URL é texto que qualquer um digita. Antes, um `as` afirmava que o valor
+ * era um dos três sem conferir nada: `?revisao=qualquercoisa` produzia um
+ * valor que o TypeScript jurava ser válido e não era. Funcionava por
+ * acidente — o `if/else` que lê o filtro cai em "todos" no fim —, mas o
+ * tipo mentia, e a próxima pessoa a mexer nesse `if` não teria como saber.
+ *
+ * Isto confere de fato. Valor estranho vira "todos", que é o padrão.
+ */
+function paraFiltroRevisao(valor: string | null): FiltroRevisao {
+  return valor === 'revisados' || valor === 'pendentes' ? valor : 'todos'
+}
 
 /** Campo vazio é ausência de medida, não zero. Vírgula vale como decimal. */
 const VAZIO: DadosModeloPerfil = {
@@ -95,7 +117,8 @@ export default function ModelosPerfil() {
   // copiados que mudaram lá. Não faz sentido a própria organização central
   // sincronizar consigo mesma.
   const { data: organizacao } = useOrganizacao()
-  const podeSincronizar = podeEditar && Boolean(organizacao) && !organizacao?.eh_catalogo_central
+  const podeSincronizar =
+    podeEditar && Boolean(organizacao) && !organizacao?.eh_catalogo_central
   const sincronizar = useSincronizarCatalogoCentral()
   const { data: linhasCentral } = useLinhasCatalogoCentral()
   const [linhaParaSincronizar, setLinhaParaSincronizar] = useState('')
@@ -155,14 +178,9 @@ export default function ModelosPerfil() {
    * por um link sem esse parâmetro.
    */
   const [parametrosFiltro, definirParametrosFiltro] = useSearchParams()
-  const filtroRevisao =
-    (parametrosFiltro.get('revisao') as
-      | 'todos'
-      | 'revisados'
-      | 'pendentes'
-      | null) ?? 'todos'
+  const filtroRevisao = paraFiltroRevisao(parametrosFiltro.get('revisao'))
 
-  function setFiltroRevisao(valor: 'todos' | 'revisados' | 'pendentes') {
+  function setFiltroRevisao(valor: FiltroRevisao) {
     const novos = new URLSearchParams(parametrosFiltro)
 
     if (valor === 'todos') {
@@ -350,7 +368,9 @@ export default function ModelosPerfil() {
                 variante="secundaria"
                 tamanho="pequeno"
                 onClick={() => void aoSincronizar()}
-                carregando={sincronizar.isPending && linhaParaSincronizar === ''}
+                carregando={
+                  sincronizar.isPending && linhaParaSincronizar === ''
+                }
                 className="min-w-0 flex-1 px-2 text-xs"
               >
                 <RefreshCw aria-hidden="true" className="size-3.5 shrink-0" />
@@ -380,7 +400,9 @@ export default function ModelosPerfil() {
                 variante="secundaria"
                 tamanho="pequeno"
                 disabled={linhaParaSincronizar === ''}
-                carregando={sincronizar.isPending && linhaParaSincronizar !== ''}
+                carregando={
+                  sincronizar.isPending && linhaParaSincronizar !== ''
+                }
                 onClick={() => void aoSincronizar(linhaParaSincronizar)}
                 className="min-w-0 flex-1 px-2 text-xs"
               >
@@ -422,7 +444,7 @@ export default function ModelosPerfil() {
 
             <select
               value={filtroRevisao}
-              onChange={(e) => setFiltroRevisao(e.target.value as any)}
+              onChange={(e) => setFiltroRevisao(paraFiltroRevisao(e.target.value))}
               className="border-borda bg-superficie hover:bg-superficie-2 min-h-12 shrink-0 rounded-xl border-2 px-3 text-sm font-medium outline-none"
             >
               <option value="todos">Todos</option>
@@ -633,10 +655,12 @@ export default function ModelosPerfil() {
                       tamanho="icone_pequeno"
                       variante="contorno"
                       onClick={() =>
-                        void desativar.mutateAsync({
-                          id: modelo.id,
-                          ativo: !modelo.ativo,
-                        })
+                        disparar(
+                          desativar.mutateAsync({
+                            id: modelo.id,
+                            ativo: !modelo.ativo,
+                          }),
+                        )
                       }
                       aria-label={`${modelo.ativo ? 'Desativar' : 'Reativar'} ${modelo.codigo}`}
                       title={modelo.ativo ? 'Desativar' : 'Reativar'}

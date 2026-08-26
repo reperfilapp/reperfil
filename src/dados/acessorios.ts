@@ -166,7 +166,57 @@ export function useUsarAcessorio() {
   })
 }
 
-/** Corrige a quantidade cadastrada — erro de digitação, não consumo. */
+/**
+ * Baixa por PERDA: quebrou, sumiu, molhou, estragou.
+ *
+ * O terceiro jeito de o estoque diminuir, e o único que diz "perdi". Os
+ * outros dois contam outras histórias: `useUsarAcessorio` é consumo (a
+ * peça virou produto) e `useAjustarQuantidadeAcessorio` é correção de
+ * cadastro (o número nunca esteve certo).
+ *
+ * Recebe QUANTAS saíram, não quantas sobraram — é como se pensa diante do
+ * estrago, e evita o engano perigoso de digitar 5 querendo dizer "perdi
+ * 5" num campo que espera "restaram 5".
+ */
+export function useDescartarAcessorio() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      loteId,
+      quantidade,
+      justificativa,
+    }: {
+      loteId: string
+      quantidade: number
+      justificativa: string
+    }): Promise<LoteAcessorio> => {
+      const { data, error } = await supabase.rpc('descartar_acessorio', {
+        p_lote_id: loteId,
+        p_quantidade: quantidade,
+        p_justificativa: justificativa,
+      })
+
+      if (error) throw new Error(error.message)
+
+      return data as LoteAcessorio
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.lotesAcessorio })
+    },
+  })
+}
+
+/**
+ * Corrige a quantidade cadastrada — erro de digitação, não consumo nem
+ * perda.
+ *
+ * Recebe a quantidade CERTA (valor absoluto), ao contrário de usar e
+ * descartar, que recebem quanto saiu. É a diferença entre "o número está
+ * errado, o certo é 10" e "saíram 10 do que havia" — e é por isso que os
+ * dois têm telas separadas, com texto diferente: confundi-los zera
+ * estoque em silêncio.
+ */
 export function useAjustarQuantidadeAcessorio() {
   const cliente = useQueryClient()
 

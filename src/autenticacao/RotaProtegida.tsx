@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { ShieldAlert, UserX, MailWarning, Loader2 } from 'lucide-react'
+import { ShieldAlert, UserX, MailWarning, Loader2, WifiOff } from 'lucide-react'
 import { useAutenticacao } from './useAutenticacao'
 import { supabase } from '@/lib/supabase'
 import { Botao } from '@/componentes/ui/Botao'
@@ -27,7 +27,8 @@ export function RotaProtegida({
   children,
   papeisPermitidos,
 }: PropsRotaProtegida) {
-  const { sessao, perfil, carregando, semAcesso, sair } = useAutenticacao()
+  const { sessao, perfil, carregando, semAcesso, erroPerfil, sair } =
+    useAutenticacao()
   const localizacao = useLocation()
 
   if (carregando) {
@@ -47,6 +48,16 @@ export function RotaProtegida({
     return (
       <Navigate to="/entrar" replace state={{ de: localizacao.pathname }} />
     )
+  }
+
+  // A busca do perfil FALHOU — rede caiu, servidor recusou. Diferente de
+  // "não tem acesso": aqui não se sabe, porque a pergunta não chegou a ser
+  // respondida. Vem antes do bloco de `semAcesso` de propósito: acusar
+  // falta de acesso por causa de um erro de rede é pior do que qualquer
+  // outra mensagem, porque manda a pessoa procurar o administrador para
+  // resolver um problema que se resolve sozinho.
+  if (erroPerfil) {
+    return <TelaFalhaAoCarregarPerfil motivo={erroPerfil} sair={sair} />
   }
 
   // Autenticado, mas o administrador ainda não vinculou a conta a uma
@@ -138,6 +149,66 @@ export function RotaProtegida({
   return <>{children}</>
 }
 
+/**
+ * A busca do perfil falhou — quase sempre rede.
+ *
+ * Existe porque o app é usado de pé no depósito, onde o sinal cai o tempo
+ * todo. Antes, qualquer falha aqui virava "sua conta não está vinculada a
+ * uma empresa": a pessoa era mandada procurar o administrador por causa de
+ * um problema que se resolve sozinho em dois segundos. Agora a tela diz o
+ * que houve e oferece tentar de novo — que é o que a situação pede.
+ */
+function TelaFalhaAoCarregarPerfil({
+  motivo,
+  sair,
+}: {
+  motivo: string
+  sair: () => Promise<void>
+}) {
+  const { recarregarPerfil } = useAutenticacao()
+  const [tentando, setTentando] = useState(false)
+
+  async function tentarDeNovo() {
+    setTentando(true)
+    try {
+      await recarregarPerfil()
+    } finally {
+      setTentando(false)
+    }
+  }
+
+  return (
+    <main
+      role="alert"
+      className="flex min-h-dvh flex-col items-center justify-center gap-6 px-6 text-center"
+    >
+      <div className="bg-atencao-100 text-atencao-700 rounded-full p-6">
+        <WifiOff aria-hidden="true" className="size-12" />
+      </div>
+
+      <div className="space-y-2">
+        <h1 className="text-2xl font-bold">Não foi possível carregar</h1>
+        <p className="text-texto-suave max-w-sm text-balance">
+          Seus dados de acesso não chegaram. Isso costuma ser a conexão —
+          confira o sinal e tente de novo.
+        </p>
+        <p className="text-texto-suave/70 max-w-sm text-xs text-balance">
+          {motivo}
+        </p>
+      </div>
+
+      <div className="flex flex-col items-center gap-3">
+        <Botao onClick={() => void tentarDeNovo()} carregando={tentando}>
+          Tentar de novo
+        </Botao>
+        <Botao variante="texto" onClick={() => void sair()}>
+          Sair
+        </Botao>
+      </div>
+    </main>
+  )
+}
+
 interface PropsTelaConfirmarEmail {
   email: string
   sair: () => Promise<void>
@@ -165,9 +236,9 @@ interface PropsTelaConfirmarEmail {
  */
 function TelaConfirmarEmail({ email, sair }: PropsTelaConfirmarEmail) {
   const { recarregarPerfil } = useAutenticacao()
-  const [estado, setEstado] = useState<'ocioso' | 'enviando' | 'enviado' | 'erro'>(
-    'ocioso',
-  )
+  const [estado, setEstado] = useState<
+    'ocioso' | 'enviando' | 'enviado' | 'erro'
+  >('ocioso')
   const [atualizando, setAtualizando] = useState(false)
   const [aindaNaoConfirmado, setAindaNaoConfirmado] = useState(false)
 
@@ -213,15 +284,15 @@ function TelaConfirmarEmail({ email, sair }: PropsTelaConfirmarEmail) {
       <div className="space-y-2">
         <h1 className="text-2xl font-bold">Confirme seu e-mail</h1>
         <p className="text-texto-suave max-w-sm text-balance">
-          Mandamos um link de confirmação para <strong>{email}</strong>. Abra
-          a mensagem, toque nele e volte aqui para atualizar.
+          Mandamos um link de confirmação para <strong>{email}</strong>. Abra a
+          mensagem, toque nele e volte aqui para atualizar.
         </p>
       </div>
 
       {aindaNaoConfirmado && (
         <p className="bg-superficie-2 rounded-xl px-4 py-3 text-sm">
-          Ainda não encontramos a confirmação. Se já tocou no link do
-          e-mail, aguarde um instante e tente de novo.
+          Ainda não encontramos a confirmação. Se já tocou no link do e-mail,
+          aguarde um instante e tente de novo.
         </p>
       )}
 

@@ -23,6 +23,7 @@ import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { Modal } from '@/componentes/ui/Modal'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
 import type { Localizacao } from '@/tipos/banco'
+import { disparar } from '@/lib/avisoErro'
 
 const VAZIO: DadosLocalizacao = {
   codigo: '',
@@ -182,10 +183,12 @@ export default function Localizacoes() {
                 <Botao
                   variante="contorno"
                   onClick={() =>
-                    void desativar.mutateAsync({
-                      id: local.id,
-                      ativo: !local.ativo,
-                    })
+                    disparar(
+                      desativar.mutateAsync({
+                        id: local.id,
+                        ativo: !local.ativo,
+                      }),
+                    )
                   }
                   aria-label={`${local.ativo ? 'Desativar' : 'Reativar'} ${local.codigo}`}
                   title={local.ativo ? 'Desativar' : 'Reativar'}

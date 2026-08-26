@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   Plus,
@@ -43,7 +43,11 @@ import {
 } from '@/dominio/ordenacaoListaTecnica'
 import { sobrasDisponiveis } from '@/dominio/estoqueParaProducao'
 import { formatarMedidaProduto, nomeDoArquivo } from '@/dominio/produto'
-import { formatarComprimento } from '@/dominio/medidas'
+import {
+  formatarComprimento,
+  interpretarMedidaDigitada,
+  validarComprimento,
+} from '@/dominio/medidas'
 import { CONFIGURACAO_CORTE_PADRAO } from '@/dominio/corte'
 import { obterLinkTemporario, BALDE_IMAGENS_PRODUTO } from '@/lib/armazenamento'
 import { imprimirFolha, imprimeNoNativo } from '@/lib/impressao'
@@ -61,6 +65,7 @@ import { FormularioProduto } from '@/componentes/produto/FormularioProduto'
 import { FolhaProduto } from '@/componentes/produto/FolhaProduto'
 import type { ItemListaTecnica } from '@/tipos/banco'
 import { APLICACAO } from '@/config/aplicacao'
+import { disparar } from '@/lib/avisoErro'
 
 export default function ProdutoDetalhe() {
   const { id = null } = useParams()
@@ -149,6 +154,18 @@ export default function ProdutoDetalhe() {
   }, [produto?.foto_url, produto?.desenho_url])
 
   /*
+   * Espelho do produto para o efeito de impressão ler sem depender dele.
+   *
+   * O efeito abaixo precisa do produto (para nomear o arquivo), mas NÃO
+   * pode reagir a ele: o React Query devolve um objeto novo a cada
+   * revalidação, e `produto` nas dependências faria o efeito rodar de
+   * novo no meio de uma impressão em andamento — abrindo o diálogo uma
+   * segunda vez sozinho. O ref dá o valor atual sem criar essa amarra.
+   */
+  const produtoRef = useRef(produto)
+  produtoRef.current = produto
+
+  /*
    * Imprimir só DEPOIS que a folha existe na tela.
    *
    * `window.print()` congela a página no estado em que ela está: chamado no
@@ -192,7 +209,8 @@ export default function ProdutoDetalhe() {
      * janela específica meses depois.
      */
     const tituloOriginal = document.title
-    const nome = produto ? nomeDoArquivo(produto) : tituloOriginal
+    const produtoAtual = produtoRef.current
+    const nome = produtoAtual ? nomeDoArquivo(produtoAtual) : tituloOriginal
 
     document.title = nome
 
@@ -281,7 +299,7 @@ export default function ProdutoDetalhe() {
   const ordenacao = useArrastarParaOrdenar({
     itens: itens ?? [],
     chave: (item) => item.id,
-    aoSoltar: (idsNaOrdem) => void reordenar.mutateAsync(idsNaOrdem),
+    aoSoltar: (idsNaOrdem) => disparar(reordenar.mutateAsync(idsNaOrdem)),
   })
 
   const nomeDoPerfil = (modeloId: string) => {
@@ -315,7 +333,10 @@ export default function ProdutoDetalhe() {
     evento.preventDefault()
     setErro(null)
 
-    const comprimento = Number(form.comprimento_mm.replace(',', '.'))
+    // Pelo domínio de medidas, e validado contra a barra do perfil
+    // escolhido — mesma correção de `AcrescentarMaterial`, pelo mesmo
+    // motivo: um corte não pode ser maior que a peça de onde ele sai.
+    const comprimento = interpretarMedidaDigitada(form.comprimento_mm, 'mm')
     const quantidade = Number(form.quantidade)
 
     if (form.modelo_perfil_id === '') {
@@ -323,8 +344,21 @@ export default function ProdutoDetalhe() {
       return
     }
 
-    if (!Number.isFinite(comprimento) || comprimento <= 0) {
+    if (comprimento === null) {
       setErro('Informe o comprimento do corte, em milímetros.')
+      return
+    }
+
+    const perfilEscolhido = (modelos ?? []).find(
+      (m) => m.id === form.modelo_perfil_id,
+    )
+    const validacao = validarComprimento(
+      comprimento,
+      perfilEscolhido?.comprimento_barra_mm,
+    )
+
+    if (!validacao.valido) {
+      setErro(validacao.mensagem)
       return
     }
 
@@ -340,7 +374,7 @@ export default function ProdutoDetalhe() {
         id: itemEditando.id,
         dados: {
           modelo_perfil_id: form.modelo_perfil_id,
-          comprimento_mm: Math.round(comprimento),
+          comprimento_mm: comprimento,
           quantidade,
           observacao: itemEditando.observacao,
         },
@@ -635,7 +669,7 @@ export default function ProdutoDetalhe() {
                     ),
                   })
 
-                  void reordenar.mutateAsync(ordenados.map((i) => i.id))
+                  disparar(reordenar.mutateAsync(ordenados.map((i) => i.id)))
                   // Volta ao rótulo neutro: o campo é um comando, não um
                   // estado — a lista pode ser arrastada depois, e deixá-lo
                   // marcado diria que ela ainda segue aquela regra.
@@ -671,7 +705,9 @@ export default function ProdutoDetalhe() {
               const desenho = capas?.get(item.modelo_perfil_id)
               const estoque = resumoDe(estoquePorPerfil, item.modelo_perfil_id)
               const falta = atendidos.get(chaveDoCorte(item)) !== true
-              const modeloItem = modelos?.find((m) => m.id === item.modelo_perfil_id)
+              const modeloItem = modelos?.find(
+                (m) => m.id === item.modelo_perfil_id,
+              )
 
               return (
                 <li
@@ -735,11 +771,13 @@ export default function ProdutoDetalhe() {
                   </div>
 
                   {/* Linha inferior: medidas/estoque + botões */}
-                  <div className="flex items-center justify-between gap-2 px-2 pb-2 pt-1">
+                  <div className="flex items-center justify-between gap-2 px-2 pt-1 pb-2">
                     <span className="text-texto-suave pl-1 text-[15px] tabular-nums">
                       {item.quantidade} ×{' '}
-                      {formatarComprimento(item.comprimento_mm)} · {estoque.pecas} pç /{' '}
-                      {(estoque.milimetros / 1000).toFixed(1).replace('.', ',')} m
+                      {formatarComprimento(item.comprimento_mm)} ·{' '}
+                      {estoque.pecas} pç /{' '}
+                      {(estoque.milimetros / 1000).toFixed(1).replace('.', ',')}{' '}
+                      m
                     </span>
 
                     {podeEditar && (
@@ -757,7 +795,7 @@ export default function ProdutoDetalhe() {
                         <Botao
                           tamanho="icone_pequeno"
                           variante="contorno"
-                          onClick={() => void remover.mutateAsync(item.id)}
+                          onClick={() => disparar(remover.mutateAsync(item.id))}
                           aria-label={`Remover ${nomeDoPerfil(item.modelo_perfil_id)} da lista técnica`}
                           title="Remover"
                         >
