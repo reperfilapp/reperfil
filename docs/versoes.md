@@ -64,6 +64,18 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.9 — 25/08/2026
+
+**"Já confirmei" agora insiste antes de desistir.**
+
+Conferia a confirmação uma vez só — se a outra aba (onde o link do e-mail
+abriu) ainda estivesse carregando o app pela primeira vez, sobre rede de
+celular, o botão dizia "ainda não confirmado" mesmo a confirmação indo
+acontecer um instante depois, exigindo clicar de novo. Agora tenta até 4
+vezes, com 1,5s entre cada, antes de mostrar a mensagem.
+
+---
+
 ## 1.7.8 — 25/08/2026
 
 **Correção: botão "Voltar" esticado em "Acrescentar material".**

@@ -153,9 +153,9 @@ export function ProvedorAutenticacao({ children }: { children: ReactNode }) {
   }, [])
 
   const recarregarPerfil = useCallback(async () => {
-    if (sessao) {
-      await buscarPerfil(sessao.user.id)
-    }
+    if (!sessao) return null
+
+    return (await buscarPerfil(sessao.user.id)) ?? null
   }, [sessao, buscarPerfil])
 
   const valor = useMemo<EstadoAutenticacao>(

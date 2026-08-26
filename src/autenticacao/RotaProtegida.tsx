@@ -155,9 +155,13 @@ interface PropsTelaConfirmarEmail {
  * Confirmar acontece numa ABA OU SESSÃO diferente (a pessoa abre o e-mail
  * no celular, ou numa segunda aba do navegador) — o clique lá não avisa
  * esta aba sozinho, porque cada aba guarda o próprio perfil em memória.
- * Este botão só chama `recarregarPerfil()`: se já confirmou, o perfil
- * novo chega com `email_confirmado_em` preenchido, `RotaProtegida`
- * reavalia sozinha e esta tela nem chega a reaparecer.
+ *
+ * Insiste algumas vezes antes de desistir, em vez de checar uma vez só: a
+ * outra aba pode ainda estar CARREGANDO no momento em que a pessoa já
+ * voltou para cá (a página de confirmação é um SPA inteiro, carregando
+ * pela primeira vez, muitas vezes em rede de celular) — conferir cedo
+ * demais mostra "ainda não confirmado" sobre uma confirmação que só
+ * termina de acontecer um instante depois.
  */
 function TelaConfirmarEmail({ email, sair }: PropsTelaConfirmarEmail) {
   const { recarregarPerfil } = useAutenticacao()
@@ -176,11 +180,24 @@ function TelaConfirmarEmail({ email, sair }: PropsTelaConfirmarEmail) {
   async function atualizar() {
     setAtualizando(true)
     setAindaNaoConfirmado(false)
-    await recarregarPerfil()
+
+    const TENTATIVAS = 4
+    const INTERVALO_MS = 1500
+
+    for (let tentativa = 0; tentativa < TENTATIVAS; tentativa++) {
+      const perfilNovo = await recarregarPerfil()
+
+      if (perfilNovo?.email_confirmado_em) {
+        setAtualizando(false)
+        return
+      }
+
+      if (tentativa < TENTATIVAS - 1) {
+        await new Promise((resolve) => setTimeout(resolve, INTERVALO_MS))
+      }
+    }
+
     setAtualizando(false)
-    // Se este componente ainda existir depois do recarregamento, é porque
-    // `RotaProtegida` olhou o perfil novo e continua vendo `null` — ainda
-    // não confirmou de verdade.
     setAindaNaoConfirmado(true)
   }
 

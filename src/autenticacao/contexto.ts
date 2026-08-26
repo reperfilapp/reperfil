@@ -27,7 +27,9 @@ export interface EstadoAutenticacao {
   semAcesso: boolean
   entrar: (email: string, senha: string) => Promise<void>
   sair: () => Promise<void>
-  recarregarPerfil: () => Promise<void>
+  /** Retorna o perfil recém-buscado, para checar o resultado sem esperar
+   *  o próximo render (ex.: tentar de novo se ainda não confirmou). */
+  recarregarPerfil: () => Promise<PerfilUsuario | null>
 }
 
 export const ContextoAutenticacao = createContext<EstadoAutenticacao | null>(
