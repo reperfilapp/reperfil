@@ -15,6 +15,12 @@ Modelos_Orçamentos_PDF/
 !.env.example
 *.keystore
 *.jks
+# As SENHAS da chave de assinatura. O `.jks` já era bloqueado acima, mas
+# este arquivo, que guarda a senha dele, não era — e sem os dois o
+# bloqueio não serve para nada. O `.exemplo` fica versionado de propósito:
+# é ele que documenta o formato.
+keystore.properties
+!keystore.properties.exemplo
 google-services.json
 
 # --- Logs ---

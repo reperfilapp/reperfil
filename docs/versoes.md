@@ -78,6 +78,78 @@ servindo do cache por esse tempo, agora com os dados errados. Corrigido
 limpando todo o cache ao sair — fecha essa brecha pela raiz, não só para
 esta consulta.
 
+## 1.7.52 — 28/08/2026
+
+**Atualização (mesma versão): corrigidos os outros dois lugares com o mesmo bug**, avisados no relatório anterior:
+
+- **Excluir a própria conta** ([`colaboradores.ts`](../src/dados/colaboradores.ts)) — se a função recusar (ex.: "você é o único administrador ativo da organização"), agora a tela mostra esse motivo, não mais um genérico "Não foi possível excluir a conta."
+- **Reenviar e-mail de confirmação** ([`RotaProtegida.tsx`](../src/autenticacao/RotaProtegida.tsx)) — o botão "Reenviar" na tela de e-mail não confirmado sempre mostrava "Não foi possível reenviar agora." mesmo quando a função tinha um motivo mais específico (perfil não encontrado, sessão inválida). Agora mostra o motivo real quando ele existe, com a mensagem genérica só como reserva.
+
+Os três pontos do app que chamam Edge Functions e mostram a mensagem de erro ao usuário agora passam por `mensagemDeErroDaFuncao`.
+
+**Testado o encerramento de empresa (Edge Function `excluir-empresa`) e corrigido um bug real que o teste revelou.**
+
+A função está publicada e a barreira de identidade funciona: sem
+cabeçalho de autorização, 401; com a chave anônima mas sem sessão de
+usuário, também 401 — só depois disso a função consulta o banco.
+
+**Mas o teste expôs um bug**, e não só nesta tela: quando a Edge
+Function responde com erro (por exemplo, "digite exatamente o nome da
+empresa: Alumifort"), o `supabase.functions.invoke` do lado do
+aplicativo NUNCA entrega esse texto ao código — ele embrulha a resposta
+inteira num `FunctionsHttpError` e deixa `data` nulo. O trecho que lia
+`data.error` depois de checar `error` era código morto: nunca executava,
+porque toda resposta de erro da nossa função já vem com status HTTP não
+2xx. Na prática, quem errasse o nome digitado na confirmação via só
+"Não foi possível encerrar a empresa." — sem saber qual nome digitar.
+
+Criei [`src/lib/erroDeFuncao.ts`](../src/lib/erroDeFuncao.ts)
+(`mensagemDeErroDaFuncao`), que abre o `FunctionsHttpError.context` e lê
+o `error` de verdade, com fallback para a mensagem genérica quando não
+há corpo em JSON. Apliquei no encerramento de empresa — é a tela onde a
+mensagem específica mais importa, por ser irreversível.
+
+**Mesmo bug em mais dois lugares**, ainda não corrigidos: excluir a
+própria conta e confirmar e-mail. Vou avisar para decidirmos se corrijo
+agora ou depois.
+
+Adicionei 5 testes cobrindo o utilitário: mensagem específica,
+corpo sem campo `error`, campo vazio, corpo que não é JSON e erro que
+nem é de HTTP.
+
+---
+
+## 1.7.51 — 28/08/2026
+
+**Assinatura da Play Store pronta no projeto Android.**
+
+Faltava a configuração de assinatura — sem ela, `npm run android:aab`
+gerava um pacote que a Play Store recusa. Agora está no `build.gradle`,
+com dois cuidados:
+
+**Não quebra o build de quem não tem a chave.** Toda a configuração é
+condicional: sem o `android/keystore.properties`, o bloco de assinatura
+nem é criado, e o app continua compilando em depuração normalmente. Foi
+por isso que a configuração nunca tinha sido aplicada — a versão óbvia
+apontaria para um arquivo inexistente e quebraria para todo mundo.
+
+**Avisa antes de gerar pacote inútil.** Sem a chave, o build de release
+imprime um aviso em moldura explicando que o pacote sairá sem assinatura e
+onde criar a chave. Sem isso, o `BUILD SUCCESSFUL` enganaria, e o problema
+só apareceria minutos depois, no envio à loja.
+
+Também criei `android/keystore.properties.exemplo`, com o comando de gerar
+a chave e o formato esperado — a chave em si só você pode gerar.
+
+**Correção de segurança no `.gitignore`:** ele bloqueava `*.jks` mas
+**não** o `keystore.properties`, que guarda as senhas desse arquivo. Um
+bloqueio pela metade não serve para nada. Corrigido.
+
+Verificado nos dois caminhos: `assembleDebug` continua passando sem a
+chave, e `bundleRelease` sem chave mostra o aviso.
+
+---
+
 ## 1.7.50 — 28/08/2026
 
 **Encerrar uma empresa — a empresa pede, o RePerfil executa.**

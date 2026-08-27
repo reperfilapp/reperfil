@@ -12,7 +12,7 @@ quando o usuário confirmar explicitamente que rodou no Supabase — nunca
 antes, mesmo que a sintaxe já tenha sido validada com `npm run banco:validar`
 (validar sintaxe não é a mesma coisa que já estar aplicada).
 
-## Status em 28/08/2026: 1 pendente (excluir_organizacao)
+## Status em 28/08/2026: nenhuma pendente
 
 - [x] 20260815120000_fundacao.sql
 - [x] 20260815120100_cadastros.sql
@@ -75,4 +75,4 @@ antes, mesmo que a sintaxe já tenha sido validada com `npm run banco:validar`
 - [x] 20260828300000_ordem_linhas_global_central.sql
 - [x] 20260828400000_limite_comprimento_lista_tecnica.sql
 - [x] 20260828500000_descartar_acessorio.sql
-- [ ] 20260828600000_excluir_organizacao.sql
+- [x] 20260828600000_excluir_organizacao.sql

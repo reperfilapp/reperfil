@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { chaves } from '@/lib/consultas'
+import { mensagemDeErroDaFuncao } from '@/lib/erroDeFuncao'
 import { permissoesIniciais, type Permissoes } from '@/dominio/cargos'
 import { apenasDigitos } from '@/dominio/documentos'
 import type {
@@ -515,7 +516,13 @@ export function useExcluirPropriaConta() {
         error?: string
       }>('excluir-conta')
 
-      if (error) throw new Error(error.message)
+      // A mensagem de erro da função importa aqui: é ela que diz "você é
+      // o único administrador ativo" em vez de uma genérica.
+      if (error) {
+        throw new Error(
+          await mensagemDeErroDaFuncao(error, 'Não foi possível excluir a conta.'),
+        )
+      }
       if (!data?.ok) throw new Error(data?.error ?? 'Não foi possível excluir a conta.')
     },
   })

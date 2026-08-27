@@ -1,23 +1,31 @@
 # Publicar na Google Play Store
 
-> **O aplicativo NÃO está publicado.** Este documento é o caminho para
-> publicá-lo. Nenhuma conta de desenvolvedor foi criada, nenhuma chave de
-> assinatura foi gerada, e nada foi enviado à Google.
+> **O aplicativo ainda NÃO foi enviado.** Este documento é o caminho.
+>
+> **Já feito:** conta de desenvolvedor criada e liberada pela Google
+> (13/08/2026, verificação aprovada) · organização de demonstração removida
+> do banco (28/08/2026).
+>
+> **Falta:** gerar a chave de assinatura, configurá-la, desativar a conta
+> de teste, gerar o AAB e enviar.
 
 ## O que já está pronto
 
 O projeto Android existe em `android/`, configurado e **compilando**.
-Verificado em 15/08/2026:
+Conferido em 28/08/2026:
 
 | Item | Valor |
 | --- | --- |
 | Identificador do pacote | `br.com.reperfil.app` |
 | Nome exibido | RePerfil |
-| Versão | 0.8.0 (versionCode 800) |
+| Versão | vem do `package.json` — hoje 1.6.84 (versionCode 10684) |
 | SDK mínimo | 24 (Android 7.0) |
-| SDK alvo | 36 (Android 16) |
+| SDK alvo | 36 (Android 16) — acima do mínimo exigido pela Google |
 | Permissões | Internet, estado da rede, câmera |
 | Ícone adaptativo e tela de abertura | Gerados da logo da empresa |
+| Ícone 512×512 para a loja | `public/icones/icone-512.png` |
+| Política de privacidade | **Existe** — `/politica-privacidade`, pública |
+| Exclusão de conta pelo app | **Existe** — exigência da Google desde 2024 |
 
 O **APK de depuração** foi compilado com sucesso e está em:
 
@@ -44,15 +52,10 @@ Para instalar no celular ligado por USB, com depuração USB ativada:
 npm run android:instalar
 ```
 
-## Passo 1 — Conta de desenvolvedor
+## ~~Passo 1 — Conta de desenvolvedor~~ ✅ FEITO
 
-Só você pode fazer isto.
-
-1. [play.google.com/console](https://play.google.com/console) com a conta
-   **reperfilapp@gmail.com**
-2. Taxa única de US$ 25
-3. A Google exige verificação de identidade e endereço; para conta de empresa,
-   pede também o CNPJ. Pode levar alguns dias
+Criada em **13/08/2026** com a conta **reperfilapp@gmail.com**, taxa paga e
+verificação de identidade aprovada pela Google.
 
 ## Passo 2 — Criar a chave de assinatura
 
@@ -80,45 +83,34 @@ Depois de gerar:
 
 ## Passo 3 — Configurar a assinatura
 
-Crie `android/keystore.properties` (já está no `.gitignore`):
+**O `build.gradle` já está pronto** (feito em 28/08/2026). Você só precisa
+criar um arquivo:
 
-```properties
-storeFile=C:/caminho/seguro/reperfil-release.jks
-storePassword=SUA_SENHA
-keyAlias=reperfil
-keyPassword=SUA_SENHA
+1. Copie `android/keystore.properties.exemplo` para
+   `android/keystore.properties` (mesma pasta, sem o `.exemplo`)
+2. Preencha os quatro campos com o caminho do `.jks` e as senhas
+
+Pronto. O `build.gradle` detecta o arquivo sozinho e assina o release.
+
+**Nada quebra sem ele.** A configuração inteira é condicional: sem o
+`keystore.properties`, o bloco de assinatura nem é criado, e quem clonar o
+repositório sem a chave continua compilando em depuração normalmente. O
+preço é que `bundleRelease` sem a chave gera um pacote não assinado — e
+para isso não ser descoberto só no envio, o build imprime um aviso em
+moldura antes de começar:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ATENÇÃO: build de release SEM assinatura.                  │
+│  Falta o arquivo android/keystore.properties. O pacote vai  │
+│  ser gerado, mas a Play Store vai RECUSAR.                  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-E acrescente ao `android/app/build.gradle`, dentro do bloco `android { }`:
-
-```gradle
-    def propsAssinatura = new Properties()
-    def arquivoProps = rootProject.file('keystore.properties')
-    if (arquivoProps.exists()) {
-        propsAssinatura.load(new FileInputStream(arquivoProps))
-    }
-
-    signingConfigs {
-        release {
-            if (arquivoProps.exists()) {
-                storeFile file(propsAssinatura['storeFile'])
-                storePassword propsAssinatura['storePassword']
-                keyAlias propsAssinatura['keyAlias']
-                keyPassword propsAssinatura['keyPassword']
-            }
-        }
-    }
-```
-
-E dentro de `buildTypes { release { … } }`:
-
-```gradle
-            signingConfig signingConfigs.release
-```
-
-> Deixei isto como instrução em vez de já aplicado no projeto de propósito: um
-> `build.gradle` que referencia uma configuração de assinatura inexistente
-> quebra o build de depuração para quem clonar o repositório.
+> O `.gitignore` bloqueia `keystore.properties` **e** `*.jks`. Antes
+> bloqueava só o `.jks` — o arquivo com as senhas dele passava batido, e
+> um bloqueio pela metade não serve para nada. O `.exemplo` continua
+> versionado de propósito: é ele que documenta o formato.
 
 ## Passo 4 — Gerar o pacote para a loja
 
@@ -148,16 +140,76 @@ O arquivo sai em `android\app\build\outputs\bundle\release\app-release.aab`.
 
 ## Checklist antes de liberar em produção
 
-- [ ] **Apagar a conta de teste** `teste@reperfil.invalido`, que é
-      administradora e tem senha conhecida — ver decisão D8 em
-      `docs/decisoes.md`
+- [x] ~~Neutralizar a conta de teste~~ — **já está**, verificado em
+      28/08/2026: `ativo = false`, e `organizacao_atual()`,
+      `e_administrador()` e `pode_movimentar_estoque()` filtram por
+      `ativo`. Mesmo com a senha, não lê nem escreve nada — o RLS barra.
+      **Não apague essa conta** (ver abaixo)
 - [ ] Confirmar os parâmetros de corte em Mais → Configurações; a espessura da
       serra ainda é valor presumido
-- [ ] Remover a organização de demonstração:
-      `delete from organizacoes where codigo = 'DEMO';`
-- [ ] Publicar a política de privacidade num endereço acessível
+- [x] ~~Remover a organização de demonstração~~ — feito em 28/08/2026
+- [x] ~~Publicar a política de privacidade num endereço acessível~~ — está em
+      `/politica-privacidade`, acessível sem login. **Continua sem revisão
+      de advogado** (ver `docs/pendencias.md`): o app trata CPF/CNPJ,
+      endereço e telefone de CLIENTES, que são terceiros que nunca usaram
+      o aplicativo
 - [ ] Testar em teste interno com pelo menos duas pessoas reais
 - [ ] Guardar a chave de assinatura em local seguro e com backup
+
+## Não apague a conta `teste@reperfil.invalido`
+
+Verificado em 28/08/2026: apesar do nome "Usuário de Teste (apagar
+depois)", ela **não é lixo**. Pertence à Alumifort e é a autora de 515
+registros reais:
+
+| O que | Quantos |
+| --- | --- |
+| Registros de auditoria | 209 |
+| Movimentações de estoque | 94 |
+| Lotes de sobra | 86 |
+| Modelos de perfil | 78 |
+| Imagens de perfil | 36 |
+| Acabamentos, reservas, cliente, localização | 12 |
+
+Apagá-la exigiria apagar tudo isso antes — parte do catálogo e do estoque
+da empresa. **O `Delete user` não funcionar é o banco protegendo esses
+dados**, não um defeito.
+
+E não é preciso: ela já está com `ativo = false`, e todas as funções de
+permissão (`organizacao_atual`, `e_administrador`,
+`pode_movimentar_estoque`) filtram por `ativo`. Quem tiver a senha
+autentica, mas `organizacao_atual()` devolve nulo e o RLS barra toda
+leitura e escrita.
+
+Se um dia quiser mesmo tirá-la de circulação por completo, o caminho é
+entrar com ela e usar Mais → Minha conta → excluir a conta: anonimiza os
+dados pessoais e libera o e-mail **sem** apagar a linha, preservando o
+histórico.
+
+## Por que o "Delete user" do painel não funciona
+
+Sintoma: no painel do Supabase, em Authentication → Users, o botão
+**Delete** não faz nada — não apaga e não mostra erro.
+
+**Causa.** Apagar em `auth.users` tenta apagar `perfis_usuario` junto (a
+chave é `on delete cascade`). Mas dezesseis tabelas apontam para
+`perfis_usuario` em colunas como `criado_por`, e nenhuma delas declara
+regra de exclusão — o padrão do Postgres nesse caso é NO ACTION, que se
+comporta como RESTRICT. Se a conta criou um registro que seja, o banco
+recusa. O painel engole esse erro, e o botão parece morto.
+
+Isso é deliberado, não um defeito: o histórico de estoque diz quem
+cadastrou cada peça, e apagar a pessoa deixaria movimentações sem autor.
+
+**Para ver o que está segurando**, rode `supabase/diagnostico-conta-teste.sql`
+no SQL Editor — ele só consulta, não altera nada.
+
+**O caminho certo** é o mesmo que o aplicativo oferece a qualquer usuário:
+Mais → Minha conta → excluir a conta. Ele apaga os dados pessoais,
+desativa o acesso e troca o e-mail de login por um sintético
+(`conta-excluida-…@reperfil.local`), liberando o endereço real — sem
+quebrar o histórico. Para a conta de teste, isso resolve o risco que
+importa: administradora ativa com senha conhecida deixa de existir.
 
 ## Sequência de testes da Google
 
@@ -174,12 +226,27 @@ conta, porque ela mudou algumas vezes.
 
 ## Sobre a política de privacidade
 
-A Google exige um endereço público. O aplicativo trata dado pessoal de
-terceiros — a tabela `clientes` guarda CPF/CNPJ, endereço e telefone —, então
-a política precisa dizer o que é coletado, por quê e por quanto tempo.
+**Já existe** e está acessível sem login em `/politica-privacidade` — tanto
+de dentro do aplicativo (rodapé da tela inicial e em "Sobre") quanto pela
+web, que é o endereço a informar à Google.
 
-Ainda não existe. Quando for redigi-la, ela precisa ser acessível de dentro do
-aplicativo também, não só na loja.
+**Mas continua sem revisão de advogado.** O aplicativo trata dado pessoal
+de terceiros: a tabela `clientes` guarda CPF/CNPJ, endereço e telefone de
+gente que nunca usou o aplicativo e nunca concordou com nada. Isso não
+impede publicar — é exposição sua, não da Google.
+
+No formulário de **Segurança de dados** (Data Safety), o que este
+aplicativo coleta:
+
+| Dado | Onde | Observação |
+| --- | --- | --- |
+| Nome, e-mail, telefone | `perfis_usuario` | do usuário |
+| **Foto da pessoa** | `fotos-colaboradores` | a Google trata imagem de pessoa com regras próprias |
+| Nome, CPF/CNPJ, endereço, telefone | `clientes` | **de terceiros** |
+| Fotos de peças e desenhos | vários baldes | não são dado pessoal |
+
+Declare também que **existe caminho de exclusão de conta pelo aplicativo**
+— a Google exige desde 2024, e o RePerfil atende.
 
 ## O que este documento NÃO cobre
 

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { chaves } from '@/lib/consultas'
+import { mensagemDeErroDaFuncao } from '@/lib/erroDeFuncao'
 import type { Organizacao } from '@/tipos/banco'
 import {
   enviarLogoOrganizacao,
@@ -280,20 +281,26 @@ export function useExcluirEmpresa() {
       organizacaoId: string
       confirmacao: string
     }): Promise<{ contasApagadas: number }> => {
-      const { data, error } = await supabase.functions.invoke(
-        'excluir-empresa',
-        { body: { organizacaoId, confirmacao } },
-      )
+      const { data, error } = await supabase.functions.invoke<{
+        ok: boolean
+        error?: string
+        contasApagadas: number
+      }>('excluir-empresa', { body: { organizacaoId, confirmacao } })
 
-      if (error) throw new Error('Não foi possível encerrar a empresa.')
-
-      const resposta = data as { ok: boolean; error?: string; contasApagadas: number }
-
-      if (!resposta.ok) {
-        throw new Error(resposta.error ?? 'Não foi possível encerrar a empresa.')
+      // A mensagem da função importa mais aqui do que em qualquer outra
+      // tela: a falha mais provável é errar o nome digitado na
+      // confirmação, e só a função sabe dizer qual é o nome esperado.
+      if (error) {
+        throw new Error(
+          await mensagemDeErroDaFuncao(error, 'Não foi possível encerrar a empresa.'),
+        )
       }
 
-      return { contasApagadas: resposta.contasApagadas }
+      if (!data?.ok) {
+        throw new Error(data?.error ?? 'Não foi possível encerrar a empresa.')
+      }
+
+      return { contasApagadas: data.contasApagadas }
     },
     onSuccess: () => {
       void cliente.invalidateQueries({ queryKey: ['empresas-central'] })

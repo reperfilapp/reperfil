@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { ShieldAlert, UserX, MailWarning, Loader2, WifiOff } from 'lucide-react'
 import { useAutenticacao } from './useAutenticacao'
 import { supabase } from '@/lib/supabase'
+import { mensagemDeErroDaFuncao } from '@/lib/erroDeFuncao'
 import { Botao } from '@/componentes/ui/Botao'
 import type { PapelUsuario } from '@/tipos/banco'
 
@@ -239,13 +240,22 @@ function TelaConfirmarEmail({ email, sair }: PropsTelaConfirmarEmail) {
   const [estado, setEstado] = useState<
     'ocioso' | 'enviando' | 'enviado' | 'erro'
   >('ocioso')
+  const [erroReenvio, setErroReenvio] = useState<string | null>(null)
   const [atualizando, setAtualizando] = useState(false)
   const [aindaNaoConfirmado, setAindaNaoConfirmado] = useState(false)
+
+  const MENSAGEM_ERRO_PADRAO = 'Não foi possível reenviar agora. Tente de novo em instantes.'
 
   async function reenviar() {
     setEstado('enviando')
     const { error } = await supabase.functions.invoke('enviar-email')
-    setEstado(error ? 'erro' : 'enviado')
+
+    if (error) {
+      setErroReenvio(await mensagemDeErroDaFuncao(error, MENSAGEM_ERRO_PADRAO))
+      setEstado('erro')
+    } else {
+      setEstado('enviado')
+    }
   }
 
   async function atualizar() {
@@ -304,7 +314,7 @@ function TelaConfirmarEmail({ email, sair }: PropsTelaConfirmarEmail) {
 
       {estado === 'erro' && (
         <p className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm">
-          Não foi possível reenviar agora. Tente de novo em instantes.
+          {erroReenvio ?? MENSAGEM_ERRO_PADRAO}
         </p>
       )}
 

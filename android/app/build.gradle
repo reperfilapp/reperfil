@@ -18,6 +18,42 @@ def partes = pacote.version.tokenize('.').collect { it.toInteger() }
 def versaoNome = pacote.version
 def versaoCodigo = partes[0] * 10000 + partes[1] * 100 + partes[2]
 
+/*
+ * A chave de assinatura da loja, quando existir.
+ *
+ * ── POR QUE FORA DO PROJETO, NUM ARQUIVO À PARTE ─────────────────────────
+ *
+ * A Google identifica o aplicativo pela chave. Perdê-la significa nunca
+ * mais publicar uma atualização DESTE aplicativo — seria preciso criar
+ * outro, com outro identificador, e pedir a todo mundo que reinstale.
+ * Vazá-la é pior: qualquer um assina um pacote que o celular aceita como
+ * se fosse o RePerfil.
+ *
+ * Por isso nem o arquivo `.jks` nem as senhas moram aqui. Eles ficam em
+ * `android/keystore.properties`, que o `.gitignore` bloqueia, e o próprio
+ * `.jks` de preferência fora da pasta do projeto.
+ *
+ * ── POR QUE TUDO É CONDICIONAL ───────────────────────────────────────────
+ *
+ * Sem o `keystore.properties`, o bloco `signingConfigs` simplesmente não é
+ * criado, e o `release` sai sem assinatura. Isso é de propósito: quem
+ * clonar o repositório sem a chave — outra máquina sua, um dia outro
+ * programador — continua compilando e rodando o aplicativo em depuração
+ * normalmente, em vez de esbarrar num erro sobre um arquivo que nunca vai
+ * ter.
+ *
+ * O preço é que `bundleRelease` sem a chave gera um pacote não assinado,
+ * que a Play Store recusa. O aviso no fim deste arquivo existe para isso
+ * não ser descoberto só depois do envio.
+ */
+def arquivoChave = rootProject.file('keystore.properties')
+def propsChave = new Properties()
+def temChave = arquivoChave.exists()
+
+if (temChave) {
+    arquivoChave.withInputStream { propsChave.load(it) }
+}
+
 android {
     namespace = "br.com.reperfil.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -34,11 +70,53 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    if (temChave) {
+        signingConfigs {
+            release {
+                storeFile file(propsChave['storeFile'])
+                storePassword propsChave['storePassword']
+                keyAlias propsChave['keyAlias']
+                keyPassword propsChave['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+            if (temChave) {
+                signingConfig signingConfigs.release
+            }
         }
+    }
+}
+
+/*
+ * Avisa ANTES de gerar um pacote que a loja vai recusar.
+ *
+ * Sem isto, `bundleRelease` sem a chave termina com "BUILD SUCCESSFUL" e
+ * produz um `.aab` de aparência normal — o problema só aparece minutos
+ * depois, no envio à Play Store, com uma mensagem que não explica onde
+ * mexer. O aviso aqui custa uma linha e economiza essa viagem.
+ */
+gradle.taskGraph.whenReady { grafo ->
+    def vaiEmpacotarRelease = grafo.allTasks.any {
+        it.name.contains('Release') && (it.name.startsWith('bundle') || it.name.startsWith('assemble'))
+    }
+
+    if (vaiEmpacotarRelease && !temChave) {
+        logger.warn('')
+        logger.warn('┌─────────────────────────────────────────────────────────────┐')
+        logger.warn('│  ATENÇÃO: build de release SEM assinatura.                  │')
+        logger.warn('│                                                             │')
+        logger.warn('│  Falta o arquivo android/keystore.properties. O pacote vai  │')
+        logger.warn('│  ser gerado, mas a Play Store vai RECUSAR.                  │')
+        logger.warn('│                                                             │')
+        logger.warn('│  Como criar: docs/publicacao-play-store.md, Passos 2 e 3.   │')
+        logger.warn('└─────────────────────────────────────────────────────────────┘')
+        logger.warn('')
     }
 }
 
