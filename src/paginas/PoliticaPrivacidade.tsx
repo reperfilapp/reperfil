@@ -2,7 +2,7 @@ import { ShieldCheck } from 'lucide-react'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { APLICACAO } from '@/config/aplicacao'
 
-const ATUALIZADO_EM = '25 de agosto de 2026'
+const ATUALIZADO_EM = '27 de agosto de 2026'
 
 /** Política de privacidade. */
 export default function PoliticaPrivacidade() {
@@ -139,11 +139,26 @@ export default function PoliticaPrivacidade() {
           <p>
             Editar seus próprios dados (nome, telefone, foto, nickname) e
             excluí-los é self-service: dentro do aplicativo, em Mais → Minha
-            conta, com a opção "Excluir minha conta". A exclusão apaga seus
-            dados pessoais e desliga seu acesso imediatamente, sem precisar
-            pedir a ninguém — só fica bloqueada se você for o único
-            administrador ativo da empresa, caso em que é preciso promover
-            outra pessoa antes.
+            conta, com a opção "Excluir minha conta". A exclusão acontece na
+            hora, sem precisar pedir a ninguém — só fica bloqueada se você
+            for o único administrador ativo da empresa, caso em que é
+            preciso promover outra pessoa antes.
+          </p>
+          <p>
+            <strong>O que é apagado:</strong> nome, telefone, CPF, foto e
+            apelido, imediatamente. O e-mail de login é substituído por um
+            endereço sintético, liberando o seu real para uso em outra
+            conta. O acesso é desligado no mesmo instante.
+          </p>
+          <p>
+            <strong>O que é mantido:</strong> o histórico de estoque e
+            produção (o que foi cadastrado, movimentado ou registrado por
+            você) permanece vinculado ao registro da conta, agora exibido
+            como "Conta excluída" — sem nome, sem contato, sem foto. Isso é
+            necessário para manter a rastreabilidade do estoque da empresa
+            (quem cadastrou cada peça, cada movimentação), e não pode ser
+            apagado seletivamente sem comprometer o histórico de terceiros.
+            Nenhum dado adicional é retido além disso.
           </p>
           <p>
             Para outras solicitações — acesso, correção ou dúvidas que não

@@ -4,10 +4,13 @@
 >
 > **Já feito:** conta de desenvolvedor criada e liberada pela Google
 > (13/08/2026, verificação aprovada) · organização de demonstração removida
-> do banco (28/08/2026).
+> do banco (28/08/2026) · chave de assinatura gerada, configurada e
+> testada (27/08/2026, `.aab` assinado com sucesso) · pacote
+> `br.com.reperfil.app` registrado na Verificação de desenvolvedor Android,
+> com a impressão digital SHA-256 da chave (27/08/2026).
 >
-> **Falta:** gerar a chave de assinatura, configurá-la, desativar a conta
-> de teste, gerar o AAB e enviar.
+> **Falta:** criar o app no Play Console, preencher a ficha da loja e
+> enviar em Teste interno.
 
 ## O que já está pronto
 
