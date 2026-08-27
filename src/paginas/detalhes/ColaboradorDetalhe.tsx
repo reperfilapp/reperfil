@@ -44,6 +44,7 @@ import {
   obterLinkTemporario,
   BALDE_FOTOS_COLABORADOR,
 } from '@/lib/armazenamento'
+import { RetratoColaborador } from '@/componentes/RetratoColaborador'
 import { formatarCpfCnpj, formatarTelefone } from '@/dominio/documentos'
 import { apelidoValido } from '@/dominio/apelido'
 import type { PapelUsuario } from '@/tipos/banco'
@@ -215,7 +216,7 @@ export default function ColaboradorDetalhe() {
       rotuloVoltar="Colaboradores"
       titulo={pessoa.nome}
       subtitulo={pessoa.email}
-      avatar={<Retrato caminho={pessoa.foto_url} nome={pessoa.nome} />}
+      avatar={<RetratoColaborador caminho={pessoa.foto_url} nome={pessoa.nome} />}
       selo={
         !pessoa.ativo && (
           <span className="bg-superficie-2 text-texto-suave rounded-full px-3 py-1 text-sm">
@@ -705,51 +706,5 @@ function UltimosAcessos({ usuarioId }: { usuarioId: string }) {
         </p>
       )}
     </Secao>
-  )
-}
-
-/**
- * O rosto, ou as iniciais enquanto ele não existe.
- *
- * Iniciais em vez de um ícone genérico de pessoa: num cadastro sem foto, o
- * ícone igual para todos não distingue ninguém, enquanto duas letras já
- * separam a Ana do Bruno numa lista.
- */
-function Retrato({ caminho, nome }: { caminho: string | null; nome: string }) {
-  const [link, setLink] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (caminho === null) {
-      setLink(null)
-      return
-    }
-
-    void obterLinkTemporario(BALDE_FOTOS_COLABORADOR, caminho).then(setLink)
-  }, [caminho])
-
-  const iniciais = nome
-    .split(' ')
-    .filter((parte) => parte.length > 2)
-    .slice(0, 2)
-    .map((parte) => parte[0]?.toUpperCase() ?? '')
-    .join('')
-
-  if (link) {
-    return (
-      <img
-        src={link}
-        alt={`Foto de ${nome}`}
-        className="bg-superficie-2 size-16 rounded-full object-cover"
-      />
-    )
-  }
-
-  return (
-    <div
-      aria-hidden="true"
-      className="bg-superficie-2 text-texto-suave flex size-16 items-center justify-center rounded-full text-xl font-bold"
-    >
-      {iniciais}
-    </div>
   )
 }

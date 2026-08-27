@@ -322,6 +322,87 @@ export function useAcessos(usuarioId: string | null, quantos = 10) {
   })
 }
 
+/** Quantas vezes uma pessoa entrou, e quando foi a última. */
+export interface ResumoAcessosPessoa {
+  usuarioId: string
+  acessos: number
+  ultimoAcesso: string | null
+}
+
+/**
+ * Teto de linhas trazidas de uma vez pelo painel da equipe.
+ *
+ * A contagem por pessoa é feita AQUI, no navegador, e não no banco — sem
+ * uma função de agregação (que exigiria migração), a única alternativa
+ * seria uma consulta por colaborador, e são dezenas.
+ *
+ * 5000 é folgado de propósito: numa serralheira de dez pessoas entrando
+ * duas vezes por dia, cobre mais de um ano. Chegando ao teto, a contagem
+ * vira "5000+" na tela em vez de mentir um número menor — ver
+ * `PainelEquipe`.
+ */
+const TETO_ACESSOS = 5000
+
+/**
+ * Resumo de acessos de TODA a equipe, numa consulta só.
+ *
+ * Existe separado de `useAcessos` porque responde a outra pergunta: aquele
+ * é "quando esta pessoa entrou?" (uma pessoa, muitos detalhes); este é
+ * "quem anda usando o sistema?" (todo mundo, um número cada).
+ *
+ * O RLS já limita à organização e exige `pode_gerenciar_colaboradores` —
+ * quem não tem a permissão recebe lista vazia, não erro.
+ */
+export function useResumoAcessosEquipe() {
+  return useQuery({
+    queryKey: [...chaves.acessos, 'resumo-equipe'],
+    queryFn: async (): Promise<{
+      porPessoa: Map<string, ResumoAcessosPessoa>
+      atingiuTeto: boolean
+    }> => {
+      const { data, error } = await supabase
+        .from('acessos_sistema')
+        .select('usuario_id, criado_em')
+        // Mais recentes primeiro: é o que garante que o PRIMEIRO registro
+        // visto de cada pessoa já é o último acesso dela, sem comparar
+        // datas depois.
+        .order('criado_em', { ascending: false })
+        .limit(TETO_ACESSOS)
+
+      if (error) {
+        // Antes da migração a tabela nem existe — o painel mostra a equipe
+        // sem números, em vez de derrubar a tela inicial inteira.
+        if (error.code === '42P01') {
+          return { porPessoa: new Map(), atingiuTeto: false }
+        }
+        throw new Error(error.message)
+      }
+
+      const linhas = data as { usuario_id: string; criado_em: string }[]
+      const porPessoa = new Map<string, ResumoAcessosPessoa>()
+
+      for (const linha of linhas) {
+        const atual = porPessoa.get(linha.usuario_id)
+
+        if (atual) {
+          atual.acessos += 1
+        } else {
+          porPessoa.set(linha.usuario_id, {
+            usuarioId: linha.usuario_id,
+            acessos: 1,
+            ultimoAcesso: linha.criado_em,
+          })
+        }
+      }
+
+      return { porPessoa, atingiuTeto: linhas.length === TETO_ACESSOS }
+    },
+    // O painel é consulta ocasional; revalidar a cada foco da janela seria
+    // tráfego para uma informação que não muda de minuto a minuto.
+    staleTime: 5 * 60_000,
+  })
+}
+
 /** Dados que o próprio colaborador ou quem o administra podem corrigir. */
 export interface DadosColaborador {
   nome: string

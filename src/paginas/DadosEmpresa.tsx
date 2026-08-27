@@ -13,6 +13,8 @@ import {
   useEditarOrganizacao,
   useLogoOrganizacao,
   useEnviarLogo,
+  useSolicitarExclusao,
+  useCancelarExclusao,
   type DadosOrganizacao,
 } from '@/dados/organizacao'
 import { useZerarEstoqueOrganizacao } from '@/dados/sobras'
@@ -93,6 +95,30 @@ export default function DadosEmpresa() {
   const [zerando, setZerando] = useState(false)
   const [justificativaZerar, setJustificativaZerar] = useState('')
   const [textoConfirmacao, setTextoConfirmacao] = useState('')
+
+  const solicitarExclusao = useSolicitarExclusao()
+  const cancelarExclusao = useCancelarExclusao()
+  const [encerrando, setEncerrando] = useState(false)
+  const [motivoEncerrar, setMotivoEncerrar] = useState('')
+  const [erroEncerrar, setErroEncerrar] = useState<string | null>(null)
+
+  async function confirmarPedidoEncerramento() {
+    setErroEncerrar(null)
+
+    if (motivoEncerrar.trim().length < 10) {
+      setErroEncerrar('Diga por que está encerrando — pelo menos 10 letras.')
+      return
+    }
+
+    try {
+      await solicitarExclusao.mutateAsync(motivoEncerrar.trim())
+      setEncerrando(false)
+    } catch (e) {
+      setErroEncerrar(
+        e instanceof Error ? e.message : 'Não foi possível enviar o pedido.',
+      )
+    }
+  }
   const [erroZerar, setErroZerar] = useState<string | null>(null)
   const [resultadoZerar, setResultadoZerar] = useState<number | null>(null)
 
@@ -563,6 +589,64 @@ export default function DadosEmpresa() {
         >
           Zerar estoque da empresa
         </Botao>
+
+        {/* ── Encerrar a empresa ────────────────────────────────────────
+            Separado do "zerar estoque" por uma linha: zerar é recomeçar,
+            encerrar é acabar. Estarem no mesmo bloco sem divisão faria o
+            segundo parecer uma variação do primeiro. */}
+        {!org.eh_catalogo_central && (
+          <div className="border-erro-300 mt-2 border-t pt-4">
+            {org.exclusao_solicitada_em ? (
+              <>
+                <p className="text-erro-700 text-sm">
+                  <strong>Encerramento pedido.</strong> O pedido foi enviado
+                  em{' '}
+                  {new Date(org.exclusao_solicitada_em).toLocaleDateString(
+                    'pt-BR',
+                  )}{' '}
+                  e está aguardando a equipe do RePerfil. Enquanto isso não
+                  acontece, a empresa segue funcionando normalmente e você
+                  pode desistir.
+                </p>
+                <Botao
+                  type="button"
+                  variante="secundaria"
+                  onClick={() => disparar(cancelarExclusao.mutateAsync())}
+                  carregando={cancelarExclusao.isPending}
+                  className="mt-3 self-start"
+                >
+                  Desistir do encerramento
+                </Botao>
+              </>
+            ) : (
+              <>
+                <p className="text-erro-700 text-sm">
+                  <strong>Encerrar a empresa</strong> apaga tudo, sem volta:
+                  catálogo, estoque, produtos, clientes, histórico, fotos e
+                  os acessos de toda a equipe. Não há backup dentro do
+                  aplicativo.
+                </p>
+                <p className="text-erro-700 mt-2 text-sm">
+                  Por segurança, quem executa é a equipe do RePerfil — aqui
+                  você faz o pedido, e pode desistir enquanto ele não for
+                  atendido.
+                </p>
+                <Botao
+                  type="button"
+                  variante="destrutiva"
+                  onClick={() => {
+                    setMotivoEncerrar('')
+                    setErroEncerrar(null)
+                    setEncerrando(true)
+                  }}
+                  className="mt-3 self-start"
+                >
+                  Pedir encerramento da empresa
+                </Botao>
+              </>
+            )}
+          </div>
+        )}
       </section>
 
       <Modal
@@ -643,6 +727,74 @@ export default function DadosEmpresa() {
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        aberto={encerrando}
+        aoFechar={() => setEncerrando(false)}
+        titulo="Pedir encerramento da empresa"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm">
+            O pedido vai para a equipe do RePerfil. Nada é apagado agora, e
+            você pode desistir enquanto ele não for atendido.
+          </p>
+
+          <p
+            role="alert"
+            className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm"
+          >
+            <strong>Quando for atendido, não há volta.</strong> Somem o
+            catálogo, o estoque, os produtos, os clientes, o histórico, as
+            fotos e os acessos de toda a equipe. Não existe backup dentro do
+            aplicativo.
+          </p>
+
+          <div>
+            <label htmlFor="motivo-encerrar" className="mb-1 block font-medium">
+              Por que está encerrando?
+            </label>
+            <input
+              id="motivo-encerrar"
+              type="text"
+              value={motivoEncerrar}
+              onChange={(e) => setMotivoEncerrar(e.target.value)}
+              placeholder="Ex.: empresa criada por engano"
+              className="border-borda bg-superficie min-h-12 w-full rounded-xl border-2 px-4"
+            />
+            <p className="text-texto-suave mt-1 text-xs">
+              Ajuda a equipe a conferir se é isso mesmo antes de apagar.
+            </p>
+          </div>
+
+          {erroEncerrar && (
+            <p
+              role="alert"
+              className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm font-medium"
+            >
+              {erroEncerrar}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <Botao
+              variante="contorno"
+              onClick={() => setEncerrando(false)}
+              className="flex-1"
+            >
+              Cancelar
+            </Botao>
+            <Botao
+              variante="destrutiva"
+              onClick={() => void confirmarPedidoEncerramento()}
+              carregando={solicitarExclusao.isPending}
+              disabled={motivoEncerrar.trim().length < 10}
+              className="flex-1"
+            >
+              Enviar pedido
+            </Botao>
+          </div>
+        </div>
       </Modal>
     </div>
   )

@@ -78,6 +78,93 @@ servindo do cache por esse tempo, agora com os dados errados. Corrigido
 limpando todo o cache ao sair — fecha essa brecha pela raiz, não só para
 esta consulta.
 
+## 1.7.50 — 28/08/2026
+
+**Encerrar uma empresa — a empresa pede, o RePerfil executa.**
+
+Empresa criada por engano, ou usada um mês e abandonada, ficava para
+sempre no banco: catálogo, estoque, colaboradores e fotos que ninguém
+mais vai abrir. Pior, os e-mails de login continuavam ocupados — quem
+quisesse recomeçar do zero com o mesmo endereço não conseguia.
+
+**Na empresa** (Dados da empresa → Zona de perigo): o administrador pede o
+encerramento, dizendo o motivo. **Nada é apagado nesse momento** — a
+empresa segue funcionando e ele pode desistir a qualquer instante.
+
+**No RePerfil** (Mais → Empresas, só na organização central): a lista de
+quem usa o app, com os pedidos de encerramento em destaque. Para executar,
+é preciso digitar o nome da empresa — não um "CONFIRMO" genérico, que com
+várias na lista não distinguiria a errada da certa. Encerrar uma que não
+pediu é possível, mas a tela avisa em vermelho.
+
+**Por que a empresa não apaga sozinha.** Seria menos código, mas apagar é
+irreversível e não há backup dentro do aplicativo: um administrador
+irritado, ou alguém que conseguiu a senha dele, encerraria anos de
+cadastro num toque, sem ninguém a quem recorrer. O caminho mais longo é a
+única rede de segurança que existe.
+
+**O que some de verdade:** todas as linhas do banco (na ordem certa — o
+`cascade` sozinho não dá conta, porque várias tabelas se protegem com
+`restrict`), os arquivos de todos os cinco baldes de imagem, e as contas
+de login, o que libera os e-mails para uso futuro. As três partes, porque
+apagar só as linhas deixaria fotos órfãs e contas fantasma.
+
+Um perfil copiado dessa empresa por outra **não é apagado**: ele é da
+outra empresa, e só perde o vínculo com a origem. A organização central
+não pode ser encerrada por aqui — sem ela, todas as demais ficariam sem
+catálogo.
+
+Precisa da migração **e da publicação da Edge Function `excluir-empresa`**.
+
+---
+
+## 1.7.49 — 28/08/2026
+
+**Histórico de acessos da equipe, no fim da tela de Equipe.**
+
+Uma faixa recolhida abaixo da lista: "Histórico de acessos · última
+entrada há 3 horas". Abrindo, quem andou entrando, ordenado do mais
+recente para o mais antigo, com foto, cargo, quando foi a última entrada
+e quantas vezes já entrou. Abrindo uma pessoa, as últimas 8 entradas dela
+com data e hora — sem precisar abrir a ficha de cada um.
+
+Inclui quem está desativado: é justamente de quem parou de entrar que se
+quer saber quando foi a última vez.
+
+Só quem administra colaboradores vê: para o colega, saber a que horas o
+outro entrou não muda nada no trabalho — muda só a sensação de estar
+sendo olhado. (O banco já pensava assim; a regra de acesso sempre exigiu
+essa permissão para ver acesso alheio.)
+
+**Fica fora do quadro da lista, no rodapé, logo acima de "Exibir
+inativos":** a lista é o cadastro da equipe, e o histórico é outro
+assunto — dentro do mesmo quadro, parecia mais uma linha do cadastro. A
+tela inicial, onde isto nasceu, voltou ao que era, sem disputar espaço
+com "Cadastrar estoque".
+
+Aberto, o painel rola por dentro com teto de altura: no rodapé, que não
+encolhe, uma equipe grande empurraria a lista de colaboradores para fora
+da tela.
+
+A lista de colaboradores também ganhou as fotos, que não tinha.
+
+**O que isto deliberadamente NÃO é:** monitoramento de jornada. Mostra
+quando alguém ENTROU, que é o único dado que o sistema guarda de
+propósito. Em particular, "entrou há 3 horas" **não** quer dizer "está
+online agora" — a pessoa pode ter entrado e fechado o app em seguida.
+Dizer o contrário exigiria o app avisando de tempos em tempos que
+continua aberto: tráfego constante na rede do depósito para uma
+informação que se olha uma vez por mês.
+
+Não precisa de migração: o registro de acessos já existia desde agosto, e
+já aparecia na ficha de cada colaborador. A novidade é vê-lo na lista.
+
+De quebra, o componente de foto/iniciais da pessoa, que vivia dentro da
+ficha do colaborador, virou compartilhado — duas cópias divergiriam na
+primeira mudança de estilo.
+
+---
+
 ## 1.7.48 — 28/08/2026
 
 **Botão voltar em Cadastrar e Reservas + busca de CEP nos dados da empresa.**

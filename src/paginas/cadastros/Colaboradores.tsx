@@ -19,12 +19,15 @@ import {
   useAtivarColaborador,
   aguardarConfirmacaoDeEnvio,
 } from '@/dados/colaboradores'
+import { RetratoColaborador } from '@/componentes/RetratoColaborador'
+import { PainelAcessosEquipe } from '@/componentes/PainelAcessosEquipe'
 import {
   CARGOS_ATIVOS,
   rotuloCargo,
   permissoesAjustadas,
 } from '@/dominio/cargos'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
+import { podeGerenciarColaboradores } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
@@ -46,6 +49,16 @@ export default function Colaboradores() {
   const { perfil } = useAutenticacao()
   const [mostrarInativos, setMostrarInativos] = useState(false)
   const { data: colaboradores, isPending } = useColaboradores(mostrarInativos)
+
+  /*
+   * O histórico de acessos fica num painel recolhido no fim desta tela, e
+   * só quem administra colaboradores o vê: para o colega, saber a que
+   * horas o outro entrou não muda nada no trabalho — muda só a sensação de
+   * estar sendo olhado. O banco já pensa igual (a política de
+   * `acessos_sistema` exige essa mesma permissão para ver acesso alheio),
+   * então esconder aqui evita pedir ao servidor o que ele recusaria.
+   */
+  const podeAdministrar = podeGerenciarColaboradores(perfil)
   const { data: convites } = useConvitesAbertos()
 
   const convidar = useConvidarColaborador()
@@ -222,14 +235,21 @@ export default function Colaboradores() {
         </>
       }
       rodape={
-        <div className="flex justify-center">
-          <button
-            type="button"
-            onClick={() => setMostrarInativos((v) => !v)}
-            className="text-acao-600 text-sm font-medium hover:underline"
-          >
-            {mostrarInativos ? 'Ocultar inativos' : 'Exibir inativos'}
-          </button>
+        <div className="flex flex-col gap-2">
+          {/* Fora da moldura da lista, no rodapé fixo: a lista é o cadastro
+              da equipe, e o histórico é outro assunto — dentro do mesmo
+              quadro, parecia mais uma linha do cadastro. */}
+          {podeAdministrar && <PainelAcessosEquipe />}
+
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() => setMostrarInativos((v) => !v)}
+              className="text-acao-600 text-sm font-medium hover:underline"
+            >
+              {mostrarInativos ? 'Ocultar inativos' : 'Exibir inativos'}
+            </button>
+          </div>
         </div>
       }
     >
@@ -288,12 +308,18 @@ export default function Colaboradores() {
             >
               {/* A linha inteira leva ao cadastro: é lá que se edita, troca
                   cargo, ajusta permissão e redefine senha. Aqui ficam só as
-                  três informações que se procura de relance. */}
+                  informações que se procura de relance. */}
               <Link
                 to={`/colaboradores/${pessoa.id}`}
                 className="flex min-w-0 flex-1 items-center gap-2"
                 aria-label={`Abrir cadastro de ${pessoa.nome}`}
               >
+                <RetratoColaborador
+                  caminho={pessoa.foto_url}
+                  nome={pessoa.nome}
+                  tamanho="pequeno"
+                />
+
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">
                     {pessoa.nome}
@@ -308,6 +334,7 @@ export default function Colaboradores() {
                       <span className="text-atencao-700 ml-2">· ajustado</span>
                     )}
                   </span>
+
                 </span>
                 <ChevronRight
                   aria-hidden="true"

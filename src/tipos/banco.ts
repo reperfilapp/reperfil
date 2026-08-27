@@ -83,6 +83,13 @@ export interface Organizacao {
   /** Só uma organização pode ser esta ao mesmo tempo — o catálogo central. */
   eh_catalogo_central?: boolean
 
+  /**
+   * Pedido de encerramento em aberto. Pedir NÃO apaga nada — quem executa
+   * é a organização central, e o pedido pode ser cancelado até lá.
+   */
+  exclusao_solicitada_em?: string | null
+  exclusao_motivo?: string | null
+
   ativo: boolean
   criado_em: string
   atualizado_em: string

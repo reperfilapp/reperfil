@@ -25,6 +25,7 @@ import Relatorios from '@/paginas/Relatorios'
 import ModelosPerfil from '@/paginas/cadastros/ModelosPerfil'
 import Linhas from '@/paginas/cadastros/Linhas'
 import AdministrarLinhasEmpresas from '@/paginas/cadastros/AdministrarLinhasEmpresas'
+import AdministrarEmpresas from '@/paginas/cadastros/AdministrarEmpresas'
 import IdentificarPerfil from '@/paginas/IdentificarPerfil'
 import PerfilDetalhe from '@/paginas/PerfilDetalhe'
 import SobraDetalhe from '@/paginas/SobraDetalhe'
@@ -117,6 +118,7 @@ export default function App() {
                 />
                 <Route path="/perfis/:id" element={<PerfilDetalhe />} />
                 <Route path="/linhas" element={<Linhas />} />
+                <Route path="/empresas" element={<AdministrarEmpresas />} />
                 <Route
                   path="/linhas/empresas"
                   element={<AdministrarLinhasEmpresas />}

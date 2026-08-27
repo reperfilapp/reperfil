@@ -189,3 +189,114 @@ export function useLogoOrganizacao(caminho: string | null | undefined) {
     staleTime: 55 * 60_000, // link válido por 1h, revalida com 5min de folga
   })
 }
+
+/* ── Encerrar a empresa ──────────────────────────────────────────────────
+ *
+ * São dois papéis diferentes, e é por isso que são hooks separados:
+ *
+ *   O ADMINISTRADOR DA EMPRESA pede (`useSolicitarExclusao`) e pode
+ *   desistir enquanto ninguém executou (`useCancelarExclusao`).
+ *
+ *   O ADMINISTRADOR DA CENTRAL vê os pedidos (`useEmpresasParaCentral`) e
+ *   executa (`useExcluirEmpresa`).
+ *
+ * O pedido não apaga nada. É a única janela de arrependimento que existe:
+ * depois que a central executa, não há backup dentro do aplicativo.
+ */
+
+export function useSolicitarExclusao() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (motivo: string) => {
+      const { error } = await supabase.rpc('solicitar_exclusao_organizacao', {
+        p_motivo: motivo,
+      })
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.organizacao })
+    },
+  })
+}
+
+export function useCancelarExclusao() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('cancelar_exclusao_organizacao')
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.organizacao })
+    },
+  })
+}
+
+/** Uma empresa como a organização central a vê. */
+export interface EmpresaNaCentral {
+  organizacao_id: string
+  nome_fantasia: string
+  criado_em: string
+  colaboradores: number
+  exclusao_solicitada_em: string | null
+  exclusao_motivo: string | null
+}
+
+export function useEmpresasParaCentral() {
+  return useQuery({
+    queryKey: ['empresas-central'],
+    queryFn: async (): Promise<EmpresaNaCentral[]> => {
+      const { data, error } = await supabase.rpc('empresas_para_central')
+
+      if (error) throw new Error(error.message)
+
+      return data as EmpresaNaCentral[]
+    },
+  })
+}
+
+/**
+ * Executa o encerramento — passa pela Edge Function, e não direto pela
+ * RPC, porque apagar as linhas é só um terço do trabalho: os arquivos no
+ * Storage e as contas em `auth.users` precisam da chave de serviço, que
+ * não pode viver dentro do aplicativo.
+ *
+ * `confirmacao` é o nome da empresa digitado à mão. Conferido no servidor,
+ * não só na tela: assim a barreira vale mesmo para quem chamar a função
+ * por fora do app.
+ */
+export function useExcluirEmpresa() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      organizacaoId,
+      confirmacao,
+    }: {
+      organizacaoId: string
+      confirmacao: string
+    }): Promise<{ contasApagadas: number }> => {
+      const { data, error } = await supabase.functions.invoke(
+        'excluir-empresa',
+        { body: { organizacaoId, confirmacao } },
+      )
+
+      if (error) throw new Error('Não foi possível encerrar a empresa.')
+
+      const resposta = data as { ok: boolean; error?: string; contasApagadas: number }
+
+      if (!resposta.ok) {
+        throw new Error(resposta.error ?? 'Não foi possível encerrar a empresa.')
+      }
+
+      return { contasApagadas: resposta.contasApagadas }
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: ['empresas-central'] })
+    },
+  })
+}

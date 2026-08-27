@@ -30,6 +30,7 @@ import {
   podeGerenciarColaboradores,
 } from '@/autenticacao/contexto'
 import { rotuloCargo } from '@/dominio/cargos'
+import { useOrganizacao } from '@/dados/organizacao'
 import { Botao } from '@/componentes/ui/Botao'
 import { SeloVersao } from '@/componentes/SeloVersao'
 import { useTema, type Tema } from '@/tema/useTema'
@@ -52,6 +53,7 @@ const OPCOES_TEMA: { valor: Tema; rotulo: string; Icone: typeof Sun }[] = [
 export default function Mais() {
   const { perfil, sair } = useAutenticacao()
   const { tema, definirTema } = useTema()
+  const { data: org } = useOrganizacao()
 
   /**
    * O que toca a fabricação, na ordem em que o trabalho acontece.
@@ -185,6 +187,15 @@ export default function Mais() {
       descricao: 'Serão usados nos orçamentos da Fase 3',
       Icone: Users,
       visivel: true,
+    },
+    {
+      // Só na organização central: é a tela de quem administra o RePerfil
+      // inteiro, não uma empresa. Some para todo mundo mais.
+      para: '/empresas',
+      rotulo: 'Empresas',
+      descricao: 'Quem usa o RePerfil, e os pedidos de encerramento',
+      Icone: Building2,
+      visivel: eAdministrador(perfil) && Boolean(org?.eh_catalogo_central),
     },
     {
       para: '/relatorios',
