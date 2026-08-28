@@ -11,6 +11,9 @@ import {
   FileText,
   GripVertical,
   ArrowDownUp,
+  Calculator,
+  ClipboardList,
+  EyeOff,
 } from 'lucide-react'
 import {
   useProduto,
@@ -41,7 +44,15 @@ import {
   CRITERIOS,
   type CriterioOrdenacao,
 } from '@/dominio/ordenacaoListaTecnica'
-import { sobrasDisponiveis } from '@/dominio/estoqueParaProducao'
+import {
+  sobrasDisponiveis,
+  type FonteMaterial,
+} from '@/dominio/estoqueParaProducao'
+import {
+  calcularListaMateriais,
+  type ListaMateriais,
+  type ModoCompra,
+} from '@/dominio/listaMateriais'
 import { formatarMedidaProduto, nomeDoArquivo } from '@/dominio/produto'
 import {
   formatarComprimento,
@@ -63,6 +74,7 @@ import { Modal } from '@/componentes/ui/Modal'
 import { Veredito } from '@/componentes/Veredito'
 import { FormularioProduto } from '@/componentes/produto/FormularioProduto'
 import { FolhaProduto } from '@/componentes/produto/FolhaProduto'
+import { FolhaListaMateriais } from '@/componentes/produto/FolhaListaMateriais'
 import type { ItemListaTecnica } from '@/tipos/banco'
 import { APLICACAO } from '@/config/aplicacao'
 import { disparar } from '@/lib/avisoErro'
@@ -116,7 +128,14 @@ export default function ProdutoDetalhe() {
    */
   const [linkFoto, setLinkFoto] = useState<string | null>(null)
   const [linkDesenho, setLinkDesenho] = useState<string | null>(null)
-  const [imprimindo, setImprimindo] = useState(false)
+  /*
+   * Qual folha está montada para impressão — nunca as duas, porque o efeito
+   * abaixo procura `#folha-impressao` e duas folhas com o mesmo id
+   * imprimiriam a que aparecesse primeiro no documento, não a pedida.
+   */
+  const [imprimindo, setImprimindo] = useState<'produto' | 'materiais' | null>(
+    null,
+  )
   /*
    * O texto digitado é guardado à parte do id escolhido: enquanto a pessoa
    * digita "MN-0", nenhum perfil está selecionado ainda, e forçar o id a
@@ -139,6 +158,56 @@ export default function ProdutoDetalhe() {
   const [mesmaCor, setMesmaCor] = useState(true)
   /** Acabamento fixado pela pessoa. Nulo = o sistema escolhe o que rende mais. */
   const [corEscolhida, setCorEscolhida] = useState<string | null>(null)
+  /*
+   * De onde o cálculo pode tirar material. Começa em `tudo` porque é o que
+   * o sistema sempre respondeu — e porque a pergunta do dia a dia é "dá para
+   * fazer com o que eu tenho?", não "dá sem tocar nas barras novas?".
+   */
+  const [fonte, setFonte] = useState<FonteMaterial>('tudo')
+
+  /*
+   * O resultado do cálculo, guardado com a ASSINATURA das opções que o
+   * geraram.
+   *
+   * ── POR QUE NÃO CALCULA SOZINHO ──────────────────────────────────────
+   *
+   * Antes, abrir o produto disparava a conta e a tela já dizia "não dá" —
+   * mesmo quem só veio conferir uma medida levava o veredito na cara, e o
+   * "não dá" de quantidade 1 dizia pouco sobre o pedido real. Agora a
+   * pergunta é feita de propósito: ajusta-se quantidade, cor e origem, e
+   * só então se pede a resposta.
+   *
+   * ── POR QUE A ASSINATURA ─────────────────────────────────────────────
+   *
+   * Mudar a quantidade depois de calcular deixaria na tela uma resposta
+   * sobre outra pergunta — o pior dos dois mundos, porque parece atual. Com
+   * a assinatura junto, qualquer opção mexida invalida o resultado sozinha,
+   * sem efeito nenhum para manter em sincronia.
+   */
+  const [calculo, setCalculo] = useState<{
+    assinaturaOpcoes: string
+    assinaturaEstoque: string
+    unidades: number
+    acabamento_id: string | null
+    atendePedido: boolean
+    soFaltaAcabamento: boolean
+    faltas: {
+      modelo_perfil_id: string
+      comprimento_mm: number
+      faltam: number
+    }[]
+    atendidos: Map<string, boolean>
+  } | null>(null)
+
+  /** A lista de materiais aberta na janela. Nulo = janela fechada. */
+  const [materiais, setMateriais] = useState<ListaMateriais | null>(null)
+  const [modoCompra, setModoCompra] = useState<ModoCompra>('aproveitar_sobras')
+  /*
+   * A lista técnica começa RECOLHIDA. Ela pode passar de vinte cortes, e
+   * quem abre o produto quase sempre quer a resposta do alto da tela — não
+   * rolar três telas de perfil para chegar nos botões.
+   */
+  const [listaAberta, setListaAberta] = useState(false)
 
   useEffect(() => {
     const foto = produto?.foto_url ?? null
@@ -231,7 +300,7 @@ export default function ProdutoDetalhe() {
            * controle é a promessa do plugin. Sem isto, a folha ficaria
            * montada para sempre e o botão pararia de responder.
            */
-          if (imprimeNoNativo()) setImprimindo(false)
+          if (imprimeNoNativo()) setImprimindo(null)
         })
     })
 
@@ -242,7 +311,7 @@ export default function ProdutoDetalhe() {
      * retorna na hora, e desmontar em seguida tirava a folha da página antes
      * de o diálogo lê-la. Daí a página em branco também no computador.
      */
-    const aoTerminar = () => setImprimindo(false)
+    const aoTerminar = () => setImprimindo(null)
 
     window.addEventListener('afterprint', aoTerminar)
 
@@ -429,7 +498,7 @@ export default function ProdutoDetalhe() {
     ? paraConfiguracaoCorte(config)
     : CONFIGURACAO_CORTE_PADRAO
 
-  const todasDisponiveis = sobrasDisponiveis(sobras ?? [])
+  const todasDisponiveis = sobrasDisponiveis(sobras ?? [], fonte)
 
   /*
    * As opções da tela viram uma transformação das sobras, e não um
@@ -449,62 +518,157 @@ export default function ProdutoDetalhe() {
     quantidade: item.quantidade,
   }))
 
-  // Quantas unidades saem no total — é o que o veredito anuncia.
-  const resultado = unidadesProduziveis(lista, disponiveis, configCorte)
-
   /*
-   * O pedido inteiro tratado como UMA unidade grande: cada corte
-   * multiplicado pela quantidade desejada, e o cálculo perguntado se fecha
-   * uma vez.
+   * Tudo que muda a resposta invalida o resultado — inclusive a lista
+   * técnica e o depósito. Um veredito que sobrevive à mudança do estoque é
+   * pior do que nenhum, porque parece atual.
    *
-   * É o que dá as FALTAS certas. Perguntar "quantas unidades saem" devolve
-   * o que faltou para a unidade seguinte — informação boa para "dá para mais
-   * uma?", inútil para "dá para as cinco que o cliente pediu?".
+   * São DUAS assinaturas porque as duas causas pedem recados diferentes:
+   * "você mexeu nas opções" é óbvio para quem mexeu, mas "outra pessoa
+   * mexeu no estoque" é notícia — e num sistema que várias pessoas usam ao
+   * mesmo tempo, dizer "as opções mudaram" quando ninguém tocou nelas seria
+   * mentira.
    */
-  const pedido = unidadesProduziveis(
-    lista.map((item) => ({
+  const assinaturaOpcoes = JSON.stringify({
+    desejada,
+    mesmaCor,
+    corEscolhida,
+    fonte,
+    lista,
+    configCorte,
+  })
+  const assinaturaEstoque = JSON.stringify(disponiveis)
+
+  const atual =
+    calculo?.assinaturaOpcoes === assinaturaOpcoes &&
+    calculo.assinaturaEstoque === assinaturaEstoque
+      ? calculo
+      : null
+
+  /** Roda a conta e guarda a resposta junto das opções que a produziram. */
+  function calcular() {
+    // Quantas unidades saem no total — é o que o veredito anuncia.
+    const resultado = unidadesProduziveis(lista, disponiveis, configCorte)
+
+    /*
+     * O pedido inteiro tratado como UMA unidade grande: cada corte
+     * multiplicado pela quantidade desejada, e o cálculo perguntado se fecha
+     * uma vez.
+     *
+     * É o que dá as FALTAS certas. Perguntar "quantas unidades saem" devolve
+     * o que faltou para a unidade seguinte — informação boa para "dá para
+     * mais uma?", inútil para "dá para as cinco que o cliente pediu?".
+     */
+    const doPedido = lista.map((item) => ({
       ...item,
       quantidade: item.quantidade * desejada,
-    })),
-    disponiveis,
-    configCorte,
-    1,
-  )
+    }))
 
-  const atendePedido = pedido.unidades >= 1
+    const pedido = unidadesProduziveis(doPedido, disponiveis, configCorte, 1)
+    const atendePedido = pedido.unidades >= 1
+
+    /*
+     * A cor de cada linha vem do atendimento POR CORTE, não das faltas do
+     * pedido. As faltas nascem do cálculo da peça inteira, que exige um
+     * único acabamento — e assim um corte com material sobrando na
+     * prateleira aparecia em vermelho só porque o acabamento escolhido para
+     * a peça era outro. A linha responde por si; o veredito, pela peça.
+     */
+    const atendidos = cortesAtendidos(doPedido, disponiveis, configCorte)
+
+    setCalculo({
+      assinaturaOpcoes,
+      assinaturaEstoque,
+      unidades: resultado.unidades,
+      acabamento_id: resultado.acabamento_id,
+      atendePedido,
+      faltas: pedido.faltas,
+      atendidos,
+      /*
+       * Todo corte tem material e mesmo assim a peça não sai: é o acabamento
+       * que impede. Sem dizer isso, a tela fica incompreensível — tudo verde
+       * e um aviso vermelho em cima.
+       */
+      soFaltaAcabamento:
+        mesmaCor &&
+        !atendePedido &&
+        lista.length > 0 &&
+        lista.every((item) => atendidos.get(chaveDoCorte(item)) === true),
+    })
+
+    // A lista abre junto: a pergunta seguinte a "não dá" é sempre "o que
+    // falta?", e a resposta está nas linhas vermelhas logo abaixo.
+    setListaAberta(true)
+  }
 
   /*
-   * A cor de cada linha vem do atendimento POR CORTE, não das faltas do
-   * pedido. As faltas nascem do cálculo da peça inteira, que exige um único
-   * acabamento — e assim um corte com material sobrando na prateleira
-   * aparecia em vermelho só porque o acabamento escolhido para a peça era
-   * outro. A linha responde por si; o veredito responde pela peça.
+   * O comprimento de barra de cada perfil — o que transforma "faltam 8
+   * cortes" em "compre 2 barras". Perfil fora do catálogo não tem barra, e a
+   * lista de materiais prefere dizer isso a inventar 6 metros.
    */
-  const atendidos = cortesAtendidos(
-    lista.map((item) => ({
-      ...item,
-      quantidade: item.quantidade * desejada,
-    })),
-    disponiveis,
-    configCorte,
+  const barrasPorPerfil = new Map(
+    (modelos ?? []).map((m) => [m.id, m.comprimento_barra_mm]),
   )
 
-  /*
-   * Todo corte tem material e mesmo assim a peça não sai: é o acabamento
-   * que impede. Sem dizer isso, a tela fica incompreensível — tudo verde e
-   * um aviso vermelho em cima.
-   */
-  const soFaltaAcabamento =
-    mesmaCor &&
-    !atendePedido &&
-    lista.length > 0 &&
-    lista.every((item) => atendidos.get(chaveDoCorte(item)) === true)
+  function gerarListaMateriais(modo: ModoCompra) {
+    setModoCompra(modo)
+    setMateriais(
+      calcularListaMateriais(
+        lista,
+        desejada,
+        disponiveis,
+        barrasPorPerfil,
+        configCorte,
+        modo,
+      ),
+    )
+  }
+
+  function imprimirProduto() {
+    /*
+     * Reimprimir com a folha já montada não dispara o efeito de novo — a
+     * dependência não mudaria. Chamar direto cobre o caso de um navegador
+     * que não emita `afterprint` e deixe o estado preso em "imprimindo".
+     */
+    if (imprimindo) {
+      const folha = document.getElementById('folha-impressao')
+
+      if (folha && produto) void imprimirFolha(folha, nomeDoArquivo(produto))
+
+      return
+    }
+
+    setImprimindo('produto')
+  }
 
   const estoquePorPerfil = resumirPorPerfil(sobras ?? [])
 
+  const nomeAcabamento = (id: string | null | undefined) =>
+    acabamentos?.find((a) => a.id === id)?.nome ?? null
+
   const acabamentoDoResultado = mesmaCor
-    ? acabamentos?.find((a) => a.id === resultado.acabamento_id)
+    ? acabamentos?.find((a) => a.id === atual?.acabamento_id)
     : undefined
+
+  /*
+   * Em que cor este material sai — a informação que faltava para a lista
+   * virar pedido. "23 barras" sem a cor é meio pedido: o fornecedor
+   * pergunta, e quem ligou não sabe responder sem voltar aqui.
+   *
+   * A cor vem de onde ela realmente foi decidida, nesta ordem: o acabamento
+   * de onde as sobras saíram (quando se aproveita o depósito), a cor fixada
+   * na tela, ou nada — e nesse caso a folha diz "a definir" em vez de
+   * inventar uma.
+   */
+  const corDaLista = (lista: ListaMateriais): string => {
+    if (!mesmaCor) return 'Qualquer cor'
+
+    return (
+      nomeAcabamento(lista.acabamento_id) ??
+      nomeAcabamento(corEscolhida) ??
+      'Cor a definir'
+    )
+  }
 
   return (
     <PaginaDetalhe
@@ -513,51 +677,39 @@ export default function ProdutoDetalhe() {
       codigo={produto.codigo}
       titulo={produto.nome}
       subtitulo={formatarMedidaProduto(produto)}
-      acoes={
-        // Tudo numa faixa só: o que se ajusta para fazer a pergunta ao
-        // estoque fica junto, e o lápis vira só o ícone para caber. Em tela
-        // estreita a faixa quebra em duas — melhor do que espremer os
-        // controles até o toque errar o alvo.
-        <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2">
-          {podeEditar && (
-            <Botao
-              variante="secundaria"
-              onClick={abrirEdicao}
-              aria-label="Editar produto"
-              title="Editar"
-            >
-              <Pencil aria-hidden="true" className="size-4" />
-            </Botao>
-          )}
-
-          {/* Só o ícone, como o lápis: a faixa já está cheia, e "PDF"
-              escrito ao lado empurraria o resto para a segunda linha em
-              tela estreita. */}
+      /*
+       * O lápis na linha do nome, e não numa faixa embaixo: editar é uma
+       * ação sobre O PRODUTO, e ficava a três dedos do título sem nada a
+       * ver com ele. A faixa de ações sumiu junto — com o cálculo agora no
+       * cartão e o PDF no cabeçalho da lista, ela não tinha mais o que
+       * segurar, e uma faixa vazia é só espaço morto no alto da tela.
+       */
+      selo={
+        podeEditar && (
           <Botao
             variante="secundaria"
-            onClick={() => {
-              // Reimprimir com a folha já montada não dispara o efeito de
-              // novo — a dependência não mudaria. Chamar direto cobre o caso
-              // de um navegador que não emita `afterprint` e deixe o estado
-              // preso em "imprimindo".
-              if (imprimindo) {
-                const folha = document.getElementById('folha-impressao')
-
-                if (folha && produto) {
-                  void imprimirFolha(folha, nomeDoArquivo(produto))
-                }
-
-                return
-              }
-
-              setImprimindo(true)
-            }}
-            aria-label="Gerar PDF do produto"
-            title="Gerar PDF"
+            onClick={abrirEdicao}
+            aria-label="Editar produto"
+            title="Editar"
           >
-            <FileText aria-hidden="true" className="size-4" />
+            <Pencil aria-hidden="true" className="size-4" />
           </Botao>
-
+        )
+      }
+    >
+      {/*
+       * As opções ficam JUNTO do botão que as consome.
+       *
+       * Enquanto a conta era automática, elas viviam na faixa do topo e
+       * cada toque disparava um cálculo novo. Agora que a resposta é pedida
+       * de propósito, deixá-las longe do botão faria ajustar a cor aqui e
+       * procurar o "Calcular" lá em cima — e a faixa do topo, aliviada,
+       * volta a ser só o que a peça é.
+       */}
+      <section className="bg-superficie-2 flex flex-col gap-3 rounded-xl p-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {/* A quantidade abre a fileira porque é a primeira decisão: todas
+              as outras opções, e as duas contas, respondem sobre ELA. */}
           <label className="flex items-center gap-2">
             <span className="text-texto-suave text-sm">Produzir</span>
             <CampoQuantidade
@@ -585,18 +737,12 @@ export default function ProdutoDetalhe() {
           </label>
 
           {/* Só aparece quando a cor importa. Um seletor inerte ao lado de
-              uma opção desligada convida a mexer no que não tem efeito.
-
-              No celular ocupa a linha inteira: sozinho na segunda fileira,
-              um campo estreito deixa um vazio à direita e ainda corta nomes
-              como "Amadeirado marrom". No desktop volta a caber na mesma
-              linha dos outros controles, que é onde ele pertence. */}
+              uma opção desligada convida a mexer no que não tem efeito. */}
           {mesmaCor && (
             /* `appearance-none` mais a seta desenhada, como no CampoSelecao:
                no iPhone o Safari desenha o `<select>` com o controle nativo,
-               ignora a altura pedida e mostra as duas setinhas opostas dele.
-               O campo saía menor que os vizinhos e com aparência estranha. */
-            <div className="relative w-full sm:w-auto">
+               ignora a altura pedida e mostra as duas setinhas opostas dele. */
+            <div className="relative w-full sm:w-auto sm:min-w-40">
               <select
                 value={corEscolhida ?? ''}
                 onChange={(e) => setCorEscolhida(e.target.value || null)}
@@ -617,207 +763,363 @@ export default function ProdutoDetalhe() {
               />
             </div>
           )}
+
+          {/* "Dá para fazer sem gastar barra nova?" é outra pergunta, e a
+              mais valiosa quando o objetivo é limpar o depósito de retalho
+              antes de comprar. */}
+          <div className="relative w-full sm:w-auto sm:min-w-48">
+            <select
+              value={fonte}
+              onChange={(e) => setFonte(e.target.value as FonteMaterial)}
+              aria-label="Material a considerar"
+              className="border-borda bg-superficie h-11 w-full appearance-none rounded-xl border-2 pr-9 pl-3 text-sm"
+            >
+              <option value="tudo">Sobras e barras novas</option>
+              <option value="so_sobras">Só sobras</option>
+            </select>
+
+            <ChevronDown
+              aria-hidden="true"
+              className="text-texto-suave pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2"
+            />
+          </div>
         </div>
-      }
-    >
-      <Veredito
-        unidades={resultado.unidades}
-        desejada={desejada}
-        atendePedido={atendePedido}
-        soFaltaAcabamento={soFaltaAcabamento}
-        acabamento={acabamentoDoResultado?.nome ?? null}
-        semReceita={(itens ?? []).length === 0}
-        faltas={pedido.faltas.map((falta) => ({
-          ...falta,
-          perfil: nomeDoPerfil(falta.modelo_perfil_id),
-        }))}
-      />
+
+        <div className="flex flex-wrap gap-2">
+          <Botao
+            onClick={calcular}
+            disabled={(itens ?? []).length === 0}
+            className="flex-1"
+          >
+            <Calculator aria-hidden="true" className="size-5" />
+            {atual ? 'Calcular de novo' : 'Dá para produzir?'}
+          </Botao>
+
+          {/* Desfaz o cálculo por inteiro — veredito, cores da lista e a
+              lista aberta —, e não só esconde o quadro. Meio caminho seria
+              pior: linhas verdes e vermelhas sem o veredito que as explica
+              deixariam a tela afirmando algo que ninguém consegue ler. */}
+          {atual && (
+            <Botao
+              variante="secundaria"
+              onClick={() => {
+                setCalculo(null)
+                setListaAberta(false)
+              }}
+            >
+              <EyeOff aria-hidden="true" className="size-5" />
+              Ocultar
+            </Botao>
+          )}
+
+          <Botao
+            variante="secundaria"
+            onClick={() => gerarListaMateriais(modoCompra)}
+            disabled={(itens ?? []).length === 0}
+            className="flex-1"
+          >
+            <ClipboardList aria-hidden="true" className="size-5" />
+            Lista de materiais
+          </Botao>
+        </div>
+
+        {/*
+         * Sem resultado, a tela diz o que fazer em vez de mostrar um vazio.
+         * Antes o veredito aparecia sozinho ao abrir o produto: quem só veio
+         * conferir uma medida levava um "não dá" que nem tinha perguntado.
+         */}
+        {atual === null && (itens ?? []).length > 0 && (
+          <p className="text-texto-suave text-sm">
+            {calculo === null
+              ? 'Ajuste a quantidade e as opções acima, e peça a conta.'
+              : calculo.assinaturaOpcoes !== assinaturaOpcoes
+                ? 'As opções mudaram desde o último cálculo. Peça a conta de novo.'
+                : 'O estoque mudou desde o último cálculo. Peça a conta de novo.'}
+          </p>
+        )}
+      </section>
+
+      {atual && (
+        <Veredito
+          unidades={atual.unidades}
+          desejada={desejada}
+          atendePedido={atual.atendePedido}
+          soFaltaAcabamento={atual.soFaltaAcabamento}
+          acabamento={acabamentoDoResultado?.nome ?? null}
+          semReceita={(itens ?? []).length === 0}
+          faltas={atual.faltas.map((falta) => ({
+            ...falta,
+            perfil: nomeDoPerfil(falta.modelo_perfil_id),
+          }))}
+        />
+      )}
 
       <section>
-        <h2 className="mb-2 flex items-center gap-2 font-semibold">
-          <ListChecks aria-hidden="true" className="size-4" />
-          Lista técnica
-        </h2>
+        {/*
+         * Recolhida por padrão: a lista passa de vinte cortes com facilidade,
+         * e quem abre o produto quase sempre quer o alto da tela — não rolar
+         * três telas de perfil para chegar nos botões. A contagem no título
+         * evita ter de abrir só para saber se há algo lá dentro.
+         */}
+        {/* Emoldurado: recolhido, o rótulo sozinho no meio da tela não
+            parecia clicável — a moldura é o que diz que ali há algo a
+            abrir. Aberto, ela vira o topo da lista. */}
+        {/* O PDF fica FORA do botão que recolhe: um botão dentro de outro é
+            HTML inválido, e o toque acabaria abrindo a lista em vez de
+            imprimir. Por isso a moldura é da fileira, não do botão. */}
+        <div
+          className={cn(
+            'border-borda bg-superficie-2 flex items-center border pr-2',
+            listaAberta ? 'mb-0 rounded-t-xl' : 'mb-2 rounded-xl',
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => setListaAberta(!listaAberta)}
+            aria-expanded={listaAberta}
+            className="flex min-w-0 flex-1 items-center gap-2 p-3 text-left font-semibold"
+          >
+            <ListChecks aria-hidden="true" className="size-4 shrink-0" />
+            <span className="min-w-0 flex-1">
+              Lista técnica
+              {(itens ?? []).length > 0 && (
+                <span className="text-texto-suave ml-1.5 font-normal">
+                  ({itens?.length}{' '}
+                  {itens?.length === 1 ? 'componente' : 'componentes'})
+                </span>
+              )}
+            </span>
+            <ChevronDown
+              aria-hidden="true"
+              className={cn(
+                'size-4 shrink-0 transition-transform',
+                listaAberta && 'rotate-180',
+              )}
+            />
+          </button>
 
-        <p className="text-texto-suave mb-2 text-sm">
-          O que entra em UMA unidade. Os comprimentos são de corte, já com os
-          descontos que a oficina aplica.
-        </p>
+          {/* A folha impressa É a lista técnica, com o desenho grande de
+              cada perfil para conferir na bancada. O botão pertence a este
+              cabeçalho mais do que pertencia ao alto da tela. */}
+          <Botao
+            variante="secundaria"
+            tamanho="icone_pequeno"
+            onClick={imprimirProduto}
+            aria-label="Gerar PDF do produto"
+            title="Gerar PDF"
+            className="ml-2 shrink-0"
+          >
+            <FileText aria-hidden="true" className="size-4" />
+          </Botao>
+        </div>
 
-        {/* Ordenar automático não briga com arrastar: a regra organiza uma
+        {listaAberta && (
+          /* Continua a moldura do rótulo: sem as bordas laterais, a lista
+             aberta parecia solta embaixo de um cabeçalho que não era dela. */
+          <div className="border-borda rounded-b-xl border-x border-b p-3">
+            <p className="text-texto-suave mb-2 text-sm">
+              O que entra em UMA unidade. Os comprimentos são de corte, já com
+              os descontos que a oficina aplica.
+            </p>
+
+            {/* Ordenar automático não briga com arrastar: a regra organiza uma
             lista recém-digitada de vinte cortes num toque, e o arrastar
             ajusta o que ficou fora de lugar. Reescreve a ordem GRAVADA —
             fosse só visual, a folha impressa sairia diferente da tela. */}
-        {podeEditar && (itens ?? []).length > 1 && (
-          <div className="mb-3 flex items-center gap-2">
-            <ArrowDownUp
-              aria-hidden="true"
-              className="text-texto-suave size-4 shrink-0"
-            />
-            <div className="relative flex-1 sm:max-w-72">
-              <select
-                value=""
-                onChange={(e) => {
-                  const criterio = e.target.value as CriterioOrdenacao
+            {podeEditar && (itens ?? []).length > 1 && (
+              <div className="mb-3 flex items-center gap-2">
+                <ArrowDownUp
+                  aria-hidden="true"
+                  className="text-texto-suave size-4 shrink-0"
+                />
+                <div className="relative flex-1 sm:max-w-72">
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const criterio = e.target.value as CriterioOrdenacao
 
-                  if (!criterio) return
+                      if (!criterio) return
 
-                  const ordenados = ordenarLista(itens ?? [], criterio, {
-                    modelos: modelos ?? [],
-                    pecasPorPerfil: new Map(
-                      [...estoquePorPerfil].map(([id, r]) => [id, r.pecas]),
-                    ),
-                  })
+                      const ordenados = ordenarLista(itens ?? [], criterio, {
+                        modelos: modelos ?? [],
+                        pecasPorPerfil: new Map(
+                          [...estoquePorPerfil].map(([id, r]) => [id, r.pecas]),
+                        ),
+                      })
 
-                  disparar(reordenar.mutateAsync(ordenados.map((i) => i.id)))
-                  // Volta ao rótulo neutro: o campo é um comando, não um
-                  // estado — a lista pode ser arrastada depois, e deixá-lo
-                  // marcado diria que ela ainda segue aquela regra.
-                  e.target.value = ''
-                }}
-                aria-label="Ordenar a lista automaticamente"
-                className="border-borda bg-superficie h-11 w-full appearance-none rounded-xl border-2 pr-9 pl-3 text-sm"
-              >
-                <option value="">Ordenar automaticamente por…</option>
-                {CRITERIOS.map((c) => (
-                  <option key={c.valor} value={c.valor}>
-                    {c.rotulo}
-                  </option>
-                ))}
-              </select>
+                      disparar(
+                        reordenar.mutateAsync(ordenados.map((i) => i.id)),
+                      )
+                      // Volta ao rótulo neutro: o campo é um comando, não um
+                      // estado — a lista pode ser arrastada depois, e deixá-lo
+                      // marcado diria que ela ainda segue aquela regra.
+                      e.target.value = ''
+                    }}
+                    aria-label="Ordenar a lista automaticamente"
+                    className="border-borda bg-superficie h-11 w-full appearance-none rounded-xl border-2 pr-9 pl-3 text-sm"
+                  >
+                    <option value="">Ordenar automaticamente por…</option>
+                    {CRITERIOS.map((c) => (
+                      <option key={c.valor} value={c.valor}>
+                        {c.rotulo}
+                      </option>
+                    ))}
+                  </select>
 
-              <ChevronDown
-                aria-hidden="true"
-                className="text-texto-suave pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2"
-              />
-            </div>
-          </div>
-        )}
+                  <ChevronDown
+                    aria-hidden="true"
+                    className="text-texto-suave pointer-events-none absolute top-1/2 right-2.5 size-4 -translate-y-1/2"
+                  />
+                </div>
+              </div>
+            )}
 
-        {(itens ?? []).length === 0 ? (
-          <p className="bg-superficie-2 text-texto-suave rounded-xl p-4 text-sm">
-            Sem lista técnica ainda. Sem ela o sistema não tem como dizer se dá
-            para fabricar este produto com as sobras.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {ordenacao.itensVisiveis.map((item, indice) => {
-              const desenho = capas?.get(item.modelo_perfil_id)
-              const estoque = resumoDe(estoquePorPerfil, item.modelo_perfil_id)
-              const falta = atendidos.get(chaveDoCorte(item)) !== true
-              const modeloItem = modelos?.find(
-                (m) => m.id === item.modelo_perfil_id,
-              )
+            {(itens ?? []).length === 0 ? (
+              <p className="bg-superficie-2 text-texto-suave rounded-xl p-4 text-sm">
+                Sem lista técnica ainda. Sem ela o sistema não tem como dizer se
+                dá para fabricar este produto com as sobras.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {ordenacao.itensVisiveis.map((item, indice) => {
+                  const desenho = capas?.get(item.modelo_perfil_id)
+                  const estoque = resumoDe(
+                    estoquePorPerfil,
+                    item.modelo_perfil_id,
+                  )
+                  /*
+                   * Sem cálculo, a linha não opina. Verde e vermelho são a
+                   * resposta de uma pergunta que ninguém fez ainda — e a lista
+                   * inteira vermelha ao abrir o produto assustava sem motivo,
+                   * já que o padrão de uma unidade quase nunca é o pedido real.
+                   */
+                  const situacao = !atual
+                    ? 'neutra'
+                    : atual.atendidos.get(chaveDoCorte(item)) === true
+                      ? 'ok'
+                      : 'falta'
+                  const modeloItem = modelos?.find(
+                    (m) => m.id === item.modelo_perfil_id,
+                  )
 
-              return (
-                <li
-                  key={item.id}
-                  ref={ordenacao.registrar(item.id)}
-                  className={cn(
-                    'flex flex-col overflow-hidden rounded-xl border',
-                    ordenacao.emMovimento === item.id &&
-                      'relative z-10 opacity-70 shadow-lg',
-                    falta
-                      ? 'border-falta-borda bg-falta'
-                      : 'border-ok-borda bg-ok',
-                  )}
-                >
-                  {/* Linha superior: alça + miniatura + nome clicável */}
-                  <div className="flex items-center gap-2 px-2 pt-2">
-                    {podeEditar && (
-                      <button
-                        type="button"
-                        onPointerDown={ordenacao.comecar(indice)}
-                        onPointerMove={ordenacao.mover}
-                        onPointerUp={ordenacao.soltar}
-                        onPointerCancel={ordenacao.soltar}
-                        aria-label={`Mover ${nomeDoPerfil(item.modelo_perfil_id)} na sequência`}
-                        title="Arraste para reordenar"
-                        className="text-texto-suave hover:text-texto flex size-8 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
-                      >
-                        <GripVertical aria-hidden="true" className="size-5" />
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => desenho && setAmpliado(desenho)}
-                      disabled={!desenho}
-                      aria-label={`Ampliar desenho de ${nomeDoPerfil(item.modelo_perfil_id)}`}
-                      className="shrink-0 disabled:cursor-default"
+                  return (
+                    <li
+                      key={item.id}
+                      ref={ordenacao.registrar(item.id)}
+                      className={cn(
+                        'flex flex-col overflow-hidden rounded-xl border',
+                        ordenacao.emMovimento === item.id &&
+                          'relative z-10 opacity-70 shadow-lg',
+                        situacao === 'neutra' && 'border-borda bg-superficie',
+                        situacao === 'falta' && 'border-falta-borda bg-falta',
+                        situacao === 'ok' && 'border-ok-borda bg-ok',
+                      )}
                     >
-                      <MiniaturaPerfil
-                        link={desenho ?? null}
-                        codigo={modeloItem?.codigo ?? ''}
-                      />
-                    </button>
+                      {/* Linha superior: alça + miniatura + nome clicável */}
+                      <div className="flex items-center gap-2 px-2 pt-2">
+                        {podeEditar && (
+                          <button
+                            type="button"
+                            onPointerDown={ordenacao.comecar(indice)}
+                            onPointerMove={ordenacao.mover}
+                            onPointerUp={ordenacao.soltar}
+                            onPointerCancel={ordenacao.soltar}
+                            aria-label={`Mover ${nomeDoPerfil(item.modelo_perfil_id)} na sequência`}
+                            title="Arraste para reordenar"
+                            className="text-texto-suave hover:text-texto flex size-8 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
+                          >
+                            <GripVertical
+                              aria-hidden="true"
+                              className="size-5"
+                            />
+                          </button>
+                        )}
 
-                    <Link
-                      to={`/perfis/${item.modelo_perfil_id}?de=${encodeURIComponent(`/produtos/${produto.id}`)}&rotulo=${encodeURIComponent('Lista técnica')}`}
-                      className="flex min-w-0 flex-1 items-center gap-1 self-stretch"
-                      aria-label={`Ver ficha de ${nomeDoPerfil(item.modelo_perfil_id)}`}
-                    >
-                      <span className="line-clamp-2 flex-1 text-[15px] leading-snug font-medium">
-                        <span className="bg-acao-100 text-acao-700 me-1 inline-block rounded px-1.5 py-0.5 font-mono text-xs font-bold">
-                          {modeloItem?.codigo ?? ''}
-                        </span>
-                        {modeloItem?.descricao ?? 'perfil removido'}
-                      </span>
-                      <ChevronRight
-                        aria-hidden="true"
-                        className="text-texto-suave size-4 shrink-0"
-                      />
-                    </Link>
-                  </div>
-
-                  {/* Linha inferior: medidas/estoque + botões */}
-                  <div className="flex items-center justify-between gap-2 px-2 pt-1 pb-2">
-                    <span className="text-texto-suave pl-1 text-[15px] tabular-nums">
-                      {item.quantidade} ×{' '}
-                      {formatarComprimento(item.comprimento_mm)} ·{' '}
-                      {estoque.pecas} pç /{' '}
-                      {(estoque.milimetros / 1000).toFixed(1).replace('.', ',')}{' '}
-                      m
-                    </span>
-
-                    {podeEditar && (
-                      <div className="flex shrink-0 items-center gap-1.5">
-                        <Botao
-                          tamanho="icone_pequeno"
-                          variante="secundaria"
-                          onClick={() => abrirCorte(item)}
-                          aria-label={`Alterar ${nomeDoPerfil(item.modelo_perfil_id)} na lista técnica`}
-                          title="Alterar quantidade ou medida"
+                        <button
+                          type="button"
+                          onClick={() => desenho && setAmpliado(desenho)}
+                          disabled={!desenho}
+                          aria-label={`Ampliar desenho de ${nomeDoPerfil(item.modelo_perfil_id)}`}
+                          className="shrink-0 disabled:cursor-default"
                         >
-                          <Pencil aria-hidden="true" className="size-4" />
-                        </Botao>
+                          <MiniaturaPerfil
+                            link={desenho ?? null}
+                            codigo={modeloItem?.codigo ?? ''}
+                          />
+                        </button>
 
-                        <Botao
-                          tamanho="icone_pequeno"
-                          variante="contorno"
-                          onClick={() => disparar(remover.mutateAsync(item.id))}
-                          aria-label={`Remover ${nomeDoPerfil(item.modelo_perfil_id)} da lista técnica`}
-                          title="Remover"
+                        <Link
+                          to={`/perfis/${item.modelo_perfil_id}?de=${encodeURIComponent(`/produtos/${produto.id}`)}&rotulo=${encodeURIComponent('Lista técnica')}`}
+                          className="flex min-w-0 flex-1 items-center gap-1 self-stretch"
+                          aria-label={`Ver ficha de ${nomeDoPerfil(item.modelo_perfil_id)}`}
                         >
-                          <Trash2 aria-hidden="true" className="size-4" />
-                        </Botao>
+                          <span className="line-clamp-2 flex-1 text-[15px] leading-snug font-medium">
+                            <span className="bg-acao-100 text-acao-700 me-1 inline-block rounded px-1.5 py-0.5 font-mono text-xs font-bold">
+                              {modeloItem?.codigo ?? ''}
+                            </span>
+                            {modeloItem?.descricao ?? 'perfil removido'}
+                          </span>
+                          <ChevronRight
+                            aria-hidden="true"
+                            className="text-texto-suave size-4 shrink-0"
+                          />
+                        </Link>
                       </div>
-                    )}
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
 
-        {podeEditar && (
-          <Botao
-            onClick={() => navegar(`/produtos/${id}/acrescentar-material`)}
-            className="mt-3 w-full"
-          >
-            <Plus aria-hidden="true" className="size-5" />
-            Acrescentar material
-          </Botao>
+                      {/* Linha inferior: medidas/estoque + botões */}
+                      <div className="flex items-center justify-between gap-2 px-2 pt-1 pb-2">
+                        <span className="text-texto-suave pl-1 text-[15px] tabular-nums">
+                          {item.quantidade} ×{' '}
+                          {formatarComprimento(item.comprimento_mm)} ·{' '}
+                          {estoque.pecas} pç /{' '}
+                          {(estoque.milimetros / 1000)
+                            .toFixed(1)
+                            .replace('.', ',')}{' '}
+                          m
+                        </span>
+
+                        {podeEditar && (
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <Botao
+                              tamanho="icone_pequeno"
+                              variante="secundaria"
+                              onClick={() => abrirCorte(item)}
+                              aria-label={`Alterar ${nomeDoPerfil(item.modelo_perfil_id)} na lista técnica`}
+                              title="Alterar quantidade ou medida"
+                            >
+                              <Pencil aria-hidden="true" className="size-4" />
+                            </Botao>
+
+                            <Botao
+                              tamanho="icone_pequeno"
+                              variante="contorno"
+                              onClick={() =>
+                                disparar(remover.mutateAsync(item.id))
+                              }
+                              aria-label={`Remover ${nomeDoPerfil(item.modelo_perfil_id)} da lista técnica`}
+                              title="Remover"
+                            >
+                              <Trash2 aria-hidden="true" className="size-4" />
+                            </Botao>
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+
+            {podeEditar && (
+              <Botao
+                onClick={() => navegar(`/produtos/${id}/acrescentar-material`)}
+                className="mt-3 w-full"
+              >
+                <Plus aria-hidden="true" className="size-5" />
+                Acrescentar material
+              </Botao>
+            )}
+          </div>
         )}
       </section>
 
@@ -829,8 +1131,9 @@ export default function ProdutoDetalhe() {
       />
 
       {/* Fica fora da tela e só aparece na impressão. Montada apenas quando
-          se pede, para não baixar imagem à toa em quem só veio consultar. */}
-      {imprimindo && (
+          se pede, para não baixar imagem à toa em quem só veio consultar —
+          e uma de cada vez, porque as duas dividem o mesmo id. */}
+      {imprimindo === 'produto' && (
         <FolhaProduto
           produto={produto}
           itens={itens ?? []}
@@ -842,6 +1145,17 @@ export default function ProdutoDetalhe() {
           pecasPorPerfil={
             new Map([...estoquePorPerfil].map(([id, r]) => [id, r.pecas]))
           }
+        />
+      )}
+
+      {imprimindo === 'materiais' && materiais && (
+        <FolhaListaMateriais
+          produto={produto}
+          materiais={materiais}
+          modelos={modelos ?? []}
+          desenhosPerfil={capas}
+          acabamento={corDaLista(materiais)}
+          empresa={APLICACAO.nome}
         />
       )}
 
@@ -869,6 +1183,182 @@ export default function ProdutoDetalhe() {
             salvando={editar.isPending}
             erro={erroProduto}
           />
+        )}
+      </Modal>
+
+      {/*
+       * A lista de materiais numa janela, e não numa tela própria: ela é
+       * lida, conferida e impressa em um minuto, e some. Uma rota nova
+       * gastaria histórico de navegação — o "voltar" do celular deixaria de
+       * levar para Produtos — por um conteúdo que ninguém quer guardar
+       * aberto.
+       */}
+      <Modal
+        aberto={materiais !== null}
+        aoFechar={() => setMateriais(null)}
+        titulo="Lista de materiais"
+      >
+        {materiais && (
+          <div className="flex flex-col gap-4">
+            {/*
+             * O modo troca aqui dentro, com a lista à vista: é comparando os
+             * dois números — o cheio e o que falta comprar — que se decide
+             * usar a sobra. Trocar o modo fora daqui obrigaria a fechar,
+             * mudar e reabrir só para ver o outro.
+             */}
+            <div className="flex flex-col gap-2">
+              {(
+                [
+                  {
+                    modo: 'aproveitar_sobras' as const,
+                    titulo: 'Aproveitar as sobras',
+                    ajuda:
+                      'Compra só a diferença. É a lista para o fornecedor.',
+                  },
+                  {
+                    modo: 'tudo_novo' as const,
+                    titulo: 'Tudo com barra nova',
+                    ajuda:
+                      'Ignora o depósito. É o material cheio, para orçamento.',
+                  },
+                ] satisfies {
+                  modo: ModoCompra
+                  titulo: string
+                  ajuda: string
+                }[]
+              ).map((opcao) => (
+                <label
+                  key={opcao.modo}
+                  className={cn(
+                    'flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3',
+                    modoCompra === opcao.modo
+                      ? 'border-acao-600 bg-acao-50'
+                      : 'border-borda',
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="modo-compra"
+                    className="mt-1 size-5 shrink-0"
+                    checked={modoCompra === opcao.modo}
+                    onChange={() => gerarListaMateriais(opcao.modo)}
+                  />
+                  <span className="min-w-0">
+                    <span className="block font-medium">{opcao.titulo}</span>
+                    <span className="text-texto-suave block text-sm">
+                      {opcao.ajuda}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            <div className="bg-superficie-2 rounded-xl p-3 text-sm">
+              <p>
+                Para <strong>{materiais.unidades}</strong>{' '}
+                {materiais.unidades === 1 ? 'unidade' : 'unidades'} de{' '}
+                {produto.nome}:{' '}
+                <strong className="text-base">
+                  {materiais.totalBarras}{' '}
+                  {materiais.totalBarras === 1 ? 'barra' : 'barras'}
+                </strong>{' '}
+                a comprar.
+              </p>
+
+              {/* A cor entra em linha própria e destacada: é o dado que
+                  transforma esta lista num pedido que o fornecedor
+                  consegue atender. */}
+              <p className="mt-1">
+                Acabamento: <strong>{corDaLista(materiais)}</strong>
+              </p>
+            </div>
+
+            <ul className="flex flex-col gap-2">
+              {materiais.linhas.map((linha) => {
+                const modelo = modelos?.find(
+                  (m) => m.id === linha.modelo_perfil_id,
+                )
+                const deSobra = linha.cortes.reduce(
+                  (total, c) => total + c.deSobra,
+                  0,
+                )
+
+                return (
+                  <li
+                    key={linha.modelo_perfil_id}
+                    className="border-borda flex gap-3 rounded-xl border p-3"
+                  >
+                    {/* O desenho identifica o perfil melhor que o código:
+                        quem confere a lista antes de ligar para o
+                        fornecedor reconhece a seção de relance, e
+                        "MN-001" contra "MN-002" não se distinguem lendo. */}
+                    <MiniaturaPerfil
+                      link={capas?.get(linha.modelo_perfil_id) ?? null}
+                      codigo={modelo?.codigo ?? ''}
+                    />
+
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="min-w-0 text-[15px] leading-snug font-medium">
+                          <span className="bg-acao-100 text-acao-700 me-1 inline-block rounded px-1.5 py-0.5 font-mono text-xs font-bold">
+                            {modelo?.codigo ?? '—'}
+                          </span>
+                          {modelo?.descricao ?? 'perfil removido'}
+                        </span>
+
+                        <span className="shrink-0 text-lg font-bold tabular-nums">
+                          {linha.comprimento_barra_mm > 0
+                            ? linha.barrasNovas
+                            : '?'}
+                        </span>
+                      </div>
+
+                      <span className="text-texto-suave text-sm tabular-nums">
+                        {linha.cortes
+                          .map(
+                            (c) =>
+                              `${c.quantidade} × ${formatarComprimento(c.comprimento_mm)}`,
+                          )
+                          .join(' · ')}
+                      </span>
+
+                      {deSobra > 0 && (
+                        <span className="text-ok-texto text-sm">
+                          {deSobra} {deSobra === 1 ? 'peça sai' : 'peças saem'}{' '}
+                          das sobras.
+                        </span>
+                      )}
+
+                      {linha.cortesImpossiveis > 0 && (
+                        <span className="text-erro-600 text-sm">
+                          {linha.comprimento_barra_mm > 0
+                            ? `${linha.cortesImpossiveis} ${linha.cortesImpossiveis === 1 ? 'corte é maior' : 'cortes são maiores'} que a barra de ${formatarComprimento(linha.comprimento_barra_mm)}.`
+                            : 'Perfil sem comprimento de barra cadastrado — não dá para dizer quantas comprar.'}
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+
+            <div className="flex gap-2">
+              <Botao
+                variante="secundaria"
+                onClick={() => setMateriais(null)}
+                className="flex-1"
+              >
+                Fechar
+              </Botao>
+              <Botao
+                onClick={() => setImprimindo('materiais')}
+                className="flex-1"
+              >
+                <FileText aria-hidden="true" className="size-5" />
+                Imprimir / PDF
+              </Botao>
+            </div>
+          </div>
         )}
       </Modal>
 

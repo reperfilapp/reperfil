@@ -7,10 +7,33 @@
 > do banco (28/08/2026) · chave de assinatura gerada, configurada e
 > testada (27/08/2026, `.aab` assinado com sucesso) · pacote
 > `br.com.reperfil.app` registrado na Verificação de desenvolvedor Android,
-> com a impressão digital SHA-256 da chave (27/08/2026).
+> com a impressão digital SHA-256 da chave (27/08/2026) · app criado no
+> Play Console, ficha da loja preenchida (textos, ícone, capturas, imagem
+> de destaque, vídeo, política de privacidade, segurança dos dados,
+> classificação de conteúdo, declarações) e **Teste interno funcionando**
+> — versão 10686 (1.6.86) disponível para os 4 testadores cadastrados,
+> login por e-mail e por nickname confirmados na versão instalada pelo
+> link de teste (27/08/2026).
 >
-> **Falta:** criar o app no Play Console, preencher a ficha da loja e
-> enviar em Teste interno.
+> **Falta:** enviar as mudanças pendentes para revisão da Google (botão
+> "Enviar mudanças para revisão" na Visão geral da publicação) e, depois
+> de aprovado, avançar para Teste fechado e Produção.
+
+## ⚠️ Cuidado ao gerar o `.aab` para a loja
+
+**Nunca gere o pacote de release rodando `bundleRelease`/`assembleRelease`
+direto.** Sempre use `npm run android:aab` (ou `npm run android:apk` para
+teste local). Só esses comandos rodam `npm run build && cap sync android`
+antes de empacotar — sem isso, o Android empacota os arquivos web que já
+estavam sincronizados de ANTES, que podem ser de dias atrás.
+
+**Isso já aconteceu uma vez** (27/08/2026): o primeiro `.aab` enviado à
+Play Store tinha a versão certa no nome (`1.6.85`, porque isso vem direto
+do `package.json` no momento do empacotamento Android), mas o site
+empacotado dentro dele era de 22/08 — 5 dias desatualizado. O sintoma foi
+enganoso: login por e-mail funcionava (recurso antigo), mas login por
+nickname não (recurso adicionado depois de 22/08) — parecia um bug do
+código ou da Play Store, e não era nenhum dos dois.
 
 ## O que já está pronto
 

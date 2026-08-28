@@ -64,6 +64,91 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.53 — 28/08/2026
+
+**A tela do produto deixou de responder sozinha e ganhou lista de compras.**
+
+Quatro mudanças, todas na tela de detalhe do produto.
+
+**1. O cálculo agora é pedido, não automático.** Antes, abrir um produto já
+disparava a conta e estampava "Não dá com as sobras de hoje" — mesmo em
+quem só veio conferir uma medida, e sobre uma quantidade (1) que quase
+nunca é o pedido real. Agora ajusta-se quantidade, cor e origem do
+material, e só então se toca em **Dá para produzir?**.
+
+O resultado guarda a assinatura das opções que o geraram: mexeu em
+qualquer uma, ele se invalida sozinho, porque resposta velha com cara de
+atual é pior do que resposta nenhuma. A assinatura é dupla — opções e
+estoque separados — para o recado ser honesto: "as opções mudaram" quando
+foi você, "o estoque mudou" quando foi outra pessoa mexendo no depósito ao
+mesmo tempo.
+
+Como consequência, as linhas da lista técnica nascem **neutras**. Verde e
+vermelho são a resposta de uma pergunta que ninguém fez ainda.
+
+Depois de calcular aparece **Ocultar**, ao lado de *Calcular de novo*. Ele
+desfaz o cálculo por inteiro — veredito, cores da lista e a lista aberta —,
+e não só esconde o quadro: linhas verdes e vermelhas sem o veredito que as
+explica deixariam a tela afirmando algo que ninguém consegue ler.
+
+**2. Dá para calcular só com sobras.** Um seletor novo escolhe entre
+*Sobras e barras novas* (o que o sistema sempre fez) e *Só sobras* — que
+responde "dá para fazer sem gastar barra inteira?", a pergunta que
+justifica o aplicativo existir. Lote antigo, cadastrado antes de o campo
+`tipo_material` existir, conta como sobra: sumir com material real por
+causa de um campo vazio seria pior do que classificá-lo pelo passado.
+
+**3. Botão "Lista de materiais".** Multiplica a lista técnica pela
+quantidade a produzir e diz **quantas barras comprar**, com dois modos:
+
+- *Aproveitar as sobras* — compra só a diferença. É a lista para o
+  fornecedor.
+- *Tudo com barra nova* — ignora o depósito de propósito. É o material
+  cheio do serviço, para orçamento; descontar sobra de um orçamento é
+  regalar material que já foi pago noutra obra.
+
+Abre numa janela, com impressão/PDF em folha própria — separada da folha do
+produto porque são duas conversas: aquela vai para a bancada e mostra
+desenho grande, esta vai para o telefone com o fornecedor.
+
+Cada linha traz o **desenho técnico do perfil**, na tela e na folha — menor
+que na folha do produto, porque aqui ele serve para identificar, não para
+conferir corte. Quem confere um pedido de vinte perfis reconhece a seção de
+relance; "MN-001" contra "MN-002" não se distinguem lendo.
+
+A lista informa **em que cor o material sai**, na tela e na folha, junto do
+total. "23 barras" sem a cor é meio pedido — o fornecedor pergunta, e quem
+ligou não sabe responder sem voltar ao aplicativo. A cor vem de onde foi
+de fato decidida: o acabamento de onde as sobras saíram, a cor fixada na
+tela, ou "Cor a definir" quando nenhuma das duas existe — em vez de
+inventar uma.
+
+O cálculo reaproveita a mesma heurística de encaixe do resto do sistema, e
+não uma conta paralela — senão a tela diria "dá para fazer" e a lista de
+compras pediria barra para o mesmo corte. Ao aproveitar o depósito escolhe
+**um** acabamento (o que cobre mais cortes): somar sobra branca com preta
+daria uma lista menor e uma janela de duas cores. Perfil sem comprimento de
+barra cadastrado não vira compra inventada — a folha diz que falta
+cadastrar.
+
+**4. Lista técnica recolhida por padrão**, com a contagem de componentes no
+rótulo e moldura em volta, para parecer o que é: algo que abre. Ela passa de
+vinte cortes com facilidade, e quem abre o produto quase sempre quer o alto
+da tela, não rolar três telas de perfil para chegar nos botões. Abre sozinha
+depois de um cálculo, porque a pergunta seguinte a "não dá" é sempre "o que
+falta?".
+
+**A faixa de ações do topo deixou de existir.** Os controles de produção —
+quantidade, cor, origem do material e os dois botões — foram reunidos num
+cartão só, junto do que os consome. O lápis subiu para a linha do nome do
+produto, à direita: editar é uma ação sobre a peça, e ficava a três dedos do
+título sem nada a ver com ele. O botão de PDF desceu para o cabeçalho da
+lista técnica, que é o que a folha impressa de fato mostra. Sem eles, a
+faixa virava espaço morto no alto da tela.
+
+15 testes novos cobrindo a lista de materiais e o filtro de origem
+(326 no total).
+
 ## 1.7.11 — 26/08/2026
 
 **Correção séria: dados de uma empresa vazavam para a próxima, na mesma aba.**

@@ -82,3 +82,38 @@ describe('sobras disponíveis para produção', () => {
     ).toEqual([])
   })
 })
+
+/**
+ * "Dá para fazer sem gastar barra nova?" é uma pergunta diferente de "dá
+ * para fazer?" — e é a que justifica o aplicativo. Sem este filtro, uma
+ * barra inteira recém-comprada respondia sim às duas.
+ */
+describe('origem do material', () => {
+  it('conta barra nova e sobra por padrão', () => {
+    const resultado = sobrasDisponiveis([
+      lote({ tipo_material: 'novo' }),
+      lote({ tipo_material: 'sobra' }),
+    ])
+
+    expect(resultado).toHaveLength(2)
+  })
+
+  it('exclui barra nova quando a pergunta é só sobre sobras', () => {
+    const resultado = sobrasDisponiveis(
+      [
+        lote({ tipo_material: 'novo', comprimento_mm: 6000 }),
+        lote({ tipo_material: 'sobra', comprimento_mm: 1455 }),
+      ],
+      'so_sobras',
+    )
+
+    expect(resultado).toHaveLength(1)
+    expect(resultado[0]?.comprimento_mm).toBe(1455)
+  })
+
+  it('trata lote antigo, sem tipo gravado, como sobra', () => {
+    // O campo nasceu depois do cadastro de estoque. O que veio antes dele é
+    // retalho, e sumir com esse material seria pior do que classificá-lo.
+    expect(sobrasDisponiveis([lote()], 'so_sobras')).toHaveLength(1)
+  })
+})

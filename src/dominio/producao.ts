@@ -65,8 +65,15 @@ export interface ResultadoProducao {
   faltas: FaltaMaterial[]
 }
 
-/** Peça de estoque enquanto está sendo consumida pelo cálculo. */
-interface PecaEmUso {
+/**
+ * Peça de estoque enquanto está sendo consumida pelo cálculo.
+ *
+ * Exportada junto com `consumirCorte` porque a lista de materiais precisa da
+ * MESMA heurística: se lá o encaixe fosse calculado de outro jeito, a tela
+ * diria "dá para fazer" e a lista de compras pediria barra para o mesmo
+ * corte — duas respostas do mesmo sistema se contradizendo.
+ */
+export interface PecaEmUso {
   comprimento_mm: number
   restante_mm: number
 }
@@ -77,7 +84,7 @@ interface PecaEmUso {
  * Devolve `false` quando não cabe em nenhuma — e nesse ponto o cálculo para
  * de contar unidades, porque a unidade seguinte já não fecha.
  */
-function consumirCorte(
+export function consumirCorte(
   pecas: PecaEmUso[],
   corteMm: number,
   config: ConfiguracaoCorte,
