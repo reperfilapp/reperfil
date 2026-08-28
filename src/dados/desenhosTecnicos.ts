@@ -191,22 +191,56 @@ export function useCapasDesenhos(tipo: TipoImagemPerfil = 'imagem') {
         arquivo_url: string
       }[]
 
-      // Primeiro desenho de cada perfil; os demais ficam para a galeria.
-      const primeiroDeCada = new Map<string, string>()
+      /*
+       * Todos os arquivos de cada perfil, na ordem — não só o primeiro.
+       *
+       * A capa continua sendo o primeiro, mas guardar a fila inteira
+       * permite cair para o seguinte quando o primeiro não resolve. Um
+       * registro pode apontar para arquivo que não existe mais (foi o que
+       * aconteceu na Alumifort: a sincronização copia o registro com o
+       * caminho da pasta do central, e apagar o perfil lá deixou as cópias
+       * apontando para o vazio). Antes, um arquivo morto na frente escondia
+       * um desenho bom logo atrás, e o perfil aparecia sem imagem nenhuma.
+       */
+      const filaDeCada = new Map<string, string[]>()
       for (const r of registros) {
-        if (r.modelo_perfil_id && !primeiroDeCada.has(r.modelo_perfil_id)) {
-          primeiroDeCada.set(r.modelo_perfil_id, r.arquivo_url)
-        }
+        if (!r.modelo_perfil_id) continue
+
+        const fila = filaDeCada.get(r.modelo_perfil_id) ?? []
+        fila.push(r.arquivo_url)
+        filaDeCada.set(r.modelo_perfil_id, fila)
       }
 
-      const links = await obterLinksTemporarios(BALDE_DE[tipo], [
-        ...primeiroDeCada.values(),
-      ])
-
       const capas = new Map<string, string>()
-      for (const [perfilId, caminho] of primeiroDeCada) {
-        const link = links.get(caminho)
-        if (link) capas.set(perfilId, link)
+      /*
+       * Uma rodada por posição da fila, e não uma por perfil: assinar tudo
+       * de uma vez custaria links à toa para as galerias inteiras, e um
+       * pedido por perfil seriam centenas de idas ao servidor. Na prática
+       * a primeira rodada resolve quase tudo, e as seguintes só acontecem
+       * enquanto sobrar perfil sem capa — nenhuma, quando não há arquivo
+       * morto.
+       */
+      for (let posicao = 0; filaDeCada.size > capas.size; posicao++) {
+        const candidatos = new Map<string, string>()
+
+        for (const [perfilId, fila] of filaDeCada) {
+          const caminho = fila[posicao]
+          if (!capas.has(perfilId) && caminho) {
+            candidatos.set(perfilId, caminho)
+          }
+        }
+
+        // Ninguém tem arquivo nesta posição: as filas acabaram.
+        if (candidatos.size === 0) break
+
+        const links = await obterLinksTemporarios(BALDE_DE[tipo], [
+          ...candidatos.values(),
+        ])
+
+        for (const [perfilId, caminho] of candidatos) {
+          const link = links.get(caminho)
+          if (link) capas.set(perfilId, link)
+        }
       }
 
       return capas

@@ -29,6 +29,8 @@ import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
 import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
 import { useSobras } from '@/dados/sobras'
+import { useOrganizacao } from '@/dados/organizacao'
+import { LiberacaoProduto } from '@/componentes/produto/LiberacaoProduto'
 import { useAcabamentos } from '@/dados/acabamentos'
 import { useConfiguracoes, paraConfiguracaoCorte } from '@/dados/configuracoes'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
@@ -104,6 +106,8 @@ export default function ProdutoDetalhe() {
   const { data: sobras } = useSobras()
   const { data: acabamentos } = useAcabamentos()
   const { data: config } = useConfiguracoes()
+  const { data: organizacao } = useOrganizacao()
+  const souCentral = Boolean(organizacao?.eh_catalogo_central)
 
   const remover = useRemoverItemLista()
   const editarItem = useEditarItemLista()
@@ -1125,7 +1129,7 @@ export default function ProdutoDetalhe() {
 
                       {/* Linha inferior: medidas/estoque + botões */}
                       <div className="flex items-center justify-between gap-2 px-2 pt-1 pb-2">
-                        <span className="text-texto-suave min-w-0 pl-1 text-sm tabular-nums leading-tight">
+                        <span className="text-texto-suave min-w-0 pl-1 text-sm leading-tight tabular-nums">
                           {item.quantidade} ×{' '}
                           {formatarComprimento(item.comprimento_mm)} ·{' '}
                           {estoque.pecas} pç /{' '}
@@ -1138,8 +1142,12 @@ export default function ProdutoDetalhe() {
                               com os metros de estoque faria ler as duas
                               coisas como uma. */}
                           <span className="mt-1 flex items-center gap-2">
-                            <span className={`whitespace-nowrap rounded-full px-2 py-0.5 font-mono text-xs font-bold ${sentidoValido(item.sentido) === 'v' ? 'bg-amber-100 text-amber-700' : 'bg-purple-100 text-purple-700'}`}>
-                              {sentidoValido(item.sentido) === 'v' ? 'V |' : 'H —'}
+                            <span
+                              className={`rounded-full px-2 py-0.5 font-mono text-xs font-bold whitespace-nowrap ${sentidoValido(item.sentido) === 'v' ? 'bg-amber-100 text-amber-700' : 'bg-purple-100 text-purple-700'}`}
+                            >
+                              {sentidoValido(item.sentido) === 'v'
+                                ? 'V |'
+                                : 'H —'}
                             </span>
                             <span className="text-xs">
                               {descreverCortes(
@@ -1221,6 +1229,12 @@ export default function ProdutoDetalhe() {
           empresa={APLICACAO.nome}
         />
       )}
+
+      {/* Só a organização central negocia isto. Fora daqui, produto novo
+          começa SEM liberação: receita pronta é o que o central negocia com
+          cada cliente, e liberar sozinho ao cadastrar entregaria de graça o
+          trabalho que justifica o catálogo existir. */}
+      {souCentral && podeEditar && <LiberacaoProduto produtoId={produto.id} />}
 
       <FichaDados
         titulo="Cadastro"
@@ -1391,11 +1405,17 @@ export default function ProdutoDetalhe() {
                           </span>
                           {c.sentido && c.corte_inicio && c.corte_fim && (
                             <span className="flex items-center gap-1">
-                              <span className={`whitespace-nowrap rounded-full px-2 py-0.5 font-mono text-xs font-bold ${c.sentido === 'v' ? 'bg-amber-100 text-amber-700' : 'bg-purple-100 text-purple-700'}`}>
+                              <span
+                                className={`rounded-full px-2 py-0.5 font-mono text-xs font-bold whitespace-nowrap ${c.sentido === 'v' ? 'bg-amber-100 text-amber-700' : 'bg-purple-100 text-purple-700'}`}
+                              >
                                 {c.sentido === 'v' ? 'V |' : 'H —'}
                               </span>
                               <span className="text-xs">
-                                {descreverCortes(c.sentido, c.corte_inicio, c.corte_fim)}
+                                {descreverCortes(
+                                  c.sentido,
+                                  c.corte_inicio,
+                                  c.corte_fim,
+                                )}
                               </span>
                             </span>
                           )}
@@ -1465,12 +1485,14 @@ export default function ProdutoDetalhe() {
               onChange={(e) =>
                 setForm({ ...form, comprimento_mm: e.target.value })
               }
-              className="min-h-11 h-11 text-lg"
+              className="h-11 min-h-11 text-lg"
               rotuloClassName="text-sm whitespace-nowrap tracking-tight"
               required
             />
             <div className="flex flex-col gap-1.5">
-              <span className="font-medium text-sm whitespace-nowrap tracking-tight">Quantidade</span>
+              <span className="text-sm font-medium tracking-tight whitespace-nowrap">
+                Quantidade
+              </span>
               <CampoQuantidade
                 valor={Number(form.quantidade) || 1}
                 aoMudar={(v) => setForm({ ...form, quantidade: String(v) })}

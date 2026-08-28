@@ -382,3 +382,199 @@ export function useReordenarLista() {
     },
   })
 }
+
+/* ── Liberação de produto do catálogo central ────────────────────────────
+ *
+ * O mesmo controle que já existe para LINHA de perfil, agora para produto,
+ * e visto de dois ângulos que leem a mesma tabela: por produto ("quem vê
+ * este?"), dentro da ficha, e por empresa ("que produtos esta vê?"), na
+ * tela de administração. Mexer num precisa aparecer no outro — daí as duas
+ * invalidações em todo `onSuccess` daqui.
+ */
+
+/** Uma empresa e se está liberada para um produto do catálogo. */
+export interface OrganizacaoLiberacaoProduto {
+  organizacao_id: string
+  nome_fantasia: string
+  liberada: boolean
+}
+
+export function useOrganizacoesParaLiberacaoProduto(produtoId: string | null) {
+  return useQuery({
+    queryKey: ['organizacoes-liberacao-produto', produtoId],
+    enabled: produtoId !== null,
+    queryFn: async (): Promise<OrganizacaoLiberacaoProduto[]> => {
+      const { data, error } = await supabase.rpc(
+        'organizacoes_para_liberacao_produto',
+        { p_produto_id: produtoId },
+      )
+
+      if (error) throw new Error(error.message)
+
+      return data as OrganizacaoLiberacaoProduto[]
+    },
+  })
+}
+
+export function useDefinirLiberacaoProduto() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      produtoId,
+      organizacaoId,
+      liberada,
+    }: {
+      produtoId: string
+      organizacaoId: string
+      liberada: boolean
+    }) => {
+      const { error } = await supabase.rpc('definir_liberacao_produto', {
+        p_produto_id: produtoId,
+        p_organizacao_id: organizacaoId,
+        p_liberada: liberada,
+      })
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_dados, variaveis) => {
+      void cliente.invalidateQueries({
+        queryKey: ['organizacoes-liberacao-produto', variaveis.produtoId],
+      })
+      void cliente.invalidateQueries({ queryKey: ['produtos-organizacao'] })
+    },
+  })
+}
+
+export function useDefinirLiberacaoProdutoTodas() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      produtoId,
+      liberada,
+    }: {
+      produtoId: string
+      liberada: boolean
+    }) => {
+      const { error } = await supabase.rpc('definir_liberacao_produto_todas', {
+        p_produto_id: produtoId,
+        p_liberada: liberada,
+      })
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_dados, variaveis) => {
+      void cliente.invalidateQueries({
+        queryKey: ['organizacoes-liberacao-produto', variaveis.produtoId],
+      })
+      void cliente.invalidateQueries({ queryKey: ['produtos-organizacao'] })
+    },
+  })
+}
+
+/** Um produto do central e se a empresa escolhida pode importá-lo. */
+export interface ProdutoParaOrganizacao {
+  produto_id: string
+  codigo: string
+  nome: string
+  liberada: boolean
+}
+
+export function useProdutosParaOrganizacao(organizacaoId: string | null) {
+  return useQuery({
+    queryKey: ['produtos-organizacao', organizacaoId],
+    enabled: organizacaoId !== null,
+    queryFn: async (): Promise<ProdutoParaOrganizacao[]> => {
+      const { data, error } = await supabase.rpc('produtos_para_organizacao', {
+        p_organizacao_id: organizacaoId,
+      })
+
+      if (error) throw new Error(error.message)
+
+      return data as ProdutoParaOrganizacao[]
+    },
+  })
+}
+
+export function useDefinirLiberacaoTodosProdutosOrganizacao() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      organizacaoId,
+      liberada,
+    }: {
+      organizacaoId: string
+      liberada: boolean
+    }) => {
+      const { error } = await supabase.rpc(
+        'definir_liberacao_todos_produtos_organizacao',
+        { p_organizacao_id: organizacaoId, p_liberada: liberada },
+      )
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: ['produtos-organizacao'] })
+      void cliente.invalidateQueries({
+        queryKey: ['organizacoes-liberacao-produto'],
+      })
+    },
+  })
+}
+
+/**
+ * Importa do catálogo central os produtos liberados para esta empresa.
+ *
+ * `itens_sem_perfil` conta os cortes que ficaram de fora por a empresa ainda
+ * não ter importado o perfil correspondente — ver o comentário longo na
+ * função do banco. É informação para a tela mostrar, não erro: o produto
+ * chega, mas com a receita incompleta, e a pessoa precisa saber disso antes
+ * de mandar cortar.
+ */
+export interface ResultadoSincronizarProdutos {
+  produtos_novos: number
+  produtos_atualizados: number
+  /**
+   * Produtos que já existiam aqui com o mesmo código, sem vínculo, e foram
+   * ADOTADOS como cópia local — ver o comentário longo na migração
+   * `20260829000000`. Contados à parte porque a receita deles foi
+   * substituída pela do central, e trocar receita em silêncio seria pior do
+   * que o erro que isso corrigiu.
+   */
+  produtos_vinculados: number
+  /** Código repetido apontando para outro produto do central. Ficam de fora. */
+  produtos_em_conflito: number
+  itens_sem_perfil: number
+}
+
+export function useSincronizarProdutos() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (): Promise<ResultadoSincronizarProdutos> => {
+      const { data, error } = await supabase.rpc('sincronizar_produtos_central')
+
+      if (error) throw new Error(error.message)
+
+      const linhas = (data ?? []) as ResultadoSincronizarProdutos[]
+
+      // A função devolve uma linha só; sem ela, zerar é mais honesto do que
+      // deixar a tela dizer "undefined produtos".
+      return (
+        linhas[0] ?? {
+          produtos_novos: 0,
+          produtos_atualizados: 0,
+          produtos_vinculados: 0,
+          produtos_em_conflito: 0,
+          itens_sem_perfil: 0,
+        }
+      )
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.produtos })
+      void cliente.invalidateQueries({ queryKey: chaves.listaTecnica })
+    },
+  })
+}

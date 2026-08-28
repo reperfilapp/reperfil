@@ -64,6 +64,119 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.55 — 28/08/2026
+
+**Produto do catálogo central agora chega às outras empresas.**
+
+Produto nunca teve caminho nenhum entre organizações. A política de leitura
+filtra por empresa e ponto: um produto cadastrado no catálogo central
+simplesmente não existia para as demais, e não havia tela, função ou coluna
+para mudar isso. Não era um bloqueio ligado — era a ausência do mecanismo.
+
+Agora existe o mesmo controle que a LINHA de perfil já tinha, visto dos dois
+ângulos que leem a mesma tabela:
+
+- **"Liberado para"**, dentro da ficha do produto — quem vê ESTE produto.
+- **"Administrar produtos por empresa"**, botão na lista de produtos — que
+  produtos ESTA empresa vê, com atalho para liberar ou bloquear todos.
+
+Nas duas telas, mexer num lugar aparece no outro sozinho. A lista de empresas
+é a mesma função da tela de linhas: ela devolve "as organizações que não são
+a central", que não tem nada de específico de linha, e duplicá-la só para
+trocar o nome deixaria duas versões da mesma pergunta para divergirem depois.
+
+**A empresa importa com "Importar do catálogo central"**, na mesma lista de
+produtos — o botão aparece no lugar do de administração para quem não é a
+central. Nenhuma organização vê os dois.
+
+**Por que importar, e não só enxergar.** Seria mais simples abrir uma leitura
+cruzada e deixar a empresa ver o produto do central. Mas a lista técnica
+aponta para o perfil, e o perfil de cada empresa é uma CÓPIA do central, com
+id próprio. Um produto lido direto de lá traria uma receita apontando para
+perfis de outra organização — a tela de viabilidade procuraria esses perfis
+no estoque local e não acharia nada, para sempre. Então o produto é copiado,
+como o perfil já é, e a receita é remapeada pelo vínculo que a cópia local do
+perfil guarda com a original.
+
+**Corte cujo perfil a empresa ainda não importou fica de fora, e é contado.**
+A tela avisa quantos foram e o que fazer (importar as linhas de perfil e
+repetir). Trazer o corte apontando para o perfil do central seria pior do que
+não trazer: a viabilidade diria "falta material" para sempre, sem nada na
+tela explicando por quê. O produto chega com a receita incompleta, e quem vai
+mandar cortar precisa saber disso antes.
+
+A receita é reescrita a cada importação, não mesclada — mesclar deixaria
+itens de uma versão anterior convivendo com os novos, e lista técnica com
+corte a mais é peça a mais na serra.
+
+**Os produtos que o central já tinha ficam liberados** para as empresas que
+já existem: é o estado que se esperava encontrar, e a razão desta migração.
+Produto novo, dali em diante, nasce bloqueado — mesma regra da linha. Receita
+pronta é o que o catálogo central negocia com cada cliente, e liberar sozinho
+ao cadastrar entregaria de graça o trabalho que justifica ele existir.
+
+**Correção do primeiro teste:** importar na Alumifort quebrava com
+`duplicate key value violates unique constraint codigo_unico_por_organizacao`.
+É o mesmo caso já visto nos perfis — o catálogo central nasceu de uma cópia
+feita a partir da Alumifort, então o vínculo de origem ficou marcado só do
+lado de quem recebeu a cópia, e os produtos originais dela continuaram sem
+apontar para ninguém. A importação via como novo um produto que a empresa já
+tinha, tentava inserir com o mesmo código, e o índice único derrubava a
+função inteira — uma exceção não tratada desfaz a transação toda, então nem
+os produtos seguintes entravam.
+
+Nos perfis a saída tinha sido PULAR o código repetido. Aqui o produto
+repetido é **adotado**: ganha o vínculo e passa a ser a cópia local daquele
+produto do central. Pular deixaria a empresa para sempre sem receber
+atualização de um produto que ela tem — que é exatamente a queixa que
+originou esta funcionalidade.
+
+Adotar reescreve a lista técnica local pela do central, como toda
+reimportação faz. Por isso os adotados são **contados à parte e anunciados**:
+quem montou a receita à mão precisa saber que ela mudou. Produto local que já
+aponta para OUTRO produto do central não é adotado — aí o código repetido é
+coincidência de verdade, e escolher sozinho qual vence seria pior do que
+deixar de fora, então ele é relatado para a pessoa renomear o código.
+
+Migrações `20260828900000_liberacao_produto_por_empresa.sql` e
+`20260829000000_importar_produto_sem_duplicar.sql`.
+
+**Cinco desenhos técnicos que sumiram na Alumifort — e os dois defeitos que
+os esconderam.**
+
+O sintoma: cinco perfis da lista técnica apareciam sem desenho na Alumifort,
+enquanto no catálogo central estavam todos lá.
+
+A causa dos dados: a sincronização copia o REGISTRO da imagem com o caminho
+original — o arquivo continua na pasta do central, e as políticas de leitura
+deixam as outras empresas lerem de lá. Isso funciona enquanto o arquivo
+existe. Ao apagar perfis no central depois da cópia, os arquivos foram junto,
+e seis registros na Alumifort ficaram apontando para o vazio.
+
+Mas o dado morto sozinho não explicava tudo, porque quatro daqueles perfis
+tinham um segundo desenho, bom. **A capa usava o primeiro arquivo da fila e
+parava ali** — com o primeiro morto, o perfil aparecia sem imagem nenhuma
+mesmo havendo outra logo atrás. Agora a busca cai para o próximo arquivo
+quando o primeiro não resolve, numa rodada extra que só acontece enquanto
+sobrar perfil sem capa: quando não há arquivo morto, nada muda.
+
+**E o motivo de isso ter passado despercebido:** `createSignedUrls` falha por
+item — o lote volta com sucesso mesmo que alguns caminhos não existam, e
+esses vinham com link nulo. O código descartava em silêncio. Miniatura vazia,
+nenhum erro em lugar nenhum. Agora o console diz quais arquivos falharam e
+por quê; continua sem quebrar a tela, mas para de esconder o problema de quem
+for procurar.
+
+Para os registros mortos que já existiam, há um script à parte
+(`supabase/limpar-registros-de-arquivo-inexistente.sql`): ele mostra o que
+vai apagar antes de apagar, e avisa quais perfis ficariam sem imagem nenhuma
+— para esses, a saída seria reenviar o desenho.
+
+**Já executado em 28/08/2026**, e nenhum perfil ficou sem imagem: todos os
+seis registros mortos tinham outro desenho bom por trás. A conferência
+posterior devolveu zero registros apontando para arquivo inexistente, nas
+duas organizações.
+
 ## 1.7.54 — 28/08/2026
 
 **A lista técnica passou a dizer COMO cortar, não só quanto.**

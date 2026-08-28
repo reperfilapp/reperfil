@@ -12,7 +12,6 @@ import RecuperarSenha from '@/paginas/RecuperarSenha'
 import DefinirSenha from '@/paginas/DefinirSenha'
 import PrimeiroAcesso from '@/paginas/PrimeiroAcesso'
 import CriarEmpresa from '@/paginas/CriarEmpresa'
-import PreviaCortes from '@/paginas/PreviaCortes'
 import ConfirmarEmail from '@/paginas/ConfirmarEmail'
 import CompletarCadastro from '@/paginas/CompletarCadastro'
 import Inicio from '@/paginas/Inicio'
@@ -26,6 +25,7 @@ import Relatorios from '@/paginas/Relatorios'
 import ModelosPerfil from '@/paginas/cadastros/ModelosPerfil'
 import Linhas from '@/paginas/cadastros/Linhas'
 import AdministrarLinhasEmpresas from '@/paginas/cadastros/AdministrarLinhasEmpresas'
+import AdministrarProdutosEmpresas from '@/paginas/cadastros/AdministrarProdutosEmpresas'
 import AdministrarEmpresas from '@/paginas/cadastros/AdministrarEmpresas'
 import IdentificarPerfil from '@/paginas/IdentificarPerfil'
 import PerfilDetalhe from '@/paginas/PerfilDetalhe'
@@ -79,8 +79,6 @@ export default function App() {
               {/* Públicas de propósito — precisam abrir sem sessão, tanto
                   para quem revisa a ficha na Play Store quanto para quem
                   ainda não é cliente e quer ler antes de pedir acesso. */}
-              {/* TEMPORÁRIO — conferência de leiaute, apagar depois */}
-              <Route path="/previa-cortes" element={<PreviaCortes />} />
               <Route path="/sobre" element={<Sobre />} />
               <Route path="/termos-de-uso" element={<TermosDeUso />} />
               <Route
@@ -125,6 +123,10 @@ export default function App() {
                 <Route
                   path="/linhas/empresas"
                   element={<AdministrarLinhasEmpresas />}
+                />
+                <Route
+                  path="/produtos/empresas"
+                  element={<AdministrarProdutosEmpresas />}
                 />
                 <Route path="/identificar" element={<IdentificarPerfil />} />
                 <Route path="/acabamentos" element={<Acabamentos />} />

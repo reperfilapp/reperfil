@@ -1,6 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Plus, Pencil, Archive, ArchiveRestore, Trash2 } from 'lucide-react'
+import {
+  Plus,
+  Pencil,
+  Archive,
+  ArchiveRestore,
+  Trash2,
+  Building2,
+  DownloadCloud,
+} from 'lucide-react'
 import {
   useProdutos,
   useCapasProdutos,
@@ -8,8 +16,10 @@ import {
   useEditarProduto,
   useDesativarProduto,
   useExcluirProduto,
+  useSincronizarProdutos,
   type DadosProduto,
 } from '@/dados/produtos'
+import { useOrganizacao } from '@/dados/organizacao'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeGerenciarCadastros } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
@@ -56,6 +66,66 @@ export default function Produtos() {
   const [ampliado, setAmpliado] = useState<Produto | null>(null)
   const [apagando, setApagando] = useState<Produto | null>(null)
   const [erroApagar, setErroApagar] = useState<string | null>(null)
+
+  /*
+   * As duas pontas do catálogo central aparecem AQUI, e não em telas
+   * separadas: quem administra o central libera produto; quem é empresa
+   * importa. São papéis diferentes na mesma lista, e nenhuma organização vê
+   * os dois botões.
+   */
+  const { data: organizacao } = useOrganizacao()
+  const souCentral = Boolean(organizacao?.eh_catalogo_central)
+  const sincronizar = useSincronizarProdutos()
+  const [resultadoImportar, setResultadoImportar] = useState<string | null>(
+    null,
+  )
+
+  async function importarDoCentral() {
+    setResultadoImportar(null)
+
+    try {
+      const r = await sincronizar.mutateAsync()
+
+      const partes = [
+        `${r.produtos_novos} ${r.produtos_novos === 1 ? 'produto novo' : 'produtos novos'}`,
+        `${r.produtos_atualizados} ${r.produtos_atualizados === 1 ? 'atualizado' : 'atualizados'}`,
+      ]
+
+      /*
+       * Adoção anunciada, nunca silenciosa: um produto que já existia aqui
+       * teve a RECEITA substituída pela do central. Quem montou a receita à
+       * mão precisa saber que ela mudou.
+       */
+      if (r.produtos_vinculados > 0) {
+        partes.push(
+          `${r.produtos_vinculados} que já existia${r.produtos_vinculados === 1 ? '' : 'm'} aqui ${r.produtos_vinculados === 1 ? 'foi vinculado' : 'foram vinculados'} ao central, com a lista técnica substituída`,
+        )
+      }
+
+      if (r.produtos_em_conflito > 0) {
+        partes.push(
+          `${r.produtos_em_conflito} ${r.produtos_em_conflito === 1 ? 'ficou de fora' : 'ficaram de fora'} por código repetido — renomeie o código aqui e repita`,
+        )
+      }
+
+      /*
+       * O aviso dos cortes sem perfil não é enfeite: o produto chega com a
+       * receita INCOMPLETA, e quem mandar cortar sem saber disso perde
+       * material. A saída é importar antes a linha de perfis que falta.
+       */
+      if (r.itens_sem_perfil > 0) {
+        partes.push(
+          `${r.itens_sem_perfil} ${r.itens_sem_perfil === 1 ? 'corte ficou de fora' : 'cortes ficaram de fora'} por falta do perfil correspondente — importe as linhas de perfil e repita`,
+        )
+      }
+
+      setResultadoImportar(partes.join(' · '))
+    } catch (e) {
+      setResultadoImportar(
+        e instanceof Error ? e.message : 'Não foi possível importar.',
+      )
+    }
+  }
 
   function abrirNovo() {
     setEditando(null)
@@ -132,6 +202,40 @@ export default function Produtos() {
               </Botao>
             )}
           </header>
+
+          {podeEditar && (
+            <div className="mb-4">
+              {souCentral ? (
+                <Botao
+                  variante="secundaria"
+                  onClick={() => navegar('/produtos/empresas')}
+                  className="w-full"
+                >
+                  <Building2 aria-hidden="true" className="size-5" />
+                  Administrar produtos por empresa
+                </Botao>
+              ) : (
+                <Botao
+                  variante="secundaria"
+                  onClick={() => void importarDoCentral()}
+                  carregando={sincronizar.isPending}
+                  className="w-full"
+                >
+                  <DownloadCloud aria-hidden="true" className="size-5" />
+                  Importar do catálogo central
+                </Botao>
+              )}
+
+              {resultadoImportar && (
+                <p
+                  role="status"
+                  className="bg-superficie-2 mt-2 rounded-xl px-4 py-3 text-sm"
+                >
+                  {resultadoImportar}
+                </p>
+              )}
+            </div>
+          )}
 
           {isPending && <p className="text-texto-suave">Carregando…</p>}
         </>

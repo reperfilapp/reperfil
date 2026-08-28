@@ -240,10 +240,33 @@ export async function obterLinksTemporarios(
     return mapa
   }
 
+  /*
+   * `createSignedUrls` falha POR ITEM: o lote volta com sucesso mesmo que
+   * alguns caminhos não existam ou não sejam legíveis, e esses vêm com
+   * `signedUrl` nulo e um `error` próprio.
+   *
+   * Antes eles eram descartados em silêncio, e o resultado era uma
+   * miniatura vazia sem nada em lugar nenhum dizendo por quê — foi
+   * exatamente assim que cinco desenhos sumiram na Alumifort sem deixar
+   * rastro. Agora o console diz qual arquivo falhou e por quê: continua
+   * sem quebrar a tela, mas para de esconder o problema de quem for
+   * procurar.
+   */
+  const falhas: string[] = []
+
   for (const item of data) {
     if (item.signedUrl && item.path) {
       mapa.set(item.path, item.signedUrl)
+    } else if (item.path) {
+      falhas.push(`${item.path}${item.error ? ` (${item.error})` : ''}`)
     }
+  }
+
+  if (falhas.length > 0) {
+    console.error(
+      `Sem link para ${falhas.length} de ${caminhos.length} imagens em "${balde}":`,
+      falhas,
+    )
   }
 
   return mapa
