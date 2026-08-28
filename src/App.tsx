@@ -12,6 +12,7 @@ import RecuperarSenha from '@/paginas/RecuperarSenha'
 import DefinirSenha from '@/paginas/DefinirSenha'
 import PrimeiroAcesso from '@/paginas/PrimeiroAcesso'
 import CriarEmpresa from '@/paginas/CriarEmpresa'
+import PreviaCortes from '@/paginas/PreviaCortes'
 import ConfirmarEmail from '@/paginas/ConfirmarEmail'
 import CompletarCadastro from '@/paginas/CompletarCadastro'
 import Inicio from '@/paginas/Inicio'
@@ -78,6 +79,8 @@ export default function App() {
               {/* Públicas de propósito — precisam abrir sem sessão, tanto
                   para quem revisa a ficha na Play Store quanto para quem
                   ainda não é cliente e quer ler antes de pedir acesso. */}
+              {/* TEMPORÁRIO — conferência de leiaute, apagar depois */}
+              <Route path="/previa-cortes" element={<PreviaCortes />} />
               <Route path="/sobre" element={<Sobre />} />
               <Route path="/termos-de-uso" element={<TermosDeUso />} />
               <Route

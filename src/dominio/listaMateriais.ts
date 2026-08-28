@@ -6,6 +6,7 @@ import {
   type PecaEmUso,
   type SobraDisponivel,
 } from './producao'
+import type { SentidoMontagem, TipoCorte } from './corteMontagem'
 
 /**
  * Quanto material comprar para produzir N unidades de um produto.
@@ -38,8 +39,26 @@ import {
 /** Como a lista trata o que já está no depósito. */
 export type ModoCompra = 'tudo_novo' | 'aproveitar_sobras'
 
+/**
+ * A lista técnica com a instrução de corte junto.
+ *
+ * O cálculo de quantas barras comprar ignora sentido e esquadria — para o
+ * empacotamento só o comprimento conta. Eles viajam junto porque a FOLHA
+ * precisa deles: quem recebe a lista de materiais também serra por ela, e
+ * uma lista que diz o comprimento mas não a esquadria manda a bancada
+ * perguntar.
+ */
+export interface ItemParaMateriais extends ItemNecessario {
+  sentido?: SentidoMontagem
+  corte_inicio?: TipoCorte
+  corte_fim?: TipoCorte
+}
+
 export interface CorteNecessario {
   comprimento_mm: number
+  sentido?: SentidoMontagem
+  corte_inicio?: TipoCorte
+  corte_fim?: TipoCorte
   /** Cortes pedidos, já multiplicados pela quantidade a produzir. */
   quantidade: number
   /** Quantos saem de sobra do depósito. Sempre 0 no modo `tudo_novo`. */
@@ -170,7 +189,7 @@ function empacotarEmBarras(
 
 export function calcularListaMateriais(
   /** A lista técnica de UMA unidade. A multiplicação acontece aqui dentro. */
-  lista: readonly ItemNecessario[],
+  lista: readonly ItemParaMateriais[],
   unidades: number,
   sobras: readonly SobraDisponivel[],
   /** Comprimento da barra de catálogo, por id de perfil. */
@@ -242,6 +261,9 @@ export function calcularListaMateriais(
 
       return {
         comprimento_mm: item.comprimento_mm,
+        ...(item.sentido ? { sentido: item.sentido } : {}),
+        ...(item.corte_inicio ? { corte_inicio: item.corte_inicio } : {}),
+        ...(item.corte_fim ? { corte_fim: item.corte_fim } : {}),
         quantidade: item.quantidade,
         deSobra,
         deBarraNova: item.quantidade - deSobra,

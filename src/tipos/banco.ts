@@ -420,6 +420,17 @@ export interface ItemListaTecnica {
    * aplicada ainda; nesse caso o banco não devolve a coluna.
    */
   ordem?: number | null
+  /**
+   * Como a peça fica montada e como cada ponta é serrada.
+   *
+   * Opcionais pelo mesmo motivo de `ordem`: a migração que os criou pode não
+   * ter sido aplicada ainda, e nesse caso o banco não devolve as colunas. O
+   * domínio (`corteMontagem`) resolve o ausente para o corte reto, que é o
+   * que um comprimento sozinho sempre quis dizer.
+   */
+  sentido?: string | null
+  corte_inicio?: string | null
+  corte_fim?: string | null
   observacao: string | null
   criado_em: string
 }

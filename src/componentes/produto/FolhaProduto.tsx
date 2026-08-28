@@ -1,5 +1,11 @@
 import { formatarMedidaProduto } from '@/dominio/produto'
 import { formatarComprimento } from '@/dominio/medidas'
+import {
+  corteValido,
+  descreverCortes,
+  sentidoValido,
+} from '@/dominio/corteMontagem'
+import { DesenhoPerfil } from './DesenhoCorte'
 import type { ItemListaTecnica, ModeloPerfil, Produto } from '@/tipos/banco'
 
 /**
@@ -211,6 +217,10 @@ export function FolhaProduto({
                       <th className="py-1">Perfil</th>
                       <th className="w-20 py-1 text-right">Qtd.</th>
                       <th className="w-28 py-1 text-right">Comprimento</th>
+                      {/* O corte é a última coluna, depois da medida: na
+                          bancada lê-se "duas peças de 1.455, meia-esquadria
+                          nas duas pontas" — nessa ordem. */}
+                      <th className="w-32 py-1">Corte</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -263,6 +273,37 @@ export function FolhaProduto({
                           </td>
                           <td className="py-2 text-right align-middle tabular-nums">
                             {formatarComprimento(item.comprimento_mm)}
+                          </td>
+                          <td className="py-2 align-middle">
+                            {/* Desenho E texto: o desenho resolve de relance
+                                para quem já monta esquadria, e o texto
+                                resolve para quem está aprendendo — numa
+                                folha impressa não há como tocar para ver a
+                                dica. */}
+                            {/* A peça inteira, com as duas pontas: é assim
+                                que ela chega à serra, e comparar as
+                                esquadrias de um lado e do outro é o que se
+                                faz antes de cortar. */}
+                            <span className="block w-28">
+                              <DesenhoPerfil
+                                sentido={sentidoValido(item.sentido)}
+                                corteInicio={corteValido(item.corte_inicio)}
+                                corteFim={corteValido(item.corte_fim)}
+                                impressao
+                                className={
+                                  sentidoValido(item.sentido) === 'h'
+                                    ? 'w-full'
+                                    : 'h-20'
+                                }
+                              />
+                            </span>
+                            <span className="mt-0.5 block text-xs">
+                              {descreverCortes(
+                                sentidoValido(item.sentido),
+                                corteValido(item.corte_inicio),
+                                corteValido(item.corte_fim),
+                              )}
+                            </span>
                           </td>
                         </tr>
                       )

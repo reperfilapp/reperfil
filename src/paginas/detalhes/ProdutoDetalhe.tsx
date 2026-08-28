@@ -53,6 +53,17 @@ import {
   type ListaMateriais,
   type ModoCompra,
 } from '@/dominio/listaMateriais'
+import {
+  CORTE_PADRAO,
+  SENTIDO_PADRAO,
+  corteValido,
+  descreverCortes,
+  sentidoValido,
+  type SentidoMontagem,
+  type TipoCorte,
+} from '@/dominio/corteMontagem'
+import { SeletorCortes } from '@/componentes/produto/SeletorCortes'
+import { DesenhoPerfil } from '@/componentes/produto/DesenhoCorte'
 import { formatarMedidaProduto, nomeDoArquivo } from '@/dominio/produto'
 import {
   formatarComprimento,
@@ -117,6 +128,9 @@ export default function ProdutoDetalhe() {
     modelo_perfil_id: '',
     comprimento_mm: '',
     quantidade: '1',
+    sentido: SENTIDO_PADRAO as SentidoMontagem,
+    corte_inicio: CORTE_PADRAO as TipoCorte,
+    corte_fim: CORTE_PADRAO as TipoCorte,
   })
   const [erro, setErro] = useState<string | null>(null)
   const [ampliado, setAmpliado] = useState<string | null>(null)
@@ -445,6 +459,9 @@ export default function ProdutoDetalhe() {
           modelo_perfil_id: form.modelo_perfil_id,
           comprimento_mm: comprimento,
           quantidade,
+          sentido: form.sentido,
+          corte_inicio: form.corte_inicio,
+          corte_fim: form.corte_fim,
           observacao: itemEditando.observacao,
         },
       })
@@ -464,6 +481,11 @@ export default function ProdutoDetalhe() {
       modelo_perfil_id: item.modelo_perfil_id,
       comprimento_mm: String(item.comprimento_mm),
       quantidade: String(item.quantidade),
+      // Pelo domínio: linha cadastrada antes das colunas existirem chega
+      // nula, e o formulário precisa abrir com algo coerente.
+      sentido: sentidoValido(item.sentido),
+      corte_inicio: corteValido(item.corte_inicio),
+      corte_fim: corteValido(item.corte_fim),
     })
     setErro(null)
     setAberto(true)
@@ -473,7 +495,14 @@ export default function ProdutoDetalhe() {
     setAberto(false)
     setItemEditando(null)
     setTextoPerfil('')
-    setForm({ modelo_perfil_id: '', comprimento_mm: '', quantidade: '1' })
+    setForm({
+      modelo_perfil_id: '',
+      comprimento_mm: '',
+      quantidade: '1',
+      sentido: SENTIDO_PADRAO,
+      corte_inicio: CORTE_PADRAO,
+      corte_fim: CORTE_PADRAO,
+    })
     setErro(null)
   }
 
@@ -516,6 +545,15 @@ export default function ProdutoDetalhe() {
     modelo_perfil_id: item.modelo_perfil_id,
     comprimento_mm: item.comprimento_mm,
     quantidade: item.quantidade,
+    /*
+     * O corte não entra na conta de quantas barras cabem — para o
+     * empacotamento só o comprimento importa. Viaja junto porque a folha da
+     * lista de materiais também é lida na serra, e comprimento sem
+     * esquadria manda a bancada perguntar.
+     */
+    sentido: sentidoValido(item.sentido),
+    corte_inicio: corteValido(item.corte_inicio),
+    corte_fim: corteValido(item.corte_fim),
   }))
 
   /*
@@ -1068,7 +1106,7 @@ export default function ProdutoDetalhe() {
 
                       {/* Linha inferior: medidas/estoque + botões */}
                       <div className="flex items-center justify-between gap-2 px-2 pt-1 pb-2">
-                        <span className="text-texto-suave pl-1 text-[15px] tabular-nums">
+                        <span className="text-texto-suave min-w-0 pl-1 text-[15px] tabular-nums">
                           {item.quantidade} ×{' '}
                           {formatarComprimento(item.comprimento_mm)} ·{' '}
                           {estoque.pecas} pç /{' '}
@@ -1076,6 +1114,31 @@ export default function ProdutoDetalhe() {
                             .toFixed(1)
                             .replace('.', ',')}{' '}
                           m
+                          {/* O corte em linha própria, com os desenhos: é
+                              instrução de bancada, não medida — misturá-lo
+                              com os metros de estoque faria ler as duas
+                              coisas como uma. */}
+                          <span className="mt-1 flex items-center gap-2">
+                            <span className="block w-20 shrink-0">
+                              <DesenhoPerfil
+                                sentido={sentidoValido(item.sentido)}
+                                corteInicio={corteValido(item.corte_inicio)}
+                                corteFim={corteValido(item.corte_fim)}
+                                className={
+                                  sentidoValido(item.sentido) === 'h'
+                                    ? 'w-full'
+                                    : 'h-12'
+                                }
+                              />
+                            </span>
+                            <span className="text-xs">
+                              {descreverCortes(
+                                sentidoValido(item.sentido),
+                                corteValido(item.corte_inicio),
+                                corteValido(item.corte_fim),
+                              )}
+                            </span>
+                          </span>
                         </span>
 
                         {podeEditar && (
@@ -1313,14 +1376,31 @@ export default function ProdutoDetalhe() {
                         </span>
                       </div>
 
-                      <span className="text-texto-suave text-sm tabular-nums">
-                        {linha.cortes
-                          .map(
-                            (c) =>
-                              `${c.quantidade} × ${formatarComprimento(c.comprimento_mm)}`,
-                          )
-                          .join(' · ')}
-                      </span>
+                      {/* Um corte por linha, com o desenho: agrupar tudo
+                          numa frase escondia que dois cortes do mesmo
+                          comprimento podem ter esquadrias diferentes — e é
+                          justamente aí que a bancada erra. */}
+                      {linha.cortes.map((c, i) => (
+                        <span
+                          key={i}
+                          className="text-texto-suave flex items-center gap-1 text-sm tabular-nums"
+                        >
+                          {c.quantidade} ×{' '}
+                          {formatarComprimento(c.comprimento_mm)}
+                          {c.sentido && c.corte_inicio && c.corte_fim && (
+                            <span className="block w-16 shrink-0">
+                              <DesenhoPerfil
+                                sentido={c.sentido}
+                                corteInicio={c.corte_inicio}
+                                corteFim={c.corte_fim}
+                                className={
+                                  c.sentido === 'h' ? 'w-full' : 'h-10'
+                                }
+                              />
+                            </span>
+                          )}
+                        </span>
+                      ))}
 
                       {deSobra > 0 && (
                         <span className="text-ok-texto text-sm">
@@ -1396,6 +1476,19 @@ export default function ProdutoDetalhe() {
               required
             />
           </div>
+
+          {/* O mesmo seletor da tela de acrescentar: corrigir um corte
+              lançado errado é tão comum quanto errar a medida, e obrigar a
+              apagar a linha e refazer só por causa da esquadria seria o
+              motivo mais bobo para perder a posição numa lista longa. */}
+          <SeletorCortes
+            sentido={form.sentido}
+            corteInicio={form.corte_inicio}
+            corteFim={form.corte_fim}
+            aoMudarSentido={(sentido) => setForm({ ...form, sentido })}
+            aoMudarInicio={(corte) => setForm({ ...form, corte_inicio: corte })}
+            aoMudarFim={(corte) => setForm({ ...form, corte_fim: corte })}
+          />
 
           {erro && (
             <p

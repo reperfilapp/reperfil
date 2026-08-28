@@ -1,4 +1,5 @@
 import { formatarComprimento } from '@/dominio/medidas'
+import { descreverCortes } from '@/dominio/corteMontagem'
 import { formatarMedidaProduto } from '@/dominio/produto'
 import type { ListaMateriais } from '@/dominio/listaMateriais'
 import type { ModeloPerfil, Produto } from '@/tipos/banco'
@@ -206,13 +207,27 @@ export function FolhaListaMateriais({
                               pedido precisa ver de onde saiu o número de
                               barras. */}
                           <td className="py-2">
-                            {linha.cortes.map((corte) => (
-                              <span
-                                key={corte.comprimento_mm}
-                                className="block tabular-nums"
-                              >
+                            {/* A chave é o índice porque o mesmo perfil pode
+                                ter duas linhas do MESMO comprimento com
+                                esquadrias diferentes — e nesse caso o
+                                comprimento não identifica a linha. */}
+                            {linha.cortes.map((corte, i) => (
+                              <span key={i} className="block tabular-nums">
                                 {corte.quantidade} ×{' '}
                                 {formatarComprimento(corte.comprimento_mm)}
+                                {corte.sentido &&
+                                  corte.corte_inicio &&
+                                  corte.corte_fim && (
+                                    <span className="ml-1 text-xs">
+                                      (
+                                      {descreverCortes(
+                                        corte.sentido,
+                                        corte.corte_inicio,
+                                        corte.corte_fim,
+                                      )}
+                                      )
+                                    </span>
+                                  )}
                               </span>
                             ))}
                             <span className="mt-1 block text-xs tabular-nums">

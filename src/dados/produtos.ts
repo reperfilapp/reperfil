@@ -6,6 +6,7 @@ import {
   BALDE_IMAGENS_PRODUTO,
 } from '@/lib/armazenamento'
 import type { Produto, ItemListaTecnica } from '@/tipos/banco'
+import type { SentidoMontagem, TipoCorte } from '@/dominio/corteMontagem'
 
 export function useProdutos(incluirInativos = false) {
   return useQuery({
@@ -270,6 +271,12 @@ export interface DadosItemLista {
   modelo_perfil_id: string
   comprimento_mm: number
   quantidade: number
+  /** Deitado (h) ou em pé (v) — ver `dominio/corteMontagem`. */
+  sentido: SentidoMontagem
+  /** Corte da ponta esquerda (deitado) ou de cima (em pé). */
+  corte_inicio: TipoCorte
+  /** Corte da ponta direita (deitado) ou de baixo (em pé). */
+  corte_fim: TipoCorte
   observacao: string | null
 }
 

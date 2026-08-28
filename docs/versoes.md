@@ -64,6 +64,137 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.54 — 28/08/2026
+
+**A lista técnica passou a dizer COMO cortar, não só quanto.**
+
+"1.455 mm do MN-001" nunca foi uma instrução completa. A mesma medida serrada
+em topo ou em meia-esquadria dá duas peças diferentes, e só uma monta — então
+quem serra perguntava ao montador toda vez, e quando o montador não estava,
+chutava. Peça de alumínio cortada espelhada não tem conserto: vira sucata.
+
+Agora cada linha da lista técnica guarda três informações novas:
+
+**Sentido de montagem** — deitado (`h`) ou em pé (`v`). Ele não muda o corte,
+muda o NOME das pontas: um perfil deitado tem ponta esquerda e direita, em pé
+tem de cima e de baixo. "Corta a 45 na esquerda" é incompreensível para quem
+está com um montante em pé na bancada.
+
+**Corte de cada ponta**, separadamente — porque são decisões independentes: o
+caso mais comum de um montante é 45° numa ponta e 90° na outra. São três
+variações: um corte reto (90°) e dois em meia-esquadria (45°), pelo lado de
+onde a serra tira a cunha.
+
+O reto é **um só**: 90° não tem inclinação para variar, e de que lado da peça
+ele acontece já está dito pelo botão da ponta — cada ponta tem o seu. E a
+meia-esquadria tem **duas, e só duas**: numa ponta, um corte a 45° corre para
+um lado ou para o outro. Uma primeira versão desta tela oferecia seis
+variações, com "90° cima/baixo" e "45° invertido"; eram formas diferentes de
+dizer a mesma coisa, e num campo de instrução de corte isso é convite a
+gravar uma e ler a outra.
+
+**Botões que alternam**, como pedido: um toque avança para a próxima variação
+e o desenho muda junto. Mais rápido do que abrir uma lista, procurar e
+escolher — e não tira os olhos do desenho, que é o que se está comparando.
+
+**Os desenhos saem de uma geometria só.** São 12 combinações possíveis —
+3 cortes × 2 pontas × 2 sentidos. Desenhá-las à mão seria 12 lugares para
+errar um traço. Existe UMA definição, da ponta esquerda de um perfil deitado,
+e as outras 11 saem de duas transformações: espelhar no comprimento e trocar
+os eixos. Ajustar a convenção é mudar uma linha.
+
+No selo do ângulo, o número **foge da linha tracejada** e a tracejada é
+**empurrada para a beirada**. Ela nascia na posição real do corte, que no
+perfil deitado cai perto do meio do quadro — encostava no "90°" e riscava os
+algarismos, num selo que existe justamente para conferir o ângulo de relance.
+Agora o meio da linha é fixado a 18% da borda, e a folga fica igual nos dois
+sentidos; era o que já acontecia por acaso no perfil em pé, onde o desenho é
+mais estreito, e por isso só lá tinha ficado bom. O selo não promete ONDE a
+serra corta — para isso existe o desenho ao lado — e sim a inclinação, que a
+linha continua mostrando porque só foi transladada, nunca girada.
+
+**O desenho do perfil ficou maior, com corpo longo e ponta curta.** A zona de
+corte tem agora a mesma medida da espessura, que é o que faz a inclinação
+sair a 45° de verdade em vez de a um ângulo qualquer que só diz "torto"; e
+com a ponta ocupando menos, o desenho volta a parecer uma barra em vez de um
+bloco.
+
+**Cores.** O bloco de posição/corte é o único da tela que grava instrução de
+serra — o resto é medida e quantidade —, então ganhou fundo âmbar para
+separar as duas coisas de relance. Âmbar por ser a única família quente do
+sistema que não significa erro (vermelho) nem disponibilidade (verde), que já
+têm sentido próprio na lista técnica logo abaixo. Dentro dele, o botão de
+sentido é azul, por ser o controle que comanda os outros dois, e os dois
+cartões de corte são brancos com borda âmbar.
+
+**A peça é desenhada UMA vez, com as duas pontas.** Antes eram duas
+miniaturas lado a lado, uma por ponta — o que mostrava duas peças onde existe
+uma. Ninguém corta metade de um montante e vai buscar outro pedaço para a
+outra metade: é comparando as duas pontas da MESMA barra que se percebe se a
+esquadria fecha. O desenho agora é longo e fino, como a barra é; num quadrado,
+com a ponta ocupando um terço, ela parecia um bloco e a inclinação virava
+detalhe.
+
+O botão de posição mostra **V** e **H** em maiúsculas, com o nome por extenso
+embaixo e o **mesmo desenho da peça** — com os cortes já escolhidos, não uma
+barra genérica. Deitado, a peça fica sob a letra; em pé, ao lado dela.
+
+Os rótulos das pontas deixaram de ser abreviados — "Lado esquerdo", "Lado
+cima" — em duas linhas, com a palavra que distingue as duas pontas sempre na
+segunda: comparar "esquerdo" com "direito" é ler uma palavra, e nas linhas
+inteiras seriam quatro.
+
+**O bloco tem altura fixa.** Deitado e em pé têm arranjos diferentes por
+dentro — a peça em cima ou à esquerda —, e deixar cada um pedir a própria
+altura fazia o bloco pular de tamanho a cada toque no botão de posição,
+empurrando o resto do formulário debaixo do dedo. A largura do botão de
+posição é fixa pelo mesmo motivo.
+
+Dentro de cada arranjo, a posição do controle repete a posição da ponta na
+peça: deitada, a peça em cima e as pontas embaixo, esquerda à esquerda e
+direita à direita; em pé, a peça à esquerda e as pontas empilhadas, cima em
+cima. É isso que dispensa decorar qual botão é qual.
+
+**Correção de um defeito antigo no tema claro:** `--cor-aviso-borda` apontava
+para `--color-atencao-300`, que nunca foi definido. Variável CSS inexistente
+não é erro — a declaração inteira é descartada e a borda cai em
+`currentColor`, o texto escuro. Por isso todo `border-aviso-borda` no tema
+claro aparecia com moldura quase preta, do quadro "não dá" do veredito aos
+cartões de corte. No tema escuro o defeito não existia, porque lá a variável
+tem valor próprio — e foi o que manteve isto invisível por tanto tempo.
+
+**Onde aparece:** na tela de acrescentar material (antes do botão, porque o
+corte faz parte da peça que está sendo lançada), na correção de um corte já
+lançado, na lista técnica do produto, na janela da lista de materiais e nas
+duas folhas impressas. Na folha os desenhos usam preto e cinza fixos, e não
+as cores do tema — no modo escuro sairiam brancos sobre branco, invisíveis
+justamente no papel que vai para a serra.
+
+**O que já estava cadastrado vira corte reto**, que é o que um comprimento
+sozinho sempre quis dizer. Supor meia-esquadria mudaria, em silêncio, a
+instrução de receitas prontas.
+
+Sentido e cortes **não** são zerados a cada peça acrescentada, ao contrário do
+comprimento: numa receita real eles se repetem em blocos (os quatro perfis do
+marco saem todos em meia-esquadria), e voltar ao reto a cada linha faria
+refazer a mesma escolha quatro vezes seguidas.
+
+**Também nesta versão:** o campo de quantidade da tela "Acrescentar material"
+ganhou os botões de mais e menos, como no resto do aplicativo — a quantidade
+de um corte quase sempre é 1, 2 ou 4, e para isso tocar num botão é mais
+rápido do que abrir o teclado do celular, que ainda cobre metade da tela.
+
+Corrigida de passagem uma chave de lista repetida na folha de materiais: dois
+cortes do mesmo perfil e mesmo comprimento, com esquadrias diferentes, são
+duas linhas distintas — e o comprimento não as identificava.
+
+Migrações `20260828700000_corte_e_sentido_lista_tecnica.sql` e
+`20260828800000_simplificar_tipos_de_corte.sql`. A segunda converte o que já
+tiver sido gravado com os nomes antigos: os dois retos viram `reto`, e cada
+"invertido" colapsa na inclinação equivalente — nunca no reto, porque trocar
+45° por 90° mudaria a peça, que é justamente o que uma migração não pode
+fazer. 18 testes novos (344 no total).
+
 ## 1.7.53 — 28/08/2026
 
 **A tela do produto deixou de responder sozinha e ganhou lista de compras.**

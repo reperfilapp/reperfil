@@ -6,10 +6,19 @@ import { SeletorPerfil } from '@/componentes/SeletorPerfil'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
+import { CampoQuantidade } from '@/componentes/ui/CampoQuantidade'
+import { SeletorCortes } from '@/componentes/produto/SeletorCortes'
 import {
   interpretarMedidaDigitada,
   validarComprimento,
 } from '@/dominio/medidas'
+import {
+  CORTE_PADRAO,
+  SENTIDO_PADRAO,
+  descreverCortes,
+  type SentidoMontagem,
+  type TipoCorte,
+} from '@/dominio/corteMontagem'
 import { cn } from '@/lib/utilitarios'
 import type { ModeloPerfil } from '@/tipos/banco'
 
@@ -33,11 +42,18 @@ export default function AcrescentarMaterial() {
 
   const [modelo, setModelo] = useState<ModeloPerfil | null>(null)
   const [comprimentoMm, setComprimentoMm] = useState('')
-  const [quantidade, setQuantidade] = useState('1')
+  const [quantidade, setQuantidade] = useState(1)
+  /*
+   * Sentido e cortes NÃO são zerados a cada peça acrescentada — ao contrário
+   * do comprimento. Numa receita real os cortes se repetem em blocos (os
+   * quatro perfis do marco saem todos em meia-esquadria), e voltar ao reto a
+   * cada linha faria a pessoa refazer a mesma escolha quatro vezes seguidas.
+   */
+  const [sentido, setSentido] = useState<SentidoMontagem>(SENTIDO_PADRAO)
+  const [corteInicio, setCorteInicio] = useState<TipoCorte>(CORTE_PADRAO)
+  const [corteFim, setCorteFim] = useState<TipoCorte>(CORTE_PADRAO)
   const [erro, setErro] = useState<string | null>(null)
-  const [ultimoAdicionado, setUltimoAdicionado] = useState<string | null>(
-    null,
-  )
+  const [ultimoAdicionado, setUltimoAdicionado] = useState<string | null>(null)
 
   async function aoEnviar(evento: FormEvent) {
     evento.preventDefault()
@@ -64,14 +80,17 @@ export default function AcrescentarMaterial() {
      * ser maior do que a peça de onde ele sai.
      */
     const comprimento = interpretarMedidaDigitada(comprimentoMm, 'mm')
-    const qtd = Number(quantidade)
+    const qtd = quantidade
 
     if (comprimento === null) {
       setErro('Informe o comprimento do corte, em milímetros.')
       return
     }
 
-    const validacao = validarComprimento(comprimento, modelo.comprimento_barra_mm)
+    const validacao = validarComprimento(
+      comprimento,
+      modelo.comprimento_barra_mm,
+    )
 
     if (!validacao.valido) {
       setErro(validacao.mensagem)
@@ -91,14 +110,19 @@ export default function AcrescentarMaterial() {
         modelo_perfil_id: modelo.id,
         comprimento_mm: comprimento,
         quantidade: qtd,
+        sentido,
+        corte_inicio: corteInicio,
+        corte_fim: corteFim,
         observacao: null,
       })
 
-      // Só o comprimento e a quantidade são zerados: o perfil escolhido
-      // normalmente se repete no próximo corte da mesma receita.
-      setUltimoAdicionado(`${modelo.codigo} — ${comprimento} mm × ${qtd}`)
+      // Só o comprimento e a quantidade são zerados: o perfil escolhido e os
+      // cortes normalmente se repetem no próximo corte da mesma receita.
+      setUltimoAdicionado(
+        `${modelo.codigo} — ${comprimento} mm × ${qtd} · ${descreverCortes(sentido, corteInicio, corteFim)}`,
+      )
       setComprimentoMm('')
-      setQuantidade('1')
+      setQuantidade(1)
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível salvar.')
     }
@@ -168,15 +192,33 @@ export default function AcrescentarMaterial() {
                 onChange={(e) => setComprimentoMm(e.target.value)}
                 required
               />
-              <CampoTexto
-                rotulo="Quantidade"
-                inputMode="numeric"
-                value={quantidade}
-                onChange={(e) => setQuantidade(e.target.value)}
-                ajuda="Por unidade."
-                required
-              />
+
+              {/* Mais e menos, como no resto do aplicativo: a quantidade de
+                  um corte quase sempre é 1, 2 ou 4, e para isso tocar num
+                  botão é mais rápido do que abrir o teclado do celular —
+                  que ainda por cima cobre metade da tela. */}
+              <div className="flex flex-col gap-1.5">
+                <span className="font-medium">Quantidade</span>
+                <CampoQuantidade
+                  valor={quantidade}
+                  aoMudar={setQuantidade}
+                  rotulo="Quantidade por unidade"
+                />
+                <span className="text-texto-suave text-sm">Por unidade.</span>
+              </div>
             </div>
+
+            {/* Antes do botão de acrescentar, e não depois: o corte faz parte
+                da peça que está sendo lançada, e quem chega no botão sem ter
+                passado por aqui lançaria a peça sem a instrução. */}
+            <SeletorCortes
+              sentido={sentido}
+              corteInicio={corteInicio}
+              corteFim={corteFim}
+              aoMudarSentido={setSentido}
+              aoMudarInicio={setCorteInicio}
+              aoMudarFim={setCorteFim}
+            />
 
             {erro && (
               <p

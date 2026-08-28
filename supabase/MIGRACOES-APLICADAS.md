@@ -76,3 +76,5 @@ antes, mesmo que a sintaxe já tenha sido validada com `npm run banco:validar`
 - [x] 20260828400000_limite_comprimento_lista_tecnica.sql
 - [x] 20260828500000_descartar_acessorio.sql
 - [x] 20260828600000_excluir_organizacao.sql
+- [x] 20260828700000_corte_e_sentido_lista_tecnica.sql
+- [x] 20260828800000_simplificar_tipos_de_corte.sql

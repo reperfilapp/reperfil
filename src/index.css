@@ -62,6 +62,17 @@
   /* Âmbar — reservado, atenção, pendente */
   --color-atencao-50: oklch(0.97 0.03 85);
   --color-atencao-100: oklch(0.93 0.07 85);
+  /*
+   * O 300 FALTAVA, e `--cor-aviso-borda` já apontava para ele desde sempre.
+   *
+   * Variável CSS inexistente não é erro: a declaração inteira é descartada e
+   * a borda cai no valor herdado, que é `currentColor` — o texto escuro. Por
+   * isso todo `border-aviso-borda` no tema claro aparecia com moldura quase
+   * preta, do quadro "não dá" do veredito aos cartões de corte. No tema
+   * escuro o defeito não existia, porque lá a variável é definida com um
+   * valor próprio, e foi o que manteve isto invisível por tanto tempo.
+   */
+  --color-atencao-300: oklch(0.86 0.1 82);
   --color-atencao-500: oklch(0.75 0.16 75);
   --color-atencao-600: oklch(0.66 0.16 65);
   --color-atencao-700: oklch(0.55 0.14 55);
