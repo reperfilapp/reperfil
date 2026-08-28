@@ -220,7 +220,7 @@ export default function ProdutoDetalhe() {
    * quem abre o produto quase sempre quer a resposta do alto da tela — não
    * rolar três telas de perfil para chegar nos botões.
    */
-  const [listaAberta, setListaAberta] = useState(false)
+  const [listaAberta, setListaAberta] = useState(true)
 
   useEffect(() => {
     const foto = produto?.foto_url ?? null
@@ -1085,22 +1085,42 @@ export default function ProdutoDetalhe() {
                           />
                         </button>
 
-                        <Link
-                          to={`/perfis/${item.modelo_perfil_id}?de=${encodeURIComponent(`/produtos/${produto.id}`)}&rotulo=${encodeURIComponent('Lista técnica')}`}
-                          className="flex min-w-0 flex-1 items-center gap-1 self-stretch"
-                          aria-label={`Ver ficha de ${nomeDoPerfil(item.modelo_perfil_id)}`}
-                        >
-                          <span className="line-clamp-2 flex-1 text-[15px] leading-snug font-medium">
-                            <span className="bg-acao-100 text-acao-700 me-1 inline-block rounded px-1.5 py-0.5 font-mono text-xs font-bold">
-                              {modeloItem?.codigo ?? ''}
+                        {podeEditar ? (
+                          <button
+                            type="button"
+                            onClick={() => abrirCorte(item)}
+                            className="flex min-w-0 flex-1 items-center gap-1 self-stretch text-left"
+                            aria-label={`Editar ${nomeDoPerfil(item.modelo_perfil_id)} na lista técnica`}
+                          >
+                            <span className="line-clamp-2 flex-1 text-[15px] leading-snug font-medium">
+                              <span className="bg-acao-100 text-acao-700 me-1 inline-block rounded px-1.5 py-0.5 font-mono text-xs font-bold">
+                                {modeloItem?.codigo ?? ''}
+                              </span>
+                              {modeloItem?.descricao ?? 'perfil removido'}
                             </span>
-                            {modeloItem?.descricao ?? 'perfil removido'}
-                          </span>
-                          <ChevronRight
-                            aria-hidden="true"
-                            className="text-texto-suave size-4 shrink-0"
-                          />
-                        </Link>
+                            <Pencil
+                              aria-hidden="true"
+                              className="text-texto-suave size-4 shrink-0"
+                            />
+                          </button>
+                        ) : (
+                          <Link
+                            to={`/perfis/${item.modelo_perfil_id}?de=${encodeURIComponent(`/produtos/${produto.id}`)}&rotulo=${encodeURIComponent('Lista técnica')}`}
+                            className="flex min-w-0 flex-1 items-center gap-1 self-stretch"
+                            aria-label={`Ver ficha de ${nomeDoPerfil(item.modelo_perfil_id)}`}
+                          >
+                            <span className="line-clamp-2 flex-1 text-[15px] leading-snug font-medium">
+                              <span className="bg-acao-100 text-acao-700 me-1 inline-block rounded px-1.5 py-0.5 font-mono text-xs font-bold">
+                                {modeloItem?.codigo ?? ''}
+                              </span>
+                              {modeloItem?.descricao ?? 'perfil removido'}
+                            </span>
+                            <ChevronRight
+                              aria-hidden="true"
+                              className="text-texto-suave size-4 shrink-0"
+                            />
+                          </Link>
+                        )}
                       </div>
 
                       {/* Linha inferior: medidas/estoque + botões */}
@@ -1118,7 +1138,7 @@ export default function ProdutoDetalhe() {
                               com os metros de estoque faria ler as duas
                               coisas como uma. */}
                           <span className="mt-1 flex items-center gap-2">
-                            <span className="bg-amber-100 text-amber-700 whitespace-nowrap rounded-full px-2 py-0.5 font-mono text-xs font-bold">
+                            <span className={`whitespace-nowrap rounded-full px-2 py-0.5 font-mono text-xs font-bold ${sentidoValido(item.sentido) === 'v' ? 'bg-amber-100 text-amber-700' : 'bg-purple-100 text-purple-700'}`}>
                               {sentidoValido(item.sentido) === 'v' ? 'V |' : 'H —'}
                             </span>
                             <span className="text-xs">
@@ -1132,17 +1152,7 @@ export default function ProdutoDetalhe() {
                         </span>
 
                         {podeEditar && (
-                          <div className="flex shrink-0 items-center gap-1.5">
-                            <Botao
-                              tamanho="icone_pequeno"
-                              variante="secundaria"
-                              onClick={() => abrirCorte(item)}
-                              aria-label={`Alterar ${nomeDoPerfil(item.modelo_perfil_id)} na lista técnica`}
-                              title="Alterar quantidade ou medida"
-                            >
-                              <Pencil aria-hidden="true" className="size-4" />
-                            </Botao>
-
+                          <div className="flex shrink-0 items-center gap-2">
                             <Botao
                               tamanho="icone_pequeno"
                               variante="contorno"
@@ -1381,7 +1391,7 @@ export default function ProdutoDetalhe() {
                           </span>
                           {c.sentido && c.corte_inicio && c.corte_fim && (
                             <span className="flex items-center gap-1">
-                              <span className="bg-amber-100 text-amber-700 whitespace-nowrap rounded-full px-2 py-0.5 font-mono text-xs font-bold">
+                              <span className={`whitespace-nowrap rounded-full px-2 py-0.5 font-mono text-xs font-bold ${c.sentido === 'v' ? 'bg-amber-100 text-amber-700' : 'bg-purple-100 text-purple-700'}`}>
                                 {c.sentido === 'v' ? 'V |' : 'H —'}
                               </span>
                               <span className="text-xs">
