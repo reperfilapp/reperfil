@@ -7,6 +7,8 @@ interface PropsCampoTexto extends InputHTMLAttributes<HTMLInputElement> {
   erro?: string | undefined
   /** Texto de apoio, mostrado quando não há erro. */
   ajuda?: ReactNode
+  /** Classes CSS extras para o rótulo. */
+  rotuloClassName?: string
 }
 
 /**
@@ -21,6 +23,7 @@ export function CampoTexto({
   erro,
   ajuda,
   className,
+  rotuloClassName,
   id,
   ...resto
 }: PropsCampoTexto) {
@@ -33,7 +36,7 @@ export function CampoTexto({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={idCampo} className="font-medium">
+      <label htmlFor={idCampo} className={cn('font-medium', rotuloClassName)}>
         {rotulo}
       </label>
 

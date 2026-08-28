@@ -190,6 +190,8 @@ export default function AcrescentarMaterial() {
                 inputMode="numeric"
                 value={comprimentoMm}
                 onChange={(e) => setComprimentoMm(e.target.value)}
+                className="min-h-11 h-11 text-lg"
+                rotuloClassName="text-sm whitespace-nowrap tracking-tight"
                 required
               />
 
@@ -198,13 +200,13 @@ export default function AcrescentarMaterial() {
                   botão é mais rápido do que abrir o teclado do celular —
                   que ainda por cima cobre metade da tela. */}
               <div className="flex flex-col gap-1.5">
-                <span className="font-medium">Quantidade</span>
+                <span className="font-medium text-sm whitespace-nowrap tracking-tight">Quantidade</span>
                 <CampoQuantidade
                   valor={quantidade}
                   aoMudar={setQuantidade}
                   rotulo="Quantidade por unidade"
+                  compacto
                 />
-                <span className="text-texto-suave text-sm">Por unidade.</span>
               </div>
             </div>
 

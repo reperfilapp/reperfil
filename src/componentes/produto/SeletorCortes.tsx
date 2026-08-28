@@ -73,8 +73,8 @@ function BotaoPonta({
          * fica no rodapé — só o conteúdo muda de lugar, nenhum tamanho muda.
          */
         sentido === 'h'
-          ? 'flex-col items-center justify-start gap-2'
-          : 'flex-row items-start justify-between gap-3',
+          ? 'flex-col items-center justify-start gap-1'
+          : 'flex-row items-start justify-between gap-2',
         className,
       )}
     >
@@ -82,7 +82,7 @@ function BotaoPonta({
           usa o sistema decifra, e sobra espaço no cartão. */}
       <span
         className={cn(
-          'text-texto min-w-0 leading-tight',
+          'text-texto min-w-0 text-sm leading-tight',
           sentido === 'h' ? 'text-center' : 'text-left',
         )}
       >
@@ -93,7 +93,7 @@ function BotaoPonta({
         ))}
       </span>
 
-      <SeloAngulo corte={corte} ponta={ponta} />
+      <SeloAngulo corte={corte} ponta={ponta} sentido={sentido} />
     </button>
   )
 }
@@ -139,7 +139,7 @@ export function SeletorCortes({
        * que muda de tamanho quando se mexe nele empurra o resto do
        * formulário para cima e para baixo debaixo do dedo.
        */}
-      <div className="border-aviso-borda bg-aviso flex h-48 items-stretch gap-3 rounded-2xl border p-3">
+      <div className="border-aviso-borda bg-aviso flex h-40 items-stretch gap-2 sm:gap-3 rounded-2xl border p-2 sm:p-3">
         {/*
          * O sentido primeiro, e à esquerda, porque ele comanda o resto:
          * trocar deitado por em pé renomeia as pontas e gira o desenho.
@@ -152,7 +152,7 @@ export function SeletorCortes({
             // A largura é a MESMA nos dois casos, pelo mesmo motivo da
             // altura fixa do bloco: o botão não pode mudar de tamanho
             // quando se toca nele.
-            'border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover flex w-32 shrink-0 rounded-2xl border-2 p-3',
+            'border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover flex w-24 sm:w-32 shrink-0 rounded-2xl border-2 p-2 sm:p-3',
             // Em pé, a letra e a peça ficam lado a lado, como a peça está;
             // deitada, empilhadas. O arranjo do botão repete o que o botão
             // está dizendo.
@@ -167,7 +167,7 @@ export function SeletorCortes({
               !deitado && 'shrink-0',
             )}
           >
-            <span className="text-5xl leading-none font-bold">
+            <span className="text-4xl sm:text-5xl leading-none font-bold">
               {deitado ? 'H' : 'V'}
             </span>
 
@@ -184,27 +184,19 @@ export function SeletorCortes({
           {/* A MESMA peça do cartão ao lado, no mesmo desenho: o botão
               mostra o que se está prestes a girar, com os cortes já
               escolhidos — e não uma barra genérica que ignora a esquadria. */}
-          {/*
-           * Deitada, a peça sai mais CURTA, não menor: o quadro encurtado
-           * mantém a escala do desenho do cartão ao lado, e só o
-           * comprimento muda — a mesma peça em duas grossuras parece duas
-           * peças.
-           *
-           * Em pé isso não é preciso, e faz mal: ali o desenho é limitado
-           * pela ALTURA do botão, que é a mesma do cartão, então na escala
-           * normal ele já sai com a espessura certa. Encurtar o quadro
-           * também aumentava a escala, e a barra engordava.
-           */}
+          {/* Ajustamos o comprimento do viewbox para que a espessura visual 
+              da barra (largura) fique padronizada em todos os desenhos,
+              compensando a diferença de tamanho dos contêineres. */}
           <DesenhoPerfil
             sentido={sentido}
             corteInicio={corteInicio}
             corteFim={corteFim}
-            {...(deitado ? { comprimento: 72 } : {})}
+            comprimento={deitado ? 80 : 130}
             className={deitado ? 'w-full' : 'h-full'}
           />
         </button>
 
-        <div className="border-aviso-borda bg-superficie flex min-w-0 flex-1 gap-3 rounded-2xl border p-3">
+        <div className="border-aviso-borda bg-superficie flex min-w-0 flex-1 gap-2 sm:gap-3 rounded-2xl border p-2 sm:p-3">
           {/*
            * Deitada, a peça fica em cima e as duas pontas embaixo, lado a
            * lado — esquerda à esquerda, direita à direita, cada rótulo
@@ -257,6 +249,7 @@ export function SeletorCortes({
                   sentido={sentido}
                   corteInicio={corteInicio}
                   corteFim={corteFim}
+                  comprimento={140}
                   className="h-full shrink-0"
                 />
 

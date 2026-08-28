@@ -85,9 +85,9 @@ export function rotuloDaPonta(
   sentido: SentidoMontagem,
   ponta: PontaCorte,
 ): string {
-  if (sentido === 'h') return ponta === 'inicio' ? 'L. ESQ.' : 'L. DIR.'
+  if (sentido === 'h') return ponta === 'inicio' ? 'LE' : 'LD'
 
-  return ponta === 'inicio' ? 'L. CIMA' : 'L. BAIXO'
+  return ponta === 'inicio' ? 'LC' : 'LB'
 }
 
 /**
@@ -134,7 +134,9 @@ export function descreverCorte(corte: TipoCorte): string {
   // ele, e "90° cima" faria procurar uma diferença que não existe.
   if (corte === 'reto') return '90°'
 
-  return corte === 'meia_cima' ? '45° cima' : '45° baixo'
+  // A direção do corte já está no desenho da barra; repetir "cima" ou "baixo"
+  // em texto não acrescenta informação para quem conferirá pelo desenho.
+  return '45°'
 }
 
 /** A instrução das duas pontas numa linha só, para a lista impressa. */

@@ -68,15 +68,15 @@ describe('ângulo', () => {
 
 describe('nome das pontas', () => {
   it('deitado fala em esquerda e direita', () => {
-    expect(rotuloDaPonta('h', 'inicio')).toBe('L. ESQ.')
-    expect(rotuloDaPonta('h', 'fim')).toBe('L. DIR.')
+    expect(rotuloDaPonta('h', 'inicio')).toBe('LE')
+    expect(rotuloDaPonta('h', 'fim')).toBe('LD')
   })
 
   it('em pé fala em cima e baixo', () => {
     // O mesmo corte, outro nome: "45 na esquerda" não quer dizer nada para
     // quem está com um montante em pé na bancada.
-    expect(rotuloDaPonta('v', 'inicio')).toBe('L. CIMA')
-    expect(rotuloDaPonta('v', 'fim')).toBe('L. BAIXO')
+    expect(rotuloDaPonta('v', 'inicio')).toBe('LC')
+    expect(rotuloDaPonta('v', 'fim')).toBe('LB')
   })
 
   it('o sentido alterna entre dois valores', () => {
@@ -103,14 +103,14 @@ describe('texto para a folha impressa', () => {
     expect(descreverCorte('reto')).toBe('90°')
   })
 
-  it('a meia-esquadria diz de que lado sai a cunha', () => {
-    expect(descreverCorte('meia_cima')).toBe('45° cima')
-    expect(descreverCorte('meia_baixo')).toBe('45° baixo')
+  it('a meia-esquadria diz apenas 45°', () => {
+    expect(descreverCorte('meia_cima')).toBe('45°')
+    expect(descreverCorte('meia_baixo')).toBe('45°')
   })
 
   it('junta as duas pontas com o nome certo do sentido', () => {
     expect(descreverCortes('v', 'meia_cima', 'reto')).toBe(
-      'L. CIMA 45° cima · L. BAIXO 90°',
+      'LC 45° · LB 90°',
     )
   })
 })

@@ -63,7 +63,6 @@ import {
   type TipoCorte,
 } from '@/dominio/corteMontagem'
 import { SeletorCortes } from '@/componentes/produto/SeletorCortes'
-import { DesenhoPerfil } from '@/componentes/produto/DesenhoCorte'
 import { formatarMedidaProduto, nomeDoArquivo } from '@/dominio/produto'
 import {
   formatarComprimento,
@@ -1106,30 +1105,21 @@ export default function ProdutoDetalhe() {
 
                       {/* Linha inferior: medidas/estoque + botões */}
                       <div className="flex items-center justify-between gap-2 px-2 pt-1 pb-2">
-                        <span className="text-texto-suave min-w-0 pl-1 text-[15px] tabular-nums">
+                        <span className="text-texto-suave min-w-0 pl-1 text-sm tabular-nums leading-tight">
                           {item.quantidade} ×{' '}
                           {formatarComprimento(item.comprimento_mm)} ·{' '}
                           {estoque.pecas} pç /{' '}
                           {(estoque.milimetros / 1000)
                             .toFixed(1)
-                            .replace('.', ',')}{' '}
-                          m
+                            .replace('.', ',')}
+                          &nbsp;m
                           {/* O corte em linha própria, com os desenhos: é
                               instrução de bancada, não medida — misturá-lo
                               com os metros de estoque faria ler as duas
                               coisas como uma. */}
                           <span className="mt-1 flex items-center gap-2">
-                            <span className="block w-20 shrink-0">
-                              <DesenhoPerfil
-                                sentido={sentidoValido(item.sentido)}
-                                corteInicio={corteValido(item.corte_inicio)}
-                                corteFim={corteValido(item.corte_fim)}
-                                className={
-                                  sentidoValido(item.sentido) === 'h'
-                                    ? 'w-full'
-                                    : 'h-12'
-                                }
-                              />
+                            <span className="bg-amber-100 text-amber-700 whitespace-nowrap rounded-full px-2 py-0.5 font-mono text-xs font-bold">
+                              {sentidoValido(item.sentido) === 'v' ? 'V |' : 'H —'}
                             </span>
                             <span className="text-xs">
                               {descreverCortes(
@@ -1383,20 +1373,20 @@ export default function ProdutoDetalhe() {
                       {linha.cortes.map((c, i) => (
                         <span
                           key={i}
-                          className="text-texto-suave flex items-center gap-1 text-sm tabular-nums"
+                          className="text-texto-suave flex flex-col gap-0.5 text-sm tabular-nums"
                         >
-                          {c.quantidade} ×{' '}
-                          {formatarComprimento(c.comprimento_mm)}
+                          <span>
+                            {c.quantidade} ×{' '}
+                            {formatarComprimento(c.comprimento_mm)}
+                          </span>
                           {c.sentido && c.corte_inicio && c.corte_fim && (
-                            <span className="block w-16 shrink-0">
-                              <DesenhoPerfil
-                                sentido={c.sentido}
-                                corteInicio={c.corte_inicio}
-                                corteFim={c.corte_fim}
-                                className={
-                                  c.sentido === 'h' ? 'w-full' : 'h-10'
-                                }
-                              />
+                            <span className="flex items-center gap-1">
+                              <span className="bg-amber-100 text-amber-700 whitespace-nowrap rounded-full px-2 py-0.5 font-mono text-xs font-bold">
+                                {c.sentido === 'v' ? 'V |' : 'H —'}
+                              </span>
+                              <span className="text-xs">
+                                {descreverCortes(c.sentido, c.corte_inicio, c.corte_fim)}
+                              </span>
                             </span>
                           )}
                         </span>
@@ -1465,16 +1455,19 @@ export default function ProdutoDetalhe() {
               onChange={(e) =>
                 setForm({ ...form, comprimento_mm: e.target.value })
               }
+              className="min-h-11 h-11 text-lg"
+              rotuloClassName="text-sm whitespace-nowrap tracking-tight"
               required
             />
-            <CampoTexto
-              rotulo="Quantidade"
-              inputMode="numeric"
-              value={form.quantidade}
-              onChange={(e) => setForm({ ...form, quantidade: e.target.value })}
-              ajuda="Por unidade."
-              required
-            />
+            <div className="flex flex-col gap-1.5">
+              <span className="font-medium text-sm whitespace-nowrap tracking-tight">Quantidade</span>
+              <CampoQuantidade
+                valor={Number(form.quantidade) || 1}
+                aoMudar={(v) => setForm({ ...form, quantidade: String(v) })}
+                rotulo="Quantidade por unidade"
+                compacto
+              />
+            </div>
           </div>
 
           {/* O mesmo seletor da tela de acrescentar: corrigir um corte

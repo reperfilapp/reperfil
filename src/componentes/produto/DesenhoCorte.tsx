@@ -73,9 +73,18 @@ const ESPESSURA = T1 - T0
  * as duas.
  */
 function cunhaDaPonta(corte: TipoCorte): readonly Ponto[] {
-  if (corte === 'reto') return []
-
   const fim = A0 + ESPESSURA
+
+  if (corte === 'reto') {
+    // Retângulo com metade da largura do 45° para ter a mesma área pintada
+    const fimReto = A0 + ESPESSURA / 2
+    return [
+      [A0, T0],
+      [fimReto, T0],
+      [fimReto, T1],
+      [A0, T1],
+    ]
+  }
 
   return corte === 'meia_cima'
     ? [
@@ -87,6 +96,32 @@ function cunhaDaPonta(corte: TipoCorte): readonly Ponto[] {
         [A0, T0],
         [fim, T1],
         [A0, T1],
+      ]
+}
+
+/**
+ * A linha de corte pontilhada que atravessa a peça, com uma pequena sobra
+ * para fora, como se fosse o risco do serrote.
+ */
+function tracoDaPonta(corte: TipoCorte): readonly [Ponto, Ponto] {
+  const fim = A0 + ESPESSURA
+  const fimReto = A0 + ESPESSURA / 2
+
+  if (corte === 'reto') {
+    return [
+      [fimReto, T0 - 2.5],
+      [fimReto, T1 + 2.5],
+    ]
+  }
+
+  return corte === 'meia_cima'
+    ? [
+        [fim + 2.5, T0 - 2.5],
+        [A0 - 2.5, T1 + 2.5],
+      ]
+    : [
+        [A0 - 2.5, T0 - 2.5],
+        [fim + 2.5, T1 + 2.5],
       ]
 }
 
@@ -172,6 +207,13 @@ export function DesenhoPerfil({
     ),
   }))
 
+  const tracos = (['inicio', 'fim'] as const).map((ponta) => {
+    const pontos = tracoDaPonta(ponta === 'inicio' ? corteInicio : corteFim)
+    const p1 = transformar(pontos[0], sentido, ponta, comprimento)
+    const p2 = transformar(pontos[1], sentido, ponta, comprimento)
+    return { ponta, x1: p1[0], y1: p1[1], x2: p2[0], y2: p2[1] }
+  })
+
   return (
     <svg
       viewBox={
@@ -205,6 +247,20 @@ export function DesenhoPerfil({
             />
           ),
       )}
+
+      {/* A linha de serra por cima da cunha. */}
+      {tracos.map(({ ponta, x1, y1, x2, y2 }) => (
+        <line
+          key={`traco-${ponta}`}
+          x1={x1}
+          y1={y1}
+          x2={x2}
+          y2={y2}
+          className={impressao ? 'stroke-black' : 'stroke-texto-suave'}
+          strokeWidth={1.4}
+          strokeDasharray="3 2.5"
+        />
+      ))}
     </svg>
   )
 }
@@ -219,11 +275,13 @@ export function DesenhoPerfil({
 export function SeloAngulo({
   corte,
   ponta,
+  sentido,
 }: {
   corte: TipoCorte
   /* A ponta importa: a mesma inclinação vista da outra extremidade corre
      para o lado contrário, e o selo tem de concordar com o desenho. */
   ponta: PontaCorte
+  sentido: SentidoMontagem
 }) {
   const angulo = anguloDoCorte(corte)
 
@@ -235,7 +293,7 @@ export function SeloAngulo({
    * justamente para conferir o ângulo de relance.
    */
   const desce =
-    corte === 'reto' ? null : (corte === 'meia_cima') === (ponta === 'inicio')
+    corte === 'reto' ? null : (corte === 'meia_cima') !== (ponta === 'inicio')
 
   /*
    * No corte reto a tracejada é VERTICAL, e por isso encosta na BEIRADA, do
@@ -246,18 +304,26 @@ export function SeloAngulo({
    */
   const traco =
     desce === null
-      ? ponta === 'inicio'
-        ? { x1: 8, y1: 3, x2: 8, y2: 37 }
-        : { x1: 32, y1: 3, x2: 32, y2: 37 }
+      ? sentido === 'h'
+        ? ponta === 'inicio'
+          ? { x1: 8, y1: 3, x2: 8, y2: 37 }
+          : { x1: 32, y1: 3, x2: 32, y2: 37 }
+        : ponta === 'inicio'
+          ? { x1: 3, y1: 8, x2: 37, y2: 8 }
+          : { x1: 3, y1: 32, x2: 37, y2: 32 }
       : desce
         ? { x1: 4, y1: 4, x2: 36, y2: 36 }
         : { x1: 4, y1: 36, x2: 36, y2: 4 }
 
   const fuga =
     desce === null
-      ? ponta === 'inicio'
-        ? 'items-center justify-end pr-2'
-        : 'items-center justify-start pl-2'
+      ? sentido === 'h'
+        ? ponta === 'inicio'
+          ? 'items-center justify-end pr-2'
+          : 'items-center justify-start pl-2'
+        : ponta === 'inicio'
+          ? 'items-end justify-center pb-1'
+          : 'items-start justify-center pt-1'
       : desce
         ? 'items-end justify-start pb-1 pl-1'
         : 'items-start justify-start pt-1 pl-1'
@@ -265,7 +331,7 @@ export function SeloAngulo({
   return (
     <span
       className={cn(
-        'border-borda bg-superficie relative inline-flex size-12 shrink-0 rounded-xl border',
+        'border-borda bg-superficie relative inline-flex size-10 shrink-0 rounded-xl border',
         fuga,
       )}
     >
@@ -282,7 +348,7 @@ export function SeloAngulo({
         />
       </svg>
 
-      <span className="text-texto relative text-base font-bold">{angulo}°</span>
+      <span className="text-texto relative text-sm font-bold">{angulo}°</span>
     </span>
   )
 }
