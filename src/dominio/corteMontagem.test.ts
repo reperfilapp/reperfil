@@ -4,11 +4,14 @@ import {
   CORTE_PADRAO,
   anguloDoCorte,
   corteValido,
+  cortesPorPecaValidos,
   descreverCorte,
   descreverCortes,
+  descreverCortesDaLinha,
   linhasDaPonta,
   outroSentido,
   proximoCorte,
+  redimensionarCortesPorPeca,
   rotuloDaPonta,
   sentidoValido,
 } from './corteMontagem'
@@ -109,9 +112,7 @@ describe('texto para a folha impressa', () => {
   })
 
   it('junta as duas pontas com o nome certo do sentido', () => {
-    expect(descreverCortes('v', 'meia_cima', 'reto')).toBe(
-      'LC 45° · LB 90°',
-    )
+    expect(descreverCortes('v', 'meia_cima', 'reto')).toBe('LC 45° · LB 90°')
   })
 })
 
@@ -130,4 +131,115 @@ describe('o que veio do banco', () => {
       expect(sentidoValido(valor)).toBe('h')
     },
   )
+})
+
+/**
+ * Os cartões de "corte por peça" na tela de acrescentar material. Errar
+ * aqui troca de dono um corte já ajustado à mão — silenciosamente, porque
+ * do ponto de vista de quem preenche a tela nada pareceu errado.
+ */
+describe('redimensionar cartões de peça', () => {
+  const PADRAO = {
+    sentido: 'h',
+    corte_inicio: 'reto',
+    corte_fim: 'reto',
+  } as const
+  const A = {
+    sentido: 'v',
+    corte_inicio: 'meia_cima',
+    corte_fim: 'reto',
+  } as const
+  const B = {
+    sentido: 'h',
+    corte_inicio: 'meia_baixo',
+    corte_fim: 'meia_baixo',
+  } as const
+
+  it('corta a lista ao diminuir, sem tocar no que sobra', () => {
+    expect(redimensionarCortesPorPeca([A, B], 1, PADRAO)).toEqual([A])
+  })
+
+  it('some com a lista ao chegar em zero peças', () => {
+    expect(redimensionarCortesPorPeca([A, B], 0, PADRAO)).toEqual([])
+  })
+
+  it('preenche peça nova copiando a ÚLTIMA existente, não o padrão', () => {
+    // O caso comum é "mais uma igual à anterior" — quem já ajustou as
+    // primeiras não quer reajustar a última à mão de novo.
+    expect(redimensionarCortesPorPeca([A, B], 3, PADRAO)).toEqual([A, B, B])
+  })
+
+  it('usa o padrão quando a lista começa vazia', () => {
+    expect(redimensionarCortesPorPeca([], 2, PADRAO)).toEqual([PADRAO, PADRAO])
+  })
+
+  it('mantém a lista como está quando o tamanho não muda', () => {
+    expect(redimensionarCortesPorPeca([A, B], 2, PADRAO)).toEqual([A, B])
+  })
+
+  it('as cópias são independentes — mudar uma não muda as outras', () => {
+    const resultado = redimensionarCortesPorPeca([A], 3, PADRAO)
+
+    resultado[1]!.sentido = 'h'
+
+    expect(resultado[2]!.sentido).toBe('v')
+  })
+})
+
+/**
+ * O que vem do banco em `cortes_por_peca` é JSONB solto — `unknown` de
+ * verdade, sem garantia nenhuma de formato. Um elemento quebrado precisa
+ * derrubar a lista INTEIRA, não só aquele elemento: mostrar 2 de 3 peças
+ * certas e inventar a terceira é pior do que voltar ao comportamento de
+ * antes do recurso existir.
+ */
+describe('validar cortes por peça vindos do banco', () => {
+  const PECA_A = { sentido: 'v', corte_inicio: 'meia_cima', corte_fim: 'reto' }
+  const PECA_B = { sentido: 'h', corte_inicio: 'reto', corte_fim: 'meia_baixo' }
+
+  it('aceita um array bem formado', () => {
+    expect(cortesPorPecaValidos([PECA_A, PECA_B])).toEqual([PECA_A, PECA_B])
+  })
+
+  it('rejeita quando não é array', () => {
+    expect(cortesPorPecaValidos(null)).toBeNull()
+    expect(cortesPorPecaValidos(undefined)).toBeNull()
+    expect(cortesPorPecaValidos({ sentido: 'h' })).toBeNull()
+    expect(cortesPorPecaValidos('h')).toBeNull()
+  })
+
+  it('rejeita array vazio — cai no comportamento uniforme, não em zero peças', () => {
+    expect(cortesPorPecaValidos([])).toBeNull()
+  })
+
+  it('um elemento quebrado derruba a lista inteira', () => {
+    expect(
+      cortesPorPecaValidos([PECA_A, { sentido: 'x', corte_inicio: 'reto' }]),
+    ).toBeNull()
+    expect(cortesPorPecaValidos([PECA_A, null])).toBeNull()
+    expect(
+      cortesPorPecaValidos([PECA_A, { ...PECA_B, corte_fim: 'invertido' }]),
+    ).toBeNull()
+  })
+})
+
+describe('descrever o corte de uma linha inteira', () => {
+  it('sem corte por peça, descreve como sempre foi', () => {
+    expect(descreverCortesDaLinha('h', 'reto', 'reto', null)).toBe(
+      descreverCortes('h', 'reto', 'reto'),
+    )
+  })
+
+  it('com corte por peça, numera cada uma — não concatena solto', () => {
+    // Concatenar sem número ("LE 90 · LD 90 · LC 45 · LB 45") confundiria
+    // qual ponta pertence a qual peça.
+    const resultado = descreverCortesDaLinha('h', 'reto', 'reto', [
+      { sentido: 'h', corte_inicio: 'reto', corte_fim: 'reto' },
+      { sentido: 'v', corte_inicio: 'meia_cima', corte_fim: 'meia_baixo' },
+    ])
+
+    expect(resultado).toBe(
+      `1) ${descreverCortes('h', 'reto', 'reto')} · 2) ${descreverCortes('v', 'meia_cima', 'meia_baixo')}`,
+    )
+  })
 })

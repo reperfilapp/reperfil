@@ -18,6 +18,14 @@
 > **Falta:** enviar as mudanças pendentes para revisão da Google (botão
 > "Enviar mudanças para revisão" na Visão geral da publicação) e, depois
 > de aprovado, avançar para Teste fechado e Produção.
+>
+> **Atenção ao prazo do teste fechado.** A conta é pessoal e foi criada
+> depois de novembro de 2023, então a Google exige **12 testadores por 14
+> dias corridos** em teste fechado antes de liberar em produção. Os 14 dias
+> só começam a contar quando o teste fechado estiver rodando com os 12 —
+> não quando o app foi criado. É o item de maior prazo do processo inteiro,
+> e o único que não depende de código: vale começar a juntar os 12 e-mails
+> agora, em paralelo com o resto.
 
 ## ⚠️ Cuidado ao gerar o `.aab` para a loja
 
@@ -37,21 +45,37 @@ código ou da Play Store, e não era nenhum dos dois.
 
 ## O que já está pronto
 
-O projeto Android existe em `android/`, configurado e **compilando**.
-Conferido em 28/08/2026:
+O projeto Android existe em `android/`, configurado, **compilando e
+assinado**. Conferido em 28/08/2026:
 
 | Item | Valor |
 | --- | --- |
 | Identificador do pacote | `br.com.reperfil.app` |
 | Nome exibido | RePerfil |
-| Versão | vem do `package.json` — hoje 1.6.84 (versionCode 10684) |
+| Nome na loja | RePerfil Sobras e Estoque |
+| Versão | vem do `package.json` — o `versionCode` é derivado dela |
 | SDK mínimo | 24 (Android 7.0) |
 | SDK alvo | 36 (Android 16) — acima do mínimo exigido pela Google |
 | Permissões | Internet, estado da rede, câmera |
+| Assinatura de release | **Pronta** — `android/keystore.properties` |
+| Assinatura de app pela Play | **Ativa** — a Google re-assina com a chave dela |
 | Ícone adaptativo e tela de abertura | Gerados da logo da empresa |
 | Ícone 512×512 para a loja | `public/icones/icone-512.png` |
 | Política de privacidade | **Existe** — `/politica-privacidade`, pública |
 | Exclusão de conta pelo app | **Existe** — exigência da Google desde 2024 |
+| Categoria na loja | Produtividade |
+| Tags | Empresa · Ferramentas · Produtividade |
+
+> A versão não é fixada aqui de propósito: ela sobe a cada `publicarrp`, e
+> um número escrito neste documento envelheceria em horas. O valor corrente
+> está no `package.json` e na tela do aplicativo (selo de versão).
+
+**A Assinatura de app pela Play está ativa**, e é por isso que o `.aab`
+enviado é re-assinado pela Google antes de chegar aos celulares. Efeito
+prático: um APK instalado direto por `adb` tem assinatura DIFERENTE do
+instalado pela loja, e o Android recusa atualizar um por cima do outro
+(`INSTALL_FAILED_UPDATE_INCOMPATIBLE`). Para trocar entre os dois é preciso
+desinstalar antes — não é defeito.
 
 O **APK de depuração** foi compilado com sucesso e está em:
 
@@ -83,40 +107,52 @@ npm run android:instalar
 Criada em **13/08/2026** com a conta **reperfilapp@gmail.com**, taxa paga e
 verificação de identidade aprovada pela Google.
 
-## Passo 2 — Criar a chave de assinatura
+## ~~Passo 2 — Criar a chave de assinatura~~ ✅ FEITO
 
-**Este comando gera um arquivo que não pode ser perdido nem versionado.**
+Gerada em **27/08/2026**, válida até 2054, alias `reperfil`. A impressão
+digital SHA-256 dela está registrada na Verificação de desenvolvedor Android
+para o pacote `br.com.reperfil.app`.
 
-A Google identifica o aplicativo por essa chave. Perdê-la significa nunca mais
-conseguir publicar uma atualização deste aplicativo — seria preciso criar
-outro, com outro identificador, e pedir a todos os usuários que reinstalem.
+**O que continua valendo como cuidado permanente:**
 
-```bash
-"/c/Program Files/Android/Android Studio/jbr/bin/keytool" -genkeypair -v -keystore reperfil-release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias reperfil
+- **Guarde o `.jks` e a senha fora deste computador** — gerenciador de
+  senhas, cofre, ou ao menos um backup em nuvem privada. Perder qualquer um
+  dos dois é perder os dois.
+- A **Assinatura de app pela Play está ativa**, então esta é a chave de
+  *envio*: se ela se perder, dá para pedir reposição à Google. Sem esse
+  recurso, perder a chave significaria nunca mais publicar atualização
+  deste aplicativo.
+
+Para gerar outra um dia (aplicativo novo, ou reposição), o comando é este —
+no PowerShell:
+
+```powershell
+& "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkeypair -v -keystore "C:\caminho\seguro\nome.jks" -keyalg RSA -keysize 2048 -validity 10000 -alias reperfil
 ```
 
-Ele pergunta uma senha e alguns dados (nome, empresa, cidade, país "BR").
+Para conferir a impressão digital de uma chave existente:
 
-Depois de gerar:
+```powershell
+& "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -list -v -keystore "C:\caminho\seguro\nome.jks" -alias reperfil
+```
 
-- **Guarde o arquivo `.jks` e a senha em lugar seguro**, fora do computador —
-  gerenciador de senhas, cofre, ou pelo menos um backup em nuvem privada
-- **Não coloque na pasta do projeto.** O `.gitignore` já bloqueia `*.jks` e
-  `*.keystore`, mas o mais seguro é o arquivo nem estar por perto
-- Considere ativar a **Assinatura de app pela Play** (*Play App Signing*), em
-  que a Google guarda a chave definitiva e você mantém apenas a de envio. Se
-  perder a de envio, dá para pedir reposição — sem ela, não
+## ~~Passo 3 — Configurar a assinatura~~ ✅ FEITO
 
-## Passo 3 — Configurar a assinatura
+O `build.gradle` e o `android/keystore.properties` estão prontos desde
+27/08/2026, e o `.aab` sai assinado.
 
-**O `build.gradle` já está pronto** (feito em 28/08/2026). Você só precisa
-criar um arquivo:
+Se um dia for preciso refazer isso — outra máquina, ou o arquivo se perder:
 
 1. Copie `android/keystore.properties.exemplo` para
    `android/keystore.properties` (mesma pasta, sem o `.exemplo`)
 2. Preencha os quatro campos com o caminho do `.jks` e as senhas
 
-Pronto. O `build.gradle` detecta o arquivo sozinho e assina o release.
+O `build.gradle` detecta o arquivo sozinho e assina o release.
+
+> **Barra normal no caminho, mesmo no Windows.** O arquivo é lido no formato
+> `.properties` do Java, onde `\` é caractere de escape e some — foi o que
+> derrubou o primeiro build com
+> `Keystore file ...C:SoftsAppReperfil_Diversos... not found`.
 
 **Nada quebra sem ele.** A configuração inteira é condicional: sem o
 `keystore.properties`, o bloco de assinatura nem é criado, e quem clonar o
@@ -148,21 +184,77 @@ npm run android:aab
 
 O arquivo sai em `android\app\build\outputs\bundle\release\app-release.aab`.
 
-## Passo 5 — Enviar
+## ~~Passo 5 — Criar o app e a ficha da loja~~ ✅ FEITO
 
-1. Play Console → **Criar app**
-   - Nome: **RePerfil: Estoque e Orçamento**
-   - Idioma padrão: Português (Brasil)
-   - Tipo: Aplicativo · Gratuito
-2. Envie o AAB em **Teste interno** primeiro, nunca direto em produção
-3. Preencha o que a Google exige antes de liberar:
-   - Política de privacidade (endereço público — ver observação abaixo)
-   - Classificação indicativa (questionário)
-   - Público-alvo e conteúdo
-   - Segurança de dados: declarar que coleta e-mail, nome e dados de clientes
-   - Capturas de tela: ao menos 2, de celular
-   - Ícone 512×512 (use `public/icones/icone-512.png`)
-   - Imagem de destaque 1024×500
+Criado em 27/08/2026 como **RePerfil Sobras e Estoque**, pacote
+`br.com.reperfil.app`, português (Brasil), aplicativo gratuito. A ficha está
+preenchida: descrições, ícone, capturas, imagem de destaque 1024×500, vídeo,
+política de privacidade, segurança dos dados, classificação, público-alvo e
+as declarações de ID de publicidade e apps de saúde.
+
+O que foi respondido, para não ter de redescobrir na próxima atualização:
+
+| Pergunta | Resposta | Por quê |
+| --- | --- | --- |
+| Público-alvo | Só maiores de 18 | É ferramenta de trabalho; marcar faixa de menor traz obrigações extras sem público real |
+| Dados coletados | Nome, e-mail, telefone, fotos, endereço, CPF/CNPJ | Declarados como **coletados**, nunca "compartilhados" |
+| Compartilhados com terceiros | Não | O provedor de banco é operador, não terceiro que usa os dados |
+| Atividade em apps | Nada | Não há analytics nem rastreamento no projeto |
+| Mensagens | Nada | O app guarda o *endereço* de e-mail, não lê caixa de entrada |
+| ID de publicidade | Não usa | Nenhum SDK de anúncios |
+| Apps de saúde | Nada se aplica | — |
+| Recursos gerados com IA | Não rotular | A imagem de destaque é composição do logo real, não geração sintética |
+
+## Passo 6 — Enviar a versão
+
+1. `npm run android:aab` (ver o aviso no topo deste documento)
+2. Play Console → **Testar e lançar → Teste interno → Criar nova versão**
+3. Envie o `.aab` — ou, se o pacote já tiver sido enviado antes, use
+   **Adicionar da biblioteca** em vez de subir de novo
+4. Avance até **Visualizar e confirmar** e confirme: parar na primeira etapa
+   deixa o pacote como "Inativo" e a faixa continua na versão anterior
+5. Na **Visão geral da publicação**, envie as mudanças para revisão
+
+O **link de teste é fixo** e não muda a cada versão:
+`https://play.google.com/apps/internaltest/4700446141496803400`
+
+> **Aviso de "arquivo de desofuscação ausente" é normal.** Só existiria com
+> ofuscação ligada (`minifyEnabled`), que está desligada de propósito. Não
+> impede o envio.
+
+### Se o celular instalar uma versão antiga pelo link
+
+Aconteceu em 27/08/2026 e custou horas: o link instalava 1.6.67 enquanto a
+loja mostrava 1.6.85 na ficha. A causa NÃO era a Play Store — era o `.aab`
+enviado, empacotado sem `cap sync` (ver o aviso no topo). O número da versão
+vinha do `package.json` e estava certo; o site dentro do pacote é que era
+antigo.
+
+Antes de culpar cache do celular, **confira o selo de versão na tela de
+login do app instalado**. Se ele mostrar uma versão antiga com um `.aab`
+recém-gerado, o problema é o pacote, não o aparelho.
+
+## Formatos dos arquivos da ficha
+
+Já entregues, mas anotados porque toda atualização de material pede de novo:
+
+- **Capturas de tela:** PNG ou JPEG, **sem transparência**, lado entre 320 e
+  3840 px, e o lado maior no máximo o dobro do menor. Print de celular já
+  serve. Mínimo 2, máximo 8.
+- **Ícone da loja:** 512×512 — `public/icones/icone-512.png`
+- **Imagem de destaque:** 1024×500, PNG ou JPEG, até 15 MB
+- **Vídeo:** opcional, e só link do YouTube — público ou **não listado**,
+  com monetização desligada e sem restrição de idade
+
+Para gravar a tela do celular ligado por USB, sem instalar nada:
+
+```bash
+adb shell screenrecord --time-limit 150 --bit-rate 8000000 /sdcard/demo.mp4
+```
+
+Depois `adb pull /sdcard/demo.mp4` para trazer o arquivo, e `adb shell rm`
+para limpar. No Git Bash é preciso `MSYS_NO_PATHCONV=1` antes do comando —
+sem isso ele converte `/sdcard/...` num caminho do Windows e falha.
 
 ## Checklist antes de liberar em produção
 
@@ -171,16 +263,28 @@ O arquivo sai em `android\app\build\outputs\bundle\release\app-release.aab`.
       `e_administrador()` e `pode_movimentar_estoque()` filtram por
       `ativo`. Mesmo com a senha, não lê nem escreve nada — o RLS barra.
       **Não apague essa conta** (ver abaixo)
-- [ ] Confirmar os parâmetros de corte em Mais → Configurações; a espessura da
-      serra ainda é valor presumido
+- [ ] **Confirmar a espessura da serra** em Mais → Configurações. Continua
+      sendo valor presumido, e é o parâmetro que decide se "dá para
+      fabricar" — errar aqui erra todo cálculo de aproveitamento
 - [x] ~~Remover a organização de demonstração~~ — feito em 28/08/2026
 - [x] ~~Publicar a política de privacidade num endereço acessível~~ — está em
       `/politica-privacidade`, acessível sem login. **Continua sem revisão
       de advogado** (ver `docs/pendencias.md`): o app trata CPF/CNPJ,
       endereço e telefone de CLIENTES, que são terceiros que nunca usaram
       o aplicativo
-- [ ] Testar em teste interno com pelo menos duas pessoas reais
-- [ ] Guardar a chave de assinatura em local seguro e com backup
+- [x] ~~Guardar a chave de assinatura em local seguro e com backup~~ —
+      gerada em 27/08/2026, fora da pasta do projeto. **Confira o backup
+      fora deste computador**, se ainda não fez: é o único item da lista
+      sem conserto possível
+- [x] ~~Testar em teste interno~~ — feito em 27/08/2026: instalação pelo
+      link, login por e-mail e por nickname
+- [ ] **Juntar 12 testadores para o teste fechado** — são 14 dias corridos
+      de exigência da Google, e é o item de maior prazo. Começar cedo
+- [ ] Enviar as mudanças pendentes para revisão, na Visão geral da
+      publicação
+- [ ] Rodar um teste real de ponta a ponta na Alumifort depois de cada
+      publicação grande: cadastrar sobra, montar lista técnica, calcular
+      viabilidade e gerar a lista de materiais
 
 ## Não apague a conta `teste@reperfil.invalido`
 

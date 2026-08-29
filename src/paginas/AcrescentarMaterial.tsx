@@ -8,6 +8,7 @@ import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoQuantidade } from '@/componentes/ui/CampoQuantidade'
 import { SeletorCortes } from '@/componentes/produto/SeletorCortes'
+import { CartaoCortePorPeca } from '@/componentes/produto/CartaoCortePorPeca'
 import {
   interpretarMedidaDigitada,
   validarComprimento,
@@ -16,9 +17,12 @@ import {
   CORTE_PADRAO,
   SENTIDO_PADRAO,
   descreverCortes,
+  redimensionarCortesPorPeca,
+  type CorteDaPeca,
   type SentidoMontagem,
   type TipoCorte,
 } from '@/dominio/corteMontagem'
+import type { DadosItemLista } from '@/dados/produtos'
 import { cn } from '@/lib/utilitarios'
 import type { ModeloPerfil } from '@/tipos/banco'
 
@@ -52,8 +56,52 @@ export default function AcrescentarMaterial() {
   const [sentido, setSentido] = useState<SentidoMontagem>(SENTIDO_PADRAO)
   const [corteInicio, setCorteInicio] = useState<TipoCorte>(CORTE_PADRAO)
   const [corteFim, setCorteFim] = useState<TipoCorte>(CORTE_PADRAO)
+  /*
+   * "Definir corte por peça": só faz sentido com mais de uma peça, e existe
+   * porque nem toda receita é uniforme — um marco pode ter três montantes
+   * retos e um só em meia-esquadria, e forçar todos ao mesmo corte
+   * obrigaria a lançar essa peça separada, fora da sequência.
+   *
+   * Desligado por padrão porque o caso comum É o uniforme: a maioria das
+   * peças da mesma medida sai com o mesmo corte, e ligar isto para toda
+   * peça pediria N escolhas onde uma bastava.
+   */
+  const [porPeca, setPorPeca] = useState(false)
+  const [cortesPorPeca, setCortesPorPeca] = useState<CorteDaPeca[]>([])
   const [erro, setErro] = useState<string | null>(null)
   const [ultimoAdicionado, setUltimoAdicionado] = useState<string | null>(null)
+
+  function mudarQuantidade(nova: number) {
+    setQuantidade(nova)
+
+    if (porPeca) {
+      setCortesPorPeca((atual) =>
+        redimensionarCortesPorPeca(atual, nova, {
+          sentido,
+          corte_inicio: corteInicio,
+          corte_fim: corteFim,
+        }),
+      )
+    }
+  }
+
+  function alternarPorPeca() {
+    const ligar = !porPeca
+
+    setPorPeca(ligar)
+
+    // Ao ligar, os cartões nascem com o corte único já escolhido — quem
+    // ligou para ajustar só a última peça não quer redigitar as outras.
+    if (ligar) {
+      setCortesPorPeca((atual) =>
+        redimensionarCortesPorPeca(atual, quantidade, {
+          sentido,
+          corte_inicio: corteInicio,
+          corte_fim: corteFim,
+        }),
+      )
+    }
+  }
 
   async function aoEnviar(evento: FormEvent) {
     evento.preventDefault()
@@ -102,27 +150,55 @@ export default function AcrescentarMaterial() {
       return
     }
 
+    // Salvaguarda: o comum é `mudarQuantidade`/`alternarPorPeca` manterem os
+    // dois em sincronia sozinhos, mas um envio não pode confiar nisso — uma
+    // linha com `cortes_por_peca` de tamanho diferente da quantidade viola
+    // a regra do próprio banco (`cortes_por_peca_valido`), e é melhor travar
+    // aqui, com uma frase, do que devolver o erro cru do Postgres.
+    if (porPeca && cortesPorPeca.length !== qtd) {
+      setErro('Defina o corte de todas as peças antes de acrescentar.')
+      return
+    }
+
     if (id === null) return
 
     try {
-      await adicionar.mutateAsync({
+      /*
+       * Continua UMA linha, quantidade N — "corte por peça" não divide a
+       * lista técnica, só anexa a exceção. `cortes_por_peca` guarda o corte
+       * de cada peça quando ligado; as colunas soltas (`sentido`,
+       * `corte_inicio`, `corte_fim`) recebem o da primeira peça, como valor
+       * de referência para quem olhar a linha sem entender o array — nunca
+       * são o que decide a instrução quando o array existe.
+       */
+      const dados: DadosItemLista = {
         produto_id: id,
         modelo_perfil_id: modelo.id,
         comprimento_mm: comprimento,
         quantidade: qtd,
-        sentido,
-        corte_inicio: corteInicio,
-        corte_fim: corteFim,
+        sentido: porPeca ? cortesPorPeca[0]!.sentido : sentido,
+        corte_inicio: porPeca ? cortesPorPeca[0]!.corte_inicio : corteInicio,
+        corte_fim: porPeca ? cortesPorPeca[0]!.corte_fim : corteFim,
+        cortes_por_peca: porPeca ? cortesPorPeca : null,
         observacao: null,
-      })
+      }
+
+      await adicionar.mutateAsync(dados)
 
       // Só o comprimento e a quantidade são zerados: o perfil escolhido e os
       // cortes normalmente se repetem no próximo corte da mesma receita.
       setUltimoAdicionado(
-        `${modelo.codigo} — ${comprimento} mm × ${qtd} · ${descreverCortes(sentido, corteInicio, corteFim)}`,
+        porPeca
+          ? `${modelo.codigo} — ${comprimento} mm × ${qtd} peças, cada uma com o corte próprio`
+          : `${modelo.codigo} — ${comprimento} mm × ${qtd} · ${descreverCortes(sentido, corteInicio, corteFim)}`,
       )
+
       setComprimentoMm('')
       setQuantidade(1)
+      // "Corte por peça" é uma decisão desta entrada, não sticky como
+      // sentido e corte — a próxima peça volta ao caso comum (uniforme).
+      setPorPeca(false)
+      setCortesPorPeca([])
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível salvar.')
     }
@@ -190,7 +266,7 @@ export default function AcrescentarMaterial() {
                 inputMode="numeric"
                 value={comprimentoMm}
                 onChange={(e) => setComprimentoMm(e.target.value)}
-                className="min-h-11 h-11 text-lg"
+                className="h-11 min-h-11 text-lg"
                 rotuloClassName="text-sm whitespace-nowrap tracking-tight"
                 required
               />
@@ -200,27 +276,62 @@ export default function AcrescentarMaterial() {
                   botão é mais rápido do que abrir o teclado do celular —
                   que ainda por cima cobre metade da tela. */}
               <div className="flex flex-col gap-1.5">
-                <span className="font-medium text-sm whitespace-nowrap tracking-tight">Quantidade</span>
+                <span className="text-sm font-medium tracking-tight whitespace-nowrap">
+                  Quantidade
+                </span>
                 <CampoQuantidade
                   valor={quantidade}
-                  aoMudar={setQuantidade}
+                  aoMudar={mudarQuantidade}
                   rotulo="Quantidade por unidade"
                   compacto
                 />
               </div>
             </div>
 
+            {/* Só aparece com mais de uma peça — com uma só, "por peça" e
+                "todas iguais" são a mesma coisa, e a opção não teria o que
+                decidir. */}
+            {quantidade > 1 && (
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="size-5"
+                  checked={porPeca}
+                  onChange={alternarPorPeca}
+                />
+                Definir corte por peça
+              </label>
+            )}
+
             {/* Antes do botão de acrescentar, e não depois: o corte faz parte
                 da peça que está sendo lançada, e quem chega no botão sem ter
                 passado por aqui lançaria a peça sem a instrução. */}
-            <SeletorCortes
-              sentido={sentido}
-              corteInicio={corteInicio}
-              corteFim={corteFim}
-              aoMudarSentido={setSentido}
-              aoMudarInicio={setCorteInicio}
-              aoMudarFim={setCorteFim}
-            />
+            {porPeca ? (
+              <div className="flex flex-col gap-3">
+                {cortesPorPeca.map((corte, indice) => (
+                  <CartaoCortePorPeca
+                    key={indice}
+                    numero={indice + 1}
+                    total={cortesPorPeca.length}
+                    corte={corte}
+                    aoMudar={(novo) =>
+                      setCortesPorPeca((atual) =>
+                        atual.map((c, i) => (i === indice ? novo : c)),
+                      )
+                    }
+                  />
+                ))}
+              </div>
+            ) : (
+              <SeletorCortes
+                sentido={sentido}
+                corteInicio={corteInicio}
+                corteFim={corteFim}
+                aoMudarSentido={setSentido}
+                aoMudarInicio={setCorteInicio}
+                aoMudarFim={setCorteFim}
+              />
+            )}
 
             {erro && (
               <p

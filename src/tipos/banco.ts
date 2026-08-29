@@ -431,6 +431,13 @@ export interface ItemListaTecnica {
   sentido?: string | null
   corte_inicio?: string | null
   corte_fim?: string | null
+  /**
+   * Corte próprio por peça, quando a linha não é uniforme — JSONB solto,
+   * sem garantia de formato. Sempre lido pelo domínio
+   * (`cortesPorPecaValidos`), nunca usado direto: um elemento malformado
+   * precisa derrubar a leitura inteira, não só aquele elemento.
+   */
+  cortes_por_peca?: unknown
   observacao: string | null
   criado_em: string
 }

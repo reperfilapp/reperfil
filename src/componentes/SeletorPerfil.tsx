@@ -23,7 +23,10 @@ import { VisualizadorImagem } from './ui/VisualizadorImagem'
 import { BotaoVoltar } from './ui/BotaoVoltar'
 import { AlternadorOrdenacao } from './ui/AlternadorOrdenacao'
 import { useNiveisNaUrl } from './useNiveisNaUrl'
-import { ORDENACAO_PADRAO, compararPorOrdemLinha } from '@/dominio/ordenacaoListas'
+import {
+  ORDENACAO_PADRAO,
+  compararPorOrdemLinha,
+} from '@/dominio/ordenacaoListas'
 
 import type { ModeloPerfil } from '@/tipos/banco'
 
@@ -192,6 +195,11 @@ export function SeletorPerfil({
             {selecionado.aplicacao && (
               <p className="text-acao-600 mt-0.5 text-xs">
                 {selecionado.aplicacao}
+              </p>
+            )}
+            {formatarMedidasSecao(selecionado) && (
+              <p className="text-texto-suave mt-0.5 text-xs tabular-nums">
+                {formatarMedidasSecao(selecionado)}
               </p>
             )}
             <p className="text-texto-suave mt-0.5 text-xs tabular-nums">

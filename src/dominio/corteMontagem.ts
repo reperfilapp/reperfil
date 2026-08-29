@@ -170,3 +170,109 @@ export function sentidoValido(
 ): SentidoMontagem {
   return valor === 'h' || valor === 'v' ? valor : SENTIDO_PADRAO
 }
+
+/** O sentido e os dois cortes de UMA peça — o que um cartão de peça guarda. */
+export interface CorteDaPeca {
+  sentido: SentidoMontagem
+  corte_inicio: TipoCorte
+  corte_fim: TipoCorte
+}
+
+/**
+ * Ajusta a lista de cartões de peça para um novo tamanho, sem jogar fora o
+ * que a pessoa já preencheu.
+ *
+ * ── POR QUE O NOVO CARTÃO COPIA O ÚLTIMO, E NÃO O PADRÃO ─────────────────
+ *
+ * O caso comum de aumentar a quantidade é "preciso de mais uma igual à
+ * anterior" — quatro montantes retos e, no meio de digitar, lembrar que são
+ * cinco. Se o quinto nascesse sempre em corte reto, quem já tinha ajustado
+ * os quatro para meia-esquadria teria de ajustar o quinto à mão de novo,
+ * toda vez. Copiando o último, o caso comum já vem pronto, e o raro (o
+ * quinto é diferente) continua custando só um toque.
+ *
+ * Diminuir apenas corta a lista: o que sobrou nas posições removidas nunca
+ * é lido de novo, e não precisa ser preservado.
+ */
+export function redimensionarCortesPorPeca(
+  atual: readonly CorteDaPeca[],
+  tamanho: number,
+  padrao: CorteDaPeca,
+): CorteDaPeca[] {
+  if (tamanho <= atual.length) return atual.slice(0, Math.max(tamanho, 0))
+
+  const ultimo = atual[atual.length - 1] ?? padrao
+  const faltam = tamanho - atual.length
+
+  return [...atual, ...Array.from({ length: faltam }, () => ({ ...ultimo }))]
+}
+
+/**
+ * Lê `cortes_por_peca` como veio do banco (JSONB solto, `unknown`) e devolve
+ * a lista validada, ou `null` se não servir.
+ *
+ * ── POR QUE `null` NO LUGAR DE CORRIGIR PEÇA A PEÇA ──────────────────────
+ *
+ * `corteValido`/`sentidoValido` corrigem um valor solto para o padrão,
+ * porque uma linha sem informação nenhuma ainda precisa de ALGUMA resposta.
+ * Aqui o caso é diferente: se um elemento do array vier quebrado, os outros
+ * N-1 também não são confiáveis — a peça 3 errada pode significar que a
+ * lista inteira foi montada por um código antigo, ou corrompida na volta.
+ * `null` cai no comportamento de sempre: toda a linha usa o sentido/corte
+ * das colunas soltas, igual a antes deste recurso existir. Mostrar 2 de 3
+ * peças certas e inventar a terceira seria pior do que isso.
+ */
+export function cortesPorPecaValidos(valor: unknown): CorteDaPeca[] | null {
+  if (!Array.isArray(valor) || valor.length === 0) return null
+
+  const pecas: CorteDaPeca[] = []
+
+  for (const item of valor) {
+    if (typeof item !== 'object' || item === null) return null
+
+    const { sentido, corte_inicio, corte_fim } = item as Record<string, unknown>
+
+    if (
+      (sentido !== 'h' && sentido !== 'v') ||
+      !CORTES.includes(corte_inicio as TipoCorte) ||
+      !CORTES.includes(corte_fim as TipoCorte)
+    ) {
+      return null
+    }
+
+    pecas.push({
+      sentido,
+      corte_inicio: corte_inicio as TipoCorte,
+      corte_fim: corte_fim as TipoCorte,
+    })
+  }
+
+  return pecas
+}
+
+/**
+ * A instrução de corte de uma linha inteira da lista técnica, incluindo
+ * quando ela não é uniforme.
+ *
+ * ── POR QUE NUMERADO, E NÃO SÓ LISTADO ────────────────────────────────────
+ *
+ * "LE 90° · LD 90° · LE 45° · LD 45°" de duas peças diferentes lidas em
+ * sequência confunde qual ponta é de qual peça. Numerando ("1) ... 2) ..."),
+ * a leitura na bancada separa: "essa peça segue o padrão 1, aquela outra
+ * segue o padrão 2" — que é exatamente a decisão que motivou o recurso.
+ */
+export function descreverCortesDaLinha(
+  sentido: SentidoMontagem,
+  corteInicio: TipoCorte,
+  corteFim: TipoCorte,
+  porPeca: readonly CorteDaPeca[] | null,
+): string {
+  if (porPeca === null) return descreverCortes(sentido, corteInicio, corteFim)
+
+  return porPeca
+    .map(
+      (peca, indice) =>
+        `${indice + 1}) ${descreverCortes(peca.sentido, peca.corte_inicio, peca.corte_fim)}`,
+    )
+    .join(' · ')
+}

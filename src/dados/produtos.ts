@@ -6,7 +6,11 @@ import {
   BALDE_IMAGENS_PRODUTO,
 } from '@/lib/armazenamento'
 import type { Produto, ItemListaTecnica } from '@/tipos/banco'
-import type { SentidoMontagem, TipoCorte } from '@/dominio/corteMontagem'
+import type {
+  CorteDaPeca,
+  SentidoMontagem,
+  TipoCorte,
+} from '@/dominio/corteMontagem'
 
 export function useProdutos(incluirInativos = false) {
   return useQuery({
@@ -277,6 +281,13 @@ export interface DadosItemLista {
   corte_inicio: TipoCorte
   /** Corte da ponta direita (deitado) ou de baixo (em pé). */
   corte_fim: TipoCorte
+  /**
+   * Corte próprio por peça, quando a linha não é uniforme — mesmo tamanho
+   * de `quantidade`. `null`/ausente: toda peça usa `sentido`/`corte_inicio`/
+   * `corte_fim` acima. A linha continua UMA só; isto é o que a distingue de
+   * "uniforme" sem precisar de mais linhas na lista técnica.
+   */
+  cortes_por_peca?: CorteDaPeca[] | null
   observacao: string | null
 }
 

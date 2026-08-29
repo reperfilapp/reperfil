@@ -2,11 +2,69 @@ import { formatarMedidaProduto } from '@/dominio/produto'
 import { formatarComprimento } from '@/dominio/medidas'
 import {
   corteValido,
+  cortesPorPecaValidos,
   descreverCortes,
   sentidoValido,
 } from '@/dominio/corteMontagem'
 import { DesenhoPerfil } from './DesenhoCorte'
 import type { ItemListaTecnica, ModeloPerfil, Produto } from '@/tipos/banco'
+
+/**
+ * A célula de corte de UMA linha da tabela — sem exceção, mostra a peça
+ * inteira; com `cortes_por_peca`, uma peça numerada por linha, todas dentro
+ * da MESMA célula. A linha da tabela continua sendo uma só; numerar é o que
+ * separa qual desenho é de qual peça, para não parecerem uma confusão só.
+ */
+function CelulaCorte({ item }: { item: ItemListaTecnica }) {
+  const pecas = cortesPorPecaValidos(item.cortes_por_peca)
+
+  if (pecas === null) {
+    const sentido = sentidoValido(item.sentido)
+
+    return (
+      <>
+        <span className="block w-28">
+          <DesenhoPerfil
+            sentido={sentido}
+            corteInicio={corteValido(item.corte_inicio)}
+            corteFim={corteValido(item.corte_fim)}
+            impressao
+            className={sentido === 'h' ? 'w-full' : 'h-20'}
+          />
+        </span>
+        <span className="mt-0.5 block text-xs">
+          {descreverCortes(
+            sentido,
+            corteValido(item.corte_inicio),
+            corteValido(item.corte_fim),
+          )}
+        </span>
+      </>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {pecas.map((peca, indice) => (
+        <div key={indice} className="flex items-center gap-1.5">
+          <span className="w-4 shrink-0 text-xs font-bold">{indice + 1})</span>
+          <span className="block w-16 shrink-0">
+            <DesenhoPerfil
+              sentido={peca.sentido}
+              corteInicio={peca.corte_inicio}
+              corteFim={peca.corte_fim}
+              impressao
+              className={peca.sentido === 'h' ? 'w-full' : 'h-10'}
+            />
+          </span>
+          <span className="text-xs">
+            {descreverCortes(peca.sentido, peca.corte_inicio, peca.corte_fim)}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 /**
  * A folha do produto, para imprimir ou salvar em PDF.
@@ -280,30 +338,7 @@ export function FolhaProduto({
                                 resolve para quem está aprendendo — numa
                                 folha impressa não há como tocar para ver a
                                 dica. */}
-                            {/* A peça inteira, com as duas pontas: é assim
-                                que ela chega à serra, e comparar as
-                                esquadrias de um lado e do outro é o que se
-                                faz antes de cortar. */}
-                            <span className="block w-28">
-                              <DesenhoPerfil
-                                sentido={sentidoValido(item.sentido)}
-                                corteInicio={corteValido(item.corte_inicio)}
-                                corteFim={corteValido(item.corte_fim)}
-                                impressao
-                                className={
-                                  sentidoValido(item.sentido) === 'h'
-                                    ? 'w-full'
-                                    : 'h-20'
-                                }
-                              />
-                            </span>
-                            <span className="mt-0.5 block text-xs">
-                              {descreverCortes(
-                                sentidoValido(item.sentido),
-                                corteValido(item.corte_inicio),
-                                corteValido(item.corte_fim),
-                              )}
-                            </span>
+                            <CelulaCorte item={item} />
                           </td>
                         </tr>
                       )

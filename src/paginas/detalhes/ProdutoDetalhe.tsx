@@ -9,7 +9,6 @@ import {
   ChevronRight,
   ChevronDown,
   FileText,
-  GripVertical,
   ArrowDownUp,
   Calculator,
   ClipboardList,
@@ -40,7 +39,12 @@ import {
   cortesAtendidos,
   chaveDoCorte,
 } from '@/dominio/producao'
-import { resumirPorPerfil, resumoDe } from '@/dominio/estoqueResumo'
+import {
+  resumirPorPerfil,
+  resumoDe,
+  formatarResumo,
+} from '@/dominio/estoqueResumo'
+import { formatarMedidasSecao } from '@/dominio/secao'
 import {
   ordenarLista,
   CRITERIOS,
@@ -59,12 +63,17 @@ import {
   CORTE_PADRAO,
   SENTIDO_PADRAO,
   corteValido,
+  cortesPorPecaValidos,
   descreverCortes,
+  descreverCortesDaLinha,
+  redimensionarCortesPorPeca,
   sentidoValido,
+  type CorteDaPeca,
   type SentidoMontagem,
   type TipoCorte,
 } from '@/dominio/corteMontagem'
 import { SeletorCortes } from '@/componentes/produto/SeletorCortes'
+import { CartaoCortePorPeca } from '@/componentes/produto/CartaoCortePorPeca'
 import { formatarMedidaProduto, nomeDoArquivo } from '@/dominio/produto'
 import {
   formatarComprimento,
@@ -80,7 +89,7 @@ import { Botao } from '@/componentes/ui/Botao'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoSugestao } from '@/componentes/ui/CampoSugestao'
 import { CampoQuantidade } from '@/componentes/ui/CampoQuantidade'
-import { useArrastarParaOrdenar } from '@/componentes/ui/useArrastarParaOrdenar'
+import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { cn } from '@/lib/utilitarios'
 import { Modal } from '@/componentes/ui/Modal'
 import { Veredito } from '@/componentes/Veredito'
@@ -127,6 +136,16 @@ export default function ProdutoDetalhe() {
   const [itemEditando, setItemEditando] = useState<ItemListaTecnica | null>(
     null,
   )
+  /*
+   * Item pendente de remoção — a lixeira não apaga no primeiro toque.
+   *
+   * O botão fica na mesma fileira do lápis e é pequeno, e um toque errado na
+   * lista técnica some com um corte sem aviso nenhum; diferente de desativar
+   * um produto, não há "reativar" para uma linha removida — é lançar tudo de
+   * novo à mão.
+   */
+  const [removendo, setRemovendo] = useState<ItemListaTecnica | null>(null)
+  const [erroRemover, setErroRemover] = useState<string | null>(null)
   const [form, setForm] = useState({
     modelo_perfil_id: '',
     comprimento_mm: '',
@@ -135,6 +154,14 @@ export default function ProdutoDetalhe() {
     corte_inicio: CORTE_PADRAO as TipoCorte,
     corte_fim: CORTE_PADRAO as TipoCorte,
   })
+  /*
+   * "Definir corte por peça" na correção — mesma ideia de
+   * `AcrescentarMaterial`: a linha continua UMA só, quantidade N; ligar
+   * isto grava a exceção `cortes_por_peca` na mesma linha, desligar limpa a
+   * coluna e a linha volta a ser uniforme.
+   */
+  const [porPeca, setPorPeca] = useState(false)
+  const [cortesPorPeca, setCortesPorPeca] = useState<CorteDaPeca[]>([])
   const [erro, setErro] = useState<string | null>(null)
   const [ampliado, setAmpliado] = useState<string | null>(null)
   /*
@@ -160,6 +187,13 @@ export default function ProdutoDetalhe() {
    * pedido.
    */
   const [textoPerfil, setTextoPerfil] = useState('')
+  /*
+   * Todo item editado já tem um perfil — o normal é só CONFERIR, não
+   * escolher de novo. O campo de busca só reaparece quando a pessoa pede
+   * ("Trocar perfil"), do mesmo jeito que o card de "Acrescentar material"
+   * esconde a busca depois de escolhido.
+   */
+  const [trocandoPerfil, setTrocandoPerfil] = useState(false)
   /*
    * Quantas unidades se quer produzir. Padrão 1 porque a pergunta mais
    * comum é "dá para fazer esta janela?" — só quando a resposta é sim é que
@@ -377,17 +411,6 @@ export default function ProdutoDetalhe() {
     }
   }
 
-  /*
-   * A ordem é gravada só ao SOLTAR, não a cada movimento: arrastar do fim
-   * para o começo passaria por todas as posições intermediárias, e cada uma
-   * viraria uma ida ao servidor.
-   */
-  const ordenacao = useArrastarParaOrdenar({
-    itens: itens ?? [],
-    chave: (item) => item.id,
-    aoSoltar: (idsNaOrdem) => disparar(reordenar.mutateAsync(idsNaOrdem)),
-  })
-
   const nomeDoPerfil = (modeloId: string) => {
     const modelo = modelos?.find((m) => m.id === modeloId)
 
@@ -413,6 +436,9 @@ export default function ProdutoDetalhe() {
     )
 
     setForm({ ...form, modelo_perfil_id: escolhido?.id ?? '' })
+
+    // Escolhido, o card volta a valer a pena — a busca já cumpriu seu papel.
+    if (escolhido) setTrocandoPerfil(false)
   }
 
   async function aoEnviar(evento: FormEvent) {
@@ -453,18 +479,34 @@ export default function ProdutoDetalhe() {
       return
     }
 
+    // Mesma salvaguarda de `AcrescentarMaterial`: um array de tamanho
+    // diferente da quantidade viola a regra do banco, e travar aqui dá uma
+    // frase em vez do erro cru do Postgres.
+    if (porPeca && cortesPorPeca.length !== quantidade) {
+      setErro('Defina o corte de todas as peças antes de salvar.')
+      return
+    }
+
     if (id === null || itemEditando === null) return
 
     try {
+      /*
+       * Continua UMA linha, quantidade N — ver o comentário em
+       * `AcrescentarMaterial.tsx`. Editar não muda esse contrato: só
+       * anexa ou remove a exceção `cortes_por_peca` da mesma linha.
+       */
       await editarItem.mutateAsync({
         id: itemEditando.id,
         dados: {
           modelo_perfil_id: form.modelo_perfil_id,
           comprimento_mm: comprimento,
           quantidade,
-          sentido: form.sentido,
-          corte_inicio: form.corte_inicio,
-          corte_fim: form.corte_fim,
+          sentido: porPeca ? cortesPorPeca[0]!.sentido : form.sentido,
+          corte_inicio: porPeca
+            ? cortesPorPeca[0]!.corte_inicio
+            : form.corte_inicio,
+          corte_fim: porPeca ? cortesPorPeca[0]!.corte_fim : form.corte_fim,
+          cortes_por_peca: porPeca ? cortesPorPeca : null,
           observacao: itemEditando.observacao,
         },
       })
@@ -472,6 +514,38 @@ export default function ProdutoDetalhe() {
       fecharCorte()
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível salvar.')
+    }
+  }
+
+  function mudarQuantidadeForm(nova: number) {
+    setForm({ ...form, quantidade: String(nova) })
+
+    if (porPeca) {
+      setCortesPorPeca((atual) =>
+        redimensionarCortesPorPeca(atual, nova, {
+          sentido: form.sentido,
+          corte_inicio: form.corte_inicio,
+          corte_fim: form.corte_fim,
+        }),
+      )
+    }
+  }
+
+  function alternarPorPecaForm() {
+    const ligar = !porPeca
+
+    setPorPeca(ligar)
+
+    if (ligar) {
+      const quantidadeAtual = Number(form.quantidade) || 1
+
+      setCortesPorPeca((atual) =>
+        redimensionarCortesPorPeca(atual, quantidadeAtual, {
+          sentido: form.sentido,
+          corte_inicio: form.corte_inicio,
+          corte_fim: form.corte_fim,
+        }),
+      )
     }
   }
 
@@ -490,6 +564,19 @@ export default function ProdutoDetalhe() {
       corte_inicio: corteValido(item.corte_inicio),
       corte_fim: corteValido(item.corte_fim),
     })
+
+    /*
+     * Reflete o que o item JÁ TEM, não sempre "modo único".
+     *
+     * `cortes_por_peca` mora na mesma linha agora — se o item já veio com a
+     * exceção preenchida (lançado assim, ou importado do central), abrir em
+     * modo único e salvar apagaria essa diferenciação sem ninguém ter
+     * pedido. `null` (não validado) é o caso comum de sempre.
+     */
+    const pecas = cortesPorPecaValidos(item.cortes_por_peca)
+    setPorPeca(pecas !== null)
+    setCortesPorPeca(pecas ?? [])
+    setTrocandoPerfil(false)
     setErro(null)
     setAberto(true)
   }
@@ -498,6 +585,7 @@ export default function ProdutoDetalhe() {
     setAberto(false)
     setItemEditando(null)
     setTextoPerfil('')
+    setTrocandoPerfil(false)
     setForm({
       modelo_perfil_id: '',
       comprimento_mm: '',
@@ -506,6 +594,8 @@ export default function ProdutoDetalhe() {
       corte_inicio: CORTE_PADRAO,
       corte_fim: CORTE_PADRAO,
     })
+    setPorPeca(false)
+    setCortesPorPeca([])
     setErro(null)
   }
 
@@ -710,6 +800,17 @@ export default function ProdutoDetalhe() {
       'Cor a definir'
     )
   }
+
+  // O card do "Alterar corte" — mesmo modelo do perfil escolhido em
+  // "Acrescentar material" (desenho, código, medidas, estoque).
+  const modeloDoCorte = modelos?.find((m) => m.id === form.modelo_perfil_id)
+  const desenhoDoCorte = modeloDoCorte
+    ? capas?.get(modeloDoCorte.id)
+    : undefined
+  const lotesDoCorte = modeloDoCorte
+    ? (sobras?.filter((s) => s.modelo_perfil_id === modeloDoCorte.id).length ??
+      0)
+    : 0
 
   return (
     <PaginaDetalhe
@@ -963,10 +1064,8 @@ export default function ProdutoDetalhe() {
               os descontos que a oficina aplica.
             </p>
 
-            {/* Ordenar automático não briga com arrastar: a regra organiza uma
-            lista recém-digitada de vinte cortes num toque, e o arrastar
-            ajusta o que ficou fora de lugar. Reescreve a ordem GRAVADA —
-            fosse só visual, a folha impressa sairia diferente da tela. */}
+            {/* A ordem é gravada de verdade, não só visual — fosse só na
+            tela, a folha impressa sairia diferente do que se vê aqui. */}
             {podeEditar && (itens ?? []).length > 1 && (
               <div className="mb-3 flex items-center gap-2">
                 <ArrowDownUp
@@ -1022,7 +1121,7 @@ export default function ProdutoDetalhe() {
               </p>
             ) : (
               <ul className="flex flex-col gap-2">
-                {ordenacao.itensVisiveis.map((item, indice) => {
+                {(itens ?? []).map((item) => {
                   const desenho = capas?.get(item.modelo_perfil_id)
                   const estoque = resumoDe(
                     estoquePorPerfil,
@@ -1046,36 +1145,15 @@ export default function ProdutoDetalhe() {
                   return (
                     <li
                       key={item.id}
-                      ref={ordenacao.registrar(item.id)}
                       className={cn(
                         'flex flex-col overflow-hidden rounded-xl border',
-                        ordenacao.emMovimento === item.id &&
-                          'relative z-10 opacity-70 shadow-lg',
                         situacao === 'neutra' && 'border-borda bg-superficie',
                         situacao === 'falta' && 'border-falta-borda bg-falta',
                         situacao === 'ok' && 'border-ok-borda bg-ok',
                       )}
                     >
-                      {/* Linha superior: alça + miniatura + nome clicável */}
+                      {/* Linha superior: miniatura + nome clicável */}
                       <div className="flex items-center gap-2 px-2 pt-2">
-                        {podeEditar && (
-                          <button
-                            type="button"
-                            onPointerDown={ordenacao.comecar(indice)}
-                            onPointerMove={ordenacao.mover}
-                            onPointerUp={ordenacao.soltar}
-                            onPointerCancel={ordenacao.soltar}
-                            aria-label={`Mover ${nomeDoPerfil(item.modelo_perfil_id)} na sequência`}
-                            title="Arraste para reordenar"
-                            className="text-texto-suave hover:text-texto flex size-8 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
-                          >
-                            <GripVertical
-                              aria-hidden="true"
-                              className="size-5"
-                            />
-                          </button>
-                        )}
-
                         <button
                           type="button"
                           onClick={() => desenho && setAmpliado(desenho)}
@@ -1150,10 +1228,11 @@ export default function ProdutoDetalhe() {
                                 : 'H —'}
                             </span>
                             <span className="text-xs">
-                              {descreverCortes(
+                              {descreverCortesDaLinha(
                                 sentidoValido(item.sentido),
                                 corteValido(item.corte_inicio),
                                 corteValido(item.corte_fim),
+                                cortesPorPecaValidos(item.cortes_por_peca),
                               )}
                             </span>
                           </span>
@@ -1164,9 +1243,7 @@ export default function ProdutoDetalhe() {
                             <Botao
                               tamanho="icone_pequeno"
                               variante="contorno"
-                              onClick={() =>
-                                disparar(remover.mutateAsync(item.id))
-                              }
+                              onClick={() => setRemovendo(item)}
                               aria-label={`Remover ${nomeDoPerfil(item.modelo_perfil_id)} da lista técnica`}
                               title="Remover"
                             >
@@ -1462,20 +1539,150 @@ export default function ProdutoDetalhe() {
         )}
       </Modal>
 
+      <Modal
+        aberto={removendo !== null}
+        aoFechar={() => setRemovendo(null)}
+        titulo="Remover da lista técnica"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm">
+            Remover{' '}
+            <strong>
+              {removendo && nomeDoPerfil(removendo.modelo_perfil_id)}
+            </strong>{' '}
+            da lista técnica — não há como desfazer. É preciso lançar o corte de
+            novo se for engano.
+          </p>
+
+          {erroRemover && (
+            <p
+              role="alert"
+              className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm"
+            >
+              {erroRemover}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <Botao
+              variante="contorno"
+              onClick={() => setRemovendo(null)}
+              className="flex-1"
+            >
+              Cancelar
+            </Botao>
+            <Botao
+              variante="destrutiva"
+              carregando={remover.isPending}
+              onClick={async () => {
+                if (!removendo) return
+
+                setErroRemover(null)
+
+                try {
+                  await remover.mutateAsync(removendo.id)
+                  setRemovendo(null)
+                } catch (e) {
+                  setErroRemover(
+                    e instanceof Error
+                      ? e.message
+                      : 'Não foi possível remover.',
+                  )
+                }
+              }}
+              className="flex-1"
+            >
+              <Trash2 aria-hidden="true" className="size-4" />
+              Remover
+            </Botao>
+          </div>
+        </div>
+      </Modal>
+
       <Modal aberto={aberto} aoFechar={fecharCorte} titulo="Alterar corte">
         <form onSubmit={aoEnviar} className="flex flex-col gap-4" noValidate>
-          {/* Campo de texto com sugestões, e não uma lista fechada: o
-              catálogo passa de oitenta perfis, e rolar até achar o MN-007
-              numa lista suspensa de celular é pior do que digitar "MN-0".
-              Quem prefere escolher continua podendo — a lista abre ao tocar
-              no campo. */}
-          <CampoSugestao
-            rotulo="Perfil"
-            valor={textoPerfil}
-            aoMudar={escolherPerfil}
-            sugestoes={(modelos ?? []).map(rotuloDoPerfil)}
-            ajuda="Digite o código ou o nome, ou toque para ver a lista."
-          />
+          {/* Todo item já chega com um perfil — o normal aqui é CONFERIR,
+              não escolher de novo. O card mostra desenho e medidas, mesmo
+              modelo do perfil escolhido em "Acrescentar material"; a busca
+              (campo de texto com sugestões) só reaparece com "Trocar
+              perfil", porque digitar de novo o que já está certo seria
+              trabalho à toa. */}
+          {modeloDoCorte && !trocandoPerfil ? (
+            <div>
+              <div className="mb-1.5 flex items-center justify-between gap-3">
+                <span className="font-medium">Perfil</span>
+                <BotaoVoltar
+                  onClick={() => setTrocandoPerfil(true)}
+                  rotulo="Trocar perfil"
+                />
+              </div>
+
+              <div className="border-borda bg-superficie flex items-start gap-3 rounded-xl border-2 px-3 py-3">
+                {desenhoDoCorte ? (
+                  <button
+                    type="button"
+                    onClick={() => setAmpliado(desenhoDoCorte)}
+                    aria-label={`Ampliar desenho técnico do perfil ${modeloDoCorte.codigo}`}
+                    className="border-borda focus-visible:ring-acao-500 flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center rounded-lg border bg-white transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:outline-none"
+                  >
+                    <img
+                      src={desenhoDoCorte}
+                      alt={`Desenho técnico do perfil ${modeloDoCorte.codigo}`}
+                      className="max-h-[3.5rem] max-w-[3.5rem] object-contain"
+                    />
+                  </button>
+                ) : (
+                  <div className="border-borda flex h-[4.5rem] w-[4.5rem] shrink-0 items-center justify-center rounded-lg border bg-white">
+                    <MiniaturaPerfil
+                      link={null}
+                      codigo={modeloDoCorte.codigo}
+                    />
+                  </div>
+                )}
+
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <p className="line-clamp-2 text-[0.8rem] leading-snug">
+                    <strong className="text-acao-600 font-bold">
+                      {modeloDoCorte.codigo}
+                    </strong>
+                    <span className="font-bold">
+                      {' '}
+                      — {modeloDoCorte.descricao}
+                    </span>
+                  </p>
+                  {modeloDoCorte.linha && (
+                    <p className="text-texto-suave text-xs">
+                      {modeloDoCorte.linha}
+                    </p>
+                  )}
+                  {formatarMedidasSecao(modeloDoCorte) && (
+                    <p className="text-texto-suave mt-0.5 text-xs tabular-nums">
+                      {formatarMedidasSecao(modeloDoCorte)}
+                    </p>
+                  )}
+                  <p className="text-texto-suave mt-0.5 text-xs tabular-nums">
+                    {formatarResumo(
+                      resumoDe(estoquePorPerfil, modeloDoCorte.id),
+                    )}{' '}
+                    · {lotesDoCorte} {lotesDoCorte === 1 ? 'lote' : 'lotes'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Campo de texto com sugestões, e não uma lista fechada: o
+               catálogo passa de oitenta perfis, e rolar até achar o MN-007
+               numa lista suspensa de celular é pior do que digitar "MN-0".
+               Quem prefere escolher continua podendo — a lista abre ao
+               tocar no campo. */
+            <CampoSugestao
+              rotulo="Perfil"
+              valor={textoPerfil}
+              aoMudar={escolherPerfil}
+              sugestoes={(modelos ?? []).map(rotuloDoPerfil)}
+              ajuda="Digite o código ou o nome, ou toque para ver a lista."
+            />
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <CampoTexto
@@ -1495,25 +1702,57 @@ export default function ProdutoDetalhe() {
               </span>
               <CampoQuantidade
                 valor={Number(form.quantidade) || 1}
-                aoMudar={(v) => setForm({ ...form, quantidade: String(v) })}
+                aoMudar={mudarQuantidadeForm}
                 rotulo="Quantidade por unidade"
                 compacto
               />
             </div>
           </div>
 
+          {(Number(form.quantidade) || 1) > 1 && (
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="size-5"
+                checked={porPeca}
+                onChange={alternarPorPecaForm}
+              />
+              Definir corte por peça
+            </label>
+          )}
+
           {/* O mesmo seletor da tela de acrescentar: corrigir um corte
               lançado errado é tão comum quanto errar a medida, e obrigar a
               apagar a linha e refazer só por causa da esquadria seria o
               motivo mais bobo para perder a posição numa lista longa. */}
-          <SeletorCortes
-            sentido={form.sentido}
-            corteInicio={form.corte_inicio}
-            corteFim={form.corte_fim}
-            aoMudarSentido={(sentido) => setForm({ ...form, sentido })}
-            aoMudarInicio={(corte) => setForm({ ...form, corte_inicio: corte })}
-            aoMudarFim={(corte) => setForm({ ...form, corte_fim: corte })}
-          />
+          {porPeca ? (
+            <div className="flex flex-col gap-3">
+              {cortesPorPeca.map((corte, indice) => (
+                <CartaoCortePorPeca
+                  key={indice}
+                  numero={indice + 1}
+                  total={cortesPorPeca.length}
+                  corte={corte}
+                  aoMudar={(novo) =>
+                    setCortesPorPeca((atual) =>
+                      atual.map((c, i) => (i === indice ? novo : c)),
+                    )
+                  }
+                />
+              ))}
+            </div>
+          ) : (
+            <SeletorCortes
+              sentido={form.sentido}
+              corteInicio={form.corte_inicio}
+              corteFim={form.corte_fim}
+              aoMudarSentido={(sentido) => setForm({ ...form, sentido })}
+              aoMudarInicio={(corte) =>
+                setForm({ ...form, corte_inicio: corte })
+              }
+              aoMudarFim={(corte) => setForm({ ...form, corte_fim: corte })}
+            />
+          )}
 
           {erro && (
             <p

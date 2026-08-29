@@ -80,3 +80,4 @@ antes, mesmo que a sintaxe já tenha sido validada com `npm run banco:validar`
 - [x] 20260828800000_simplificar_tipos_de_corte.sql
 - [x] 20260828900000_liberacao_produto_por_empresa.sql
 - [x] 20260829000000_importar_produto_sem_duplicar.sql
+- [x] 20260829100000_cortes_por_peca_na_mesma_linha.sql

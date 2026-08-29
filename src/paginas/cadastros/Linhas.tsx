@@ -285,17 +285,34 @@ export default function Linhas() {
                 administra decide. */}
             {souCentral && podeEditar && (
               <div className="flex shrink-0 flex-col items-center gap-0.5">
+                {/*
+                 * A ALTURA de cada peça continua a mesma de antes — quem
+                 * define a altura da célula é o texto ao lado (nome +
+                 * resumo, duas linhas), e esticar este controle esticaria a
+                 * célula à toa. O que cresce é a LARGURA: alvo de toque mais
+                 * largo ajuda a acertar no celular sem empurrar a linha
+                 * para baixo.
+                 */}
+                {/*
+                 * O botão cresce (h-3.5 → h-6), mas a margem negativa
+                 * cancela o crescimento na conta da coluna: `-mt-2.5`
+                 * empurra os 10px extras para CIMA, para dentro do próprio
+                 * `p-4` da célula (espaço vazio, 16px disponíveis) — a
+                 * margem de baixo continua 0, então o lado que encosta na
+                 * pílula não muda nem 1px. O alvo de toque real cresce; a
+                 * altura que a coluna ocupa no layout, não.
+                 */}
                 <button
                   type="button"
                   onClick={() => moverLinha(indice, -1)}
                   disabled={indice === 0 || reordenar.isPending}
                   aria-label={`Mover ${linha} para cima`}
                   title="Mover para cima"
-                  className="text-acao-700 hover:text-acao-800 flex h-3.5 w-6 items-center justify-center disabled:opacity-30"
+                  className="text-acao-700 hover:text-acao-800 -mt-2.5 flex h-6 w-10 items-center justify-center disabled:opacity-30"
                 >
                   <ChevronUp
                     aria-hidden="true"
-                    className="size-4"
+                    className="size-5"
                     strokeWidth={2.5}
                   />
                 </button>
@@ -308,7 +325,7 @@ export default function Linhas() {
                     seleção do sistema; número e seta são só o desenho por
                     baixo, sem clique próprio (`pointer-events-none`). Sem
                     isso, só clicar exatamente sobre o número abria. */}
-                <div className="bg-acao-100 relative flex items-center gap-0.5 rounded-full px-1.5 py-0.5">
+                <div className="bg-acao-100 relative flex items-center gap-0.5 rounded-full px-2 py-0.5">
                   <select
                     value={indice + 1}
                     onChange={(e) =>
@@ -324,7 +341,7 @@ export default function Linhas() {
                       </option>
                     ))}
                   </select>
-                  <span className="text-acao-800 pointer-events-none w-5 text-center text-[0.65rem] leading-none font-semibold">
+                  <span className="text-acao-800 pointer-events-none w-5 text-center text-base leading-none font-semibold">
                     {indice + 1}
                   </span>
                   <ChevronDown
@@ -341,11 +358,11 @@ export default function Linhas() {
                   }
                   aria-label={`Mover ${linha} para baixo`}
                   title="Mover para baixo"
-                  className="text-acao-700 hover:text-acao-800 flex h-3.5 w-6 items-center justify-center disabled:opacity-30"
+                  className="text-acao-700 hover:text-acao-800 -mb-2.5 flex h-6 w-10 items-center justify-center disabled:opacity-30"
                 >
                   <ChevronDown
                     aria-hidden="true"
-                    className="size-4"
+                    className="size-5"
                     strokeWidth={2.5}
                   />
                 </button>

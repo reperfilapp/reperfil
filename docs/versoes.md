@@ -64,6 +64,128 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.62 — 29/08/2026
+
+**O desenho técnico no card de "Alterar corte" agora amplia ao tocar.**
+
+Complemento da 1.7.61: o desenho dentro do card era só ilustrativo. Agora
+toca e abre no mesmo visualizador de imagem que o resto do aplicativo já
+usa, para conferir a seção em tela cheia antes de salvar o corte.
+
+## 1.7.61 — 29/08/2026
+
+**"Alterar corte" ganhou o card completo do perfil.**
+
+O campo "Perfil" desse modal era só um texto com sugestões — sem desenho
+técnico, sem medida, sem estoque. Quem for corrigir a esquadria de uma linha
+não tinha como conferir se o corte é do perfil certo sem sair do modal.
+
+Agora, ao abrir, aparece o mesmo card usado em "Acrescentar material":
+desenho técnico, código, descrição, linha, medida da seção e estoque
+disponível. Como todo item editado já tem um perfil, o card é o padrão; o
+campo de busca (com sugestões) só reaparece ao tocar em "Trocar perfil" —
+digitar de novo o que já estava certo seria trabalho à toa.
+
+## 1.7.60 — 29/08/2026
+
+**O card do perfil escolhido passou a mostrar as medidas da seção.**
+
+Em "Acrescentar material" e "Cadastrar sobra" — as duas telas que usam o
+mesmo `SeletorPerfil` —, o card do perfil já escolhido mostrava código,
+descrição, linha e estoque, mas não a medida da seção (largura × altura).
+Essa informação já aparecia na lista de busca, um passo antes; só sumia
+depois de escolher, bem na hora de conferir a peça na mão contra o cadastro.
+
+## 1.7.59 — 29/08/2026
+
+**A alça de arrastar saiu da lista técnica.**
+
+A lista técnica do produto tinha duas formas de reordenar: arrastar pela alça
+(⠿) de cada linha, e o campo "Ordenar automaticamente por...". Na prática a
+alça brigava com a rolagem da página no celular — o mesmo problema que já
+tinha tirado o arrastar da tela de linhas e sistemas, aqui repetido. Como o
+campo de ordenação automática já resolve o caso comum sozinho, a alça saiu; o
+hook que ela usava (`useArrastarParaOrdenar`) não servia mais nada, foi
+removido junto.
+
+## 1.7.58 — 29/08/2026
+
+**Setas de reordenar linhas ficaram mais fáceis de tocar no celular, sem esticar a fileira.**
+
+O alvo de toque das setas (mover linha para cima/baixo, em "Linhas e sistemas")
+era pequeno demais no celular — mas simplesmente aumentar a altura do botão
+esticava a fileira inteira junto, já que é ela que dá a altura da célula.
+
+A saída: o botão cresce (14px → 24px), mas ganha uma margem negativa exatamente
+igual ao tanto que cresceu, empurrada para o lado de fora — para dentro do
+próprio espaço vazio da borda da célula. O toque real fica maior; o espaço que
+a coluna ocupa no layout continua o mesmo de antes, e a fileira não mexe nem
+1px. O número da pílula do meio também cresceu (0,65rem → 1rem) — o
+pequeno aumento de altura que isso trouxe para a pílula ficou, de propósito:
+afasta um pouco mais as setas da pílula, o que ajuda o toque em vez de
+atrapalhar.
+
+## 1.7.57 — 28/08/2026
+
+**A lixeira da lista técnica passou a confirmar antes de remover.**
+
+Removia direto no toque, sem aviso — o mesmo botão da fileira do lápis,
+pequeno, na lista técnica que pode ter vinte linhas. Diferente de desativar
+um produto, remover um corte da lista técnica não tem "reativar": é lançar
+tudo de novo à mão. Segue o mesmo padrão de confirmação já usado para apagar
+produto, mas por remoção — não some com o cadastro, só com a linha.
+
+## 1.7.56 — 28/08/2026
+
+**Corte por peça mudou de mecanismo: a lista técnica não ganha linha nova.**
+
+A primeira versão do recurso (nesta mesma sessão, ainda não publicada)
+dividia um item de quantidade N em N linhas de quantidade 1, cada uma com o
+próprio corte. Funcionava no banco, mas não na bancada: "4 marcos, um deles
+diferente" virava quatro linhas soltas, e a lista deixava de responder
+"quantas peças desse perfil eu preciso?" de relance — era preciso somar
+linhas espalhadas para saber.
+
+Agora a linha continua **uma só**, com a quantidade de sempre. O corte por
+peça vira uma coluna nova, `cortes_por_peca` — um JSONB com o sentido e os
+dois cortes de cada peça, do tamanho de `quantidade`. Ausente (o caso
+comum): toda peça da linha usa o sentido/corte de sempre, sem nada mudar
+para quem nunca tocou no recurso.
+
+**Onde aparece:**
+
+- Na lista técnica do produto e na tela de acrescentar material: sem
+  mudança visível para quem não usa o recurso.
+- Em "Alterar corte": reabrir um item que já tem `cortes_por_peca` volta
+  automaticamente para os cartões numerados, com os cortes de cada peça —
+  antes, a tela sempre abria em modo único e SALVAR apagaria a
+  diferenciação que já existia, sem ninguém ter pedido isso.
+- **No PDF da lista técnica** (folha do produto): quando a linha tem
+  `cortes_por_peca`, a célula de corte mostra cada peça numerada — desenho e
+  ângulo próprios —, todas dentro da MESMA célula da MESMA linha. É a parte
+  que motivou a mudança: os cortes precisavam aparecer agrupados no item,
+  não espalhados em linhas diferentes da tabela.
+
+**Por que um elemento malformado derruba o array inteiro, em vez de
+corrigir só aquele.** `corteValido`/`sentidoValido` corrigem um valor solto
+para o padrão porque uma linha sem informação nenhuma ainda precisa de
+alguma resposta. Com o array é diferente: se a peça 3 vier quebrada, as
+outras N-1 também não são confiáveis — pode ser sinal de que a lista
+inteira foi escrita por um código antigo. `cortesPorPecaValidos` devolve
+`null` nesse caso, e a linha cai no comportamento uniforme de sempre.
+Mostrar 2 de 3 peças certas e inventar a terceira seria pior.
+
+`sincronizar_produtos_central()` também passou a copiar esta coluna — sem
+isso, todo produto dividido em peças chegaria uniformizado na empresa que
+importa do catálogo central.
+
+A mutação que dividia a linha (`useSubstituirItemPorPecas`) foi removida:
+não existe mais "trocar uma linha por várias", só "gravar ou limpar a
+coluna da mesma linha".
+
+Migração `20260829100000_cortes_por_peca_na_mesma_linha.sql`. 12 testes
+novos (357 no total).
+
 ## 1.7.55 — 28/08/2026
 
 **Produto do catálogo central agora chega às outras empresas.**

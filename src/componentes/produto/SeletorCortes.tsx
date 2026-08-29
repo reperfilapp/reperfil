@@ -105,6 +105,13 @@ export function SeletorCortes({
   aoMudarSentido,
   aoMudarInicio,
   aoMudarFim,
+  /*
+   * Trocável para "Peça N de M": quando o cartão é um entre vários (corte
+   * por peça), "Posição / Tipo de corte" repetido em cada um não diz qual é
+   * qual — é o número da peça que a pessoa precisa ler para saber onde
+   * está.
+   */
+  titulo = 'Posição / Tipo de corte',
   className,
 }: {
   sentido: SentidoMontagem
@@ -113,13 +120,14 @@ export function SeletorCortes({
   aoMudarSentido: (sentido: SentidoMontagem) => void
   aoMudarInicio: (corte: TipoCorte) => void
   aoMudarFim: (corte: TipoCorte) => void
+  titulo?: string
   className?: string
 }) {
   const deitado = sentido === 'h'
 
   return (
     <section className={cn('flex flex-col gap-2', className)}>
-      <h2 className="font-semibold">Posição / Tipo de corte</h2>
+      <h2 className="font-semibold">{titulo}</h2>
 
       {/*
        * Fundo âmbar, e não o cinza dos demais cartões.
@@ -139,7 +147,7 @@ export function SeletorCortes({
        * que muda de tamanho quando se mexe nele empurra o resto do
        * formulário para cima e para baixo debaixo do dedo.
        */}
-      <div className="border-aviso-borda bg-aviso flex h-40 items-stretch gap-2 sm:gap-3 rounded-2xl border p-2 sm:p-3">
+      <div className="border-aviso-borda bg-aviso flex h-40 items-stretch gap-2 rounded-2xl border p-2 sm:gap-3 sm:p-3">
         {/*
          * O sentido primeiro, e à esquerda, porque ele comanda o resto:
          * trocar deitado por em pé renomeia as pontas e gira o desenho.
@@ -152,7 +160,7 @@ export function SeletorCortes({
             // A largura é a MESMA nos dois casos, pelo mesmo motivo da
             // altura fixa do bloco: o botão não pode mudar de tamanho
             // quando se toca nele.
-            'border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover flex w-24 sm:w-32 shrink-0 rounded-2xl border-2 p-2 sm:p-3',
+            'border-destaque-borda bg-destaque text-destaque-texto hover:bg-destaque-hover flex w-24 shrink-0 rounded-2xl border-2 p-2 sm:w-32 sm:p-3',
             // Em pé, a letra e a peça ficam lado a lado, como a peça está;
             // deitada, empilhadas. O arranjo do botão repete o que o botão
             // está dizendo.
@@ -167,7 +175,7 @@ export function SeletorCortes({
               !deitado && 'shrink-0',
             )}
           >
-            <span className="text-4xl sm:text-5xl leading-none font-bold">
+            <span className="text-4xl leading-none font-bold sm:text-5xl">
               {deitado ? 'H' : 'V'}
             </span>
 
@@ -196,7 +204,7 @@ export function SeletorCortes({
           />
         </button>
 
-        <div className="border-aviso-borda bg-superficie flex min-w-0 flex-1 gap-2 sm:gap-3 rounded-2xl border p-2 sm:p-3">
+        <div className="border-aviso-borda bg-superficie flex min-w-0 flex-1 gap-2 rounded-2xl border p-2 sm:gap-3 sm:p-3">
           {/*
            * Deitada, a peça fica em cima e as duas pontas embaixo, lado a
            * lado — esquerda à esquerda, direita à direita, cada rótulo
