@@ -45,4 +45,5 @@ export const chaves = {
   modelosAcessorio: ['modelos-acessorio'] as const,
   lotesAcessorio: ['lotes-acessorio'] as const,
   inventario: ['inventario'] as const,
+  textosInstitucionais: ['textos-institucionais'] as const,
 } as const

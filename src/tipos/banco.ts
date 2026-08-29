@@ -369,6 +369,17 @@ export interface ConfiguracoesAplicacao {
   logo_desenvolvedor_caminho?: string | null
 }
 
+/**
+ * Textos da tela "Sobre" — registro único (singleton), comum a toda
+ * organização. Só a organização central edita; as demais só leem.
+ */
+export interface TextosInstitucionais {
+  id: string
+  texto_sobre_app: string
+  texto_equipe_tecnica: string
+  atualizado_em: string
+}
+
 export interface MovimentacaoEstoque {
   id: string
   organizacao_id: string

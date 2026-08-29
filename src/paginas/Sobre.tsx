@@ -7,6 +7,7 @@ import {
   Mail,
   Phone,
   MapPin,
+  Pencil,
   X,
 } from 'lucide-react'
 import {
@@ -14,12 +15,20 @@ import {
   useEnviarLogoDesenvolvedor,
   useLogoDesenvolvedor,
 } from '@/dados/configuracoes'
+import {
+  useTextosInstitucionais,
+  useSalvarTextoInstitucional,
+} from '@/dados/textosInstitucionais'
+import { useOrganizacao } from '@/dados/organizacao'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { eAdministrador } from '@/autenticacao/contexto'
 import { LogoEmpresa } from '@/componentes/LogoEmpresa'
 import { MarcaRePerfil } from '@/componentes/MarcaRePerfil'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
+import { Botao } from '@/componentes/ui/Botao'
+import { Modal } from '@/componentes/ui/Modal'
 import { SeloVersao } from '@/componentes/SeloVersao'
+import type { TextosInstitucionais } from '@/tipos/banco'
 
 const NOME_DESENVOLVEDOR = 'Fernando S. Carvalho'
 const EMAIL_CONTATO = 'reperfilapp@gmail.com'
@@ -35,6 +44,49 @@ export default function Sobre() {
     config?.logo_desenvolvedor_caminho,
   )
   const enviarLogo = useEnviarLogoDesenvolvedor()
+
+  const { data: organizacao } = useOrganizacao()
+  // Textos institucionais são do RePerfil, não de cada empresa cliente —
+  // só a organização central pode editá-los (a política de RLS recusa
+  // qualquer outra), mesmo que o administrador logado seja de outra
+  // empresa.
+  const podeEditarTextos =
+    podeEditar && Boolean(organizacao?.eh_catalogo_central)
+
+  const { data: textos } = useTextosInstitucionais()
+  const salvarTexto = useSalvarTextoInstitucional()
+  const [campoEditando, setCampoEditando] = useState<
+    | keyof Pick<
+        TextosInstitucionais,
+        'texto_sobre_app' | 'texto_equipe_tecnica'
+      >
+    | null
+  >(null)
+  const [rascunho, setRascunho] = useState('')
+  const [erroTexto, setErroTexto] = useState<string | null>(null)
+
+  function abrirEdicaoTexto(campo: 'texto_sobre_app' | 'texto_equipe_tecnica') {
+    setCampoEditando(campo)
+    setRascunho(textos?.[campo] ?? '')
+    setErroTexto(null)
+  }
+
+  async function salvarTextoEditado() {
+    if (!textos || !campoEditando) return
+
+    setErroTexto(null)
+
+    try {
+      await salvarTexto.mutateAsync({
+        id: textos.id,
+        campo: campoEditando,
+        valor: rascunho.trim(),
+      })
+      setCampoEditando(null)
+    } catch (e) {
+      setErroTexto(e instanceof Error ? e.message : 'Não foi possível salvar.')
+    }
+  }
 
   const entradaCamera = useRef<HTMLInputElement>(null)
   const entradaGaleria = useRef<HTMLInputElement>(null)
@@ -53,7 +105,9 @@ export default function Sobre() {
     try {
       await enviarLogo.mutateAsync({ id: config.id, arquivo })
     } catch (e) {
-      setErro(e instanceof Error ? e.message : 'Não foi possível enviar o logo.')
+      setErro(
+        e instanceof Error ? e.message : 'Não foi possível enviar o logo.',
+      )
     } finally {
       setEnviando(false)
     }
@@ -175,38 +229,54 @@ export default function Sobre() {
 
       {/* ── Sobre o app ───────────────────────────────────────────────────── */}
       <section className="bg-superficie mb-6 rounded-xl p-5 shadow-sm">
-        <h2 className="mb-3 font-semibold">O RePerfil</h2>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="font-semibold">O RePerfil</h2>
+          {podeEditarTextos && (
+            <button
+              type="button"
+              onClick={() => abrirEdicaoTexto('texto_sobre_app')}
+              aria-label="Editar texto “O RePerfil”"
+              title="Editar"
+              className="hover:bg-superficie-2 rounded-lg p-1.5"
+            >
+              <Pencil aria-hidden="true" className="text-texto-suave size-4" />
+            </button>
+          )}
+        </div>
         <div className="text-texto flex flex-col gap-3 text-sm leading-relaxed">
-          <p>
-            Somos uma empresa de desenvolvimento de software localizada em
-            Rio Verde, GO. O RePerfil nasceu para resolver um problema
-            concreto de oficina: sobra de perfil de alumínio que não volta a
-            ser usada porque ninguém sabe onde ela está, ou de que tamanho é.
-          </p>
-          <p>
-            O aplicativo controla essas sobras e permite reaproveitá-las de
-            verdade em novos cortes — além de controlar o estoque de material
-            novo, seja perfil ou acessório (dobradiça, roldana, puxador e
-            afins).
-          </p>
-          <p>
-            Tem uma necessidade específica que o RePerfil ainda não atende?
-            Fale com a gente pelo e-mail ou WhatsApp acima — vamos avaliar a
-            possibilidade de atender sua demanda.
-          </p>
+          {(textos?.texto_sobre_app ?? '')
+            .split('\n')
+            .filter(Boolean)
+            .map((paragrafo, i) => (
+              <p key={i}>{paragrafo}</p>
+            ))}
         </div>
       </section>
 
       {/* ── Equipe técnica ────────────────────────────────────────────────── */}
       <section className="bg-superficie mb-6 rounded-xl p-5 shadow-sm">
-        <h2 className="mb-3 font-semibold">Nossa equipe técnica</h2>
-        <p className="text-texto text-sm leading-relaxed">
-          Nossa equipe é formada por profissionais com ampla experiência em
-          serralheria de alumínio — somos proprietários de uma empresa de
-          esquadrias e vidros temperados, especializada em montagens de todo
-          tipo de esquadria de alumínio, ACM e projetos com vidro temperado.
-          O RePerfil é feito por quem também trabalha no depósito.
-        </p>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="font-semibold">Nossa equipe técnica</h2>
+          {podeEditarTextos && (
+            <button
+              type="button"
+              onClick={() => abrirEdicaoTexto('texto_equipe_tecnica')}
+              aria-label="Editar texto “Nossa equipe técnica”"
+              title="Editar"
+              className="hover:bg-superficie-2 rounded-lg p-1.5"
+            >
+              <Pencil aria-hidden="true" className="text-texto-suave size-4" />
+            </button>
+          )}
+        </div>
+        <div className="text-texto flex flex-col gap-3 text-sm leading-relaxed">
+          {(textos?.texto_equipe_tecnica ?? '')
+            .split('\n')
+            .filter(Boolean)
+            .map((paragrafo, i) => (
+              <p key={i}>{paragrafo}</p>
+            ))}
+        </div>
       </section>
 
       {/* ── Documentos legais ─────────────────────────────────────────────── */}
@@ -231,6 +301,56 @@ export default function Sobre() {
       </section>
 
       <SeloVersao />
+
+      <Modal
+        aberto={campoEditando !== null}
+        aoFechar={() => setCampoEditando(null)}
+        titulo={
+          campoEditando === 'texto_sobre_app'
+            ? 'Editar “O RePerfil”'
+            : 'Editar “Nossa equipe técnica”'
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <label className="flex flex-col gap-1.5 text-sm font-medium">
+            Um parágrafo por linha
+            <textarea
+              value={rascunho}
+              onChange={(e) => setRascunho(e.target.value)}
+              rows={8}
+              className="border-borda bg-superficie rounded-xl border-2 p-3 text-sm leading-relaxed font-normal"
+            />
+          </label>
+
+          {erroTexto && (
+            <p
+              role="alert"
+              className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm"
+            >
+              {erroTexto}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <Botao
+              type="button"
+              variante="contorno"
+              onClick={() => setCampoEditando(null)}
+              className="flex-1"
+            >
+              Cancelar
+            </Botao>
+            <Botao
+              type="button"
+              onClick={() => void salvarTextoEditado()}
+              carregando={salvarTexto.isPending}
+              className="flex-1"
+            >
+              Salvar
+            </Botao>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

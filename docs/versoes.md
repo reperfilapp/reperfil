@@ -64,6 +64,35 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.72 — 29/08/2026
+
+**Os textos "O RePerfil" e "Nossa equipe técnica" (tela Sobre) ficaram editáveis.**
+
+Eram texto fixo no código — mudar uma vírgula pedia uma nova versão do
+aplicativo. Agora moram no banco (tabela nova, `textos_institucionais`, um
+registro só, comum a toda organização) e cada card ganha um lápis de editar.
+
+O lápis só aparece para o administrador da organização CENTRAL — não
+qualquer administrador. Faz sentido: são os textos institucionais do
+RePerfil (quem somos, nossa equipe), não da empresa cliente que está
+logada — deixar qualquer empresa editá-los deixaria o texto de uma
+sobrescrever o de todas as outras, já que é um registro só, comum a todo
+mundo. A política de RLS recusa a gravação de qualquer outra organização,
+mesmo que o administrador tente pelo próprio Supabase.
+
+Formato do texto: uma linha por parágrafo, num `<textarea>` livre — sem
+listas, negrito ou links dentro do texto (perderiam a formatação).
+
+Migração `textos_institucionais`: cria a tabela, semeia com o texto atual
+(o mesmo que já estava fixo no código) e configura a política de RLS.
+
+## 1.7.71 — 29/08/2026
+
+**Logo da empresa, na tela inicial, ganhou o mesmo "toque para ampliar" da marca RePerfil ao lado.**
+
+Só quando existe logo cadastrado — sem logo, o círculo com as iniciais não
+tem o que ampliar.
+
 ## 1.7.68 — 29/08/2026
 
 **Três cartões de fundo, na tela do produto, ganharam cor própria.**

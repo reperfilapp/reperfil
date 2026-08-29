@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   PackagePlus,
@@ -16,6 +17,7 @@ import { useOrganizacao, useLogoOrganizacao } from '@/dados/organizacao'
 import { MarcaRePerfil } from '@/componentes/MarcaRePerfil'
 import { SeloVersao } from '@/componentes/SeloVersao'
 import { LogoEmpresa } from '@/componentes/LogoEmpresa'
+import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
 import { cn } from '@/lib/utilitarios'
 
 export default function Inicio() {
@@ -25,6 +27,7 @@ export default function Inicio() {
   const { data: org } = useOrganizacao()
   const { data: logoUrl } = useLogoOrganizacao(org?.logo_caminho)
   const { data: modelos, isPending: perfisCarregando } = useModelosPerfil()
+  const [logoAmpliado, setLogoAmpliado] = useState(false)
 
   const metros =
     resumo === undefined
@@ -48,11 +51,26 @@ export default function Inicio() {
       <div className="mb-6 flex items-center justify-center gap-4">
         {org ? (
           <>
-            <LogoEmpresa
-              logoUrl={logoUrl}
-              nomeFantasia={org.nome_fantasia}
-              tamanho="gigante"
-            />
+            {logoUrl ? (
+              <button
+                type="button"
+                onClick={() => setLogoAmpliado(true)}
+                aria-label={`Ampliar logo de ${org.nome_fantasia}`}
+                className="focus-visible:ring-acao-500 rounded-lg transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:outline-none"
+              >
+                <LogoEmpresa
+                  logoUrl={logoUrl}
+                  nomeFantasia={org.nome_fantasia}
+                  tamanho="gigante"
+                />
+              </button>
+            ) : (
+              <LogoEmpresa
+                logoUrl={logoUrl}
+                nomeFantasia={org.nome_fantasia}
+                tamanho="gigante"
+              />
+            )}
             <div className="bg-borda/50 h-10 w-px" aria-hidden="true" />
             <Link to="/sobre" aria-label="Sobre o RePerfil">
               <MarcaRePerfil
@@ -117,7 +135,10 @@ export default function Inicio() {
           to="/perfis"
           className="bg-celula border-borda hover:bg-superficie-2 block rounded-xl border-2 p-4 text-center shadow-sm transition-colors"
         >
-          <Layers aria-hidden="true" className="text-acao-600 mx-auto mb-1 size-5" />
+          <Layers
+            aria-hidden="true"
+            className="text-acao-600 mx-auto mb-1 size-5"
+          />
           <p className="text-xl font-bold tabular-nums">
             {perfisCarregando ? '—' : totalPerfis}
           </p>
@@ -200,6 +221,14 @@ export default function Inicio() {
           Política de privacidade
         </Link>
       </nav>
+
+      {logoAmpliado && logoUrl && org && (
+        <VisualizadorImagem
+          src={logoUrl}
+          alt={`Logo de ${org.nome_fantasia}, ampliado`}
+          aoFechar={() => setLogoAmpliado(false)}
+        />
+      )}
     </div>
   )
 }
