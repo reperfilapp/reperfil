@@ -8,7 +8,7 @@ import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoQuantidade } from '@/componentes/ui/CampoQuantidade'
 import { SeletorCortes } from '@/componentes/produto/SeletorCortes'
-import { CartaoCortePorPeca } from '@/componentes/produto/CartaoCortePorPeca'
+import { CartaoGrupoCorte } from '@/componentes/produto/CartaoGrupoCorte'
 import {
   interpretarMedidaDigitada,
   validarComprimento,
@@ -16,9 +16,14 @@ import {
 import {
   CORTE_PADRAO,
   SENTIDO_PADRAO,
+  criarGrupoUnico,
   descreverCortes,
-  redimensionarCortesPorPeca,
+  dividirGrupo,
+  redimensionarGrupos,
+  removerGrupo,
+  somaQuantidades,
   type CorteDaPeca,
+  type GrupoCorte,
   type SentidoMontagem,
   type TipoCorte,
 } from '@/dominio/corteMontagem'
@@ -57,50 +62,53 @@ export default function AcrescentarMaterial() {
   const [corteInicio, setCorteInicio] = useState<TipoCorte>(CORTE_PADRAO)
   const [corteFim, setCorteFim] = useState<TipoCorte>(CORTE_PADRAO)
   /*
-   * "Definir corte por peça": só faz sentido com mais de uma peça, e existe
-   * porque nem toda receita é uniforme — um marco pode ter três montantes
-   * retos e um só em meia-esquadria, e forçar todos ao mesmo corte
-   * obrigaria a lançar essa peça separada, fora da sequência.
+   * "Dividir em grupos de corte": só faz sentido com mais de uma peça, e
+   * existe porque nem toda receita é uniforme — um marco pode ter três
+   * montantes retos e um só em meia-esquadria, e forçar todos ao mesmo
+   * corte obrigaria a lançar essa peça separada, fora da sequência.
    *
    * Desligado por padrão porque o caso comum É o uniforme: a maioria das
    * peças da mesma medida sai com o mesmo corte, e ligar isto para toda
-   * peça pediria N escolhas onde uma bastava.
+   * peça pediria uma divisão onde nenhuma era precisa.
    */
-  const [porPeca, setPorPeca] = useState(false)
-  const [cortesPorPeca, setCortesPorPeca] = useState<CorteDaPeca[]>([])
+  const [porGrupos, setPorGrupos] = useState(false)
+  const [grupos, setGrupos] = useState<GrupoCorte[]>([])
   const [erro, setErro] = useState<string | null>(null)
   const [ultimoAdicionado, setUltimoAdicionado] = useState<string | null>(null)
 
   function mudarQuantidade(nova: number) {
     setQuantidade(nova)
 
-    if (porPeca) {
-      setCortesPorPeca((atual) =>
-        redimensionarCortesPorPeca(atual, nova, {
-          sentido,
-          corte_inicio: corteInicio,
-          corte_fim: corteFim,
-        }),
+    if (porGrupos) {
+      setGrupos((atual) => redimensionarGrupos(atual, nova))
+    }
+  }
+
+  function alternarPorGrupos() {
+    const ligar = !porGrupos
+
+    setPorGrupos(ligar)
+
+    // Ao ligar, nasce um grupo só, com o corte único já escolhido e toda a
+    // quantidade — quem ligou para ajustar só uma fração não quer redigitar
+    // o resto.
+    if (ligar) {
+      setGrupos((atual) =>
+        atual.length === 0
+          ? criarGrupoUnico(quantidade, {
+              sentido,
+              corte_inicio: corteInicio,
+              corte_fim: corteFim,
+            })
+          : redimensionarGrupos(atual, quantidade),
       )
     }
   }
 
-  function alternarPorPeca() {
-    const ligar = !porPeca
-
-    setPorPeca(ligar)
-
-    // Ao ligar, os cartões nascem com o corte único já escolhido — quem
-    // ligou para ajustar só a última peça não quer redigitar as outras.
-    if (ligar) {
-      setCortesPorPeca((atual) =>
-        redimensionarCortesPorPeca(atual, quantidade, {
-          sentido,
-          corte_inicio: corteInicio,
-          corte_fim: corteFim,
-        }),
-      )
-    }
+  function mudarCorteDoGrupo(indice: number, corte: CorteDaPeca) {
+    setGrupos((atual) =>
+      atual.map((g, i) => (i === indice ? { ...g, ...corte } : g)),
+    )
   }
 
   async function aoEnviar(evento: FormEvent) {
@@ -150,12 +158,12 @@ export default function AcrescentarMaterial() {
       return
     }
 
-    // Salvaguarda: o comum é `mudarQuantidade`/`alternarPorPeca` manterem os
-    // dois em sincronia sozinhos, mas um envio não pode confiar nisso — uma
-    // linha com `cortes_por_peca` de tamanho diferente da quantidade viola
-    // a regra do próprio banco (`cortes_por_peca_valido`), e é melhor travar
-    // aqui, com uma frase, do que devolver o erro cru do Postgres.
-    if (porPeca && cortesPorPeca.length !== qtd) {
+    // Salvaguarda: o comum é `mudarQuantidade`/`alternarPorGrupos` manterem
+    // a soma dos grupos em sincronia sozinhos, mas um envio não pode
+    // confiar nisso — uma linha onde a soma não bate com a quantidade viola
+    // a regra do próprio banco (`grupos_de_corte_valido`), e é melhor
+    // travar aqui, com uma frase, do que devolver o erro cru do Postgres.
+    if (porGrupos && somaQuantidades(grupos) !== qtd) {
       setErro('Defina o corte de todas as peças antes de acrescentar.')
       return
     }
@@ -165,9 +173,9 @@ export default function AcrescentarMaterial() {
     try {
       /*
        * Continua UMA linha, quantidade N — "corte por peça" não divide a
-       * lista técnica, só anexa a exceção. `cortes_por_peca` guarda o corte
-       * de cada peça quando ligado; as colunas soltas (`sentido`,
-       * `corte_inicio`, `corte_fim`) recebem o da primeira peça, como valor
+       * lista técnica, só anexa a exceção. `grupos_de_corte` guarda o corte
+       * de cada grupo quando ligado; as colunas soltas (`sentido`,
+       * `corte_inicio`, `corte_fim`) recebem o do primeiro grupo, como valor
        * de referência para quem olhar a linha sem entender o array — nunca
        * são o que decide a instrução quando o array existe.
        */
@@ -176,10 +184,10 @@ export default function AcrescentarMaterial() {
         modelo_perfil_id: modelo.id,
         comprimento_mm: comprimento,
         quantidade: qtd,
-        sentido: porPeca ? cortesPorPeca[0]!.sentido : sentido,
-        corte_inicio: porPeca ? cortesPorPeca[0]!.corte_inicio : corteInicio,
-        corte_fim: porPeca ? cortesPorPeca[0]!.corte_fim : corteFim,
-        cortes_por_peca: porPeca ? cortesPorPeca : null,
+        sentido: porGrupos ? grupos[0]!.sentido : sentido,
+        corte_inicio: porGrupos ? grupos[0]!.corte_inicio : corteInicio,
+        corte_fim: porGrupos ? grupos[0]!.corte_fim : corteFim,
+        grupos_de_corte: porGrupos ? grupos : null,
         observacao: null,
       }
 
@@ -188,8 +196,8 @@ export default function AcrescentarMaterial() {
       // Só o comprimento e a quantidade são zerados: o perfil escolhido e os
       // cortes normalmente se repetem no próximo corte da mesma receita.
       setUltimoAdicionado(
-        porPeca
-          ? `${modelo.codigo} — ${comprimento} mm × ${qtd} peças, cada uma com o corte próprio`
+        porGrupos
+          ? `${modelo.codigo} — ${comprimento} mm × ${qtd} peças, em ${grupos.length} grupos de corte`
           : `${modelo.codigo} — ${comprimento} mm × ${qtd} · ${descreverCortes(sentido, corteInicio, corteFim)}`,
       )
 
@@ -197,8 +205,8 @@ export default function AcrescentarMaterial() {
       setQuantidade(1)
       // "Corte por peça" é uma decisão desta entrada, não sticky como
       // sentido e corte — a próxima peça volta ao caso comum (uniforme).
-      setPorPeca(false)
-      setCortesPorPeca([])
+      setPorGrupos(false)
+      setGrupos([])
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível salvar.')
     }
@@ -288,36 +296,39 @@ export default function AcrescentarMaterial() {
               </div>
             </div>
 
-            {/* Só aparece com mais de uma peça — com uma só, "por peça" e
-                "todas iguais" são a mesma coisa, e a opção não teria o que
-                decidir. */}
+            {/* Só aparece com mais de uma peça — com uma só, dividir em
+                grupos não teria o que decidir. */}
             {quantidade > 1 && (
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   className="size-5"
-                  checked={porPeca}
-                  onChange={alternarPorPeca}
+                  checked={porGrupos}
+                  onChange={alternarPorGrupos}
                 />
-                Definir corte por peça
+                Dividir em grupos de corte diferentes
               </label>
             )}
 
             {/* Antes do botão de acrescentar, e não depois: o corte faz parte
                 da peça que está sendo lançada, e quem chega no botão sem ter
                 passado por aqui lançaria a peça sem a instrução. */}
-            {porPeca ? (
+            {porGrupos ? (
               <div className="flex flex-col gap-3">
-                {cortesPorPeca.map((corte, indice) => (
-                  <CartaoCortePorPeca
+                {grupos.map((grupo, indice) => (
+                  <CartaoGrupoCorte
                     key={indice}
-                    numero={indice + 1}
-                    total={cortesPorPeca.length}
-                    corte={corte}
-                    aoMudar={(novo) =>
-                      setCortesPorPeca((atual) =>
-                        atual.map((c, i) => (i === indice ? novo : c)),
+                    grupo={grupo}
+                    indice={indice}
+                    totalGrupos={grupos.length}
+                    aoMudarCorte={(corte) => mudarCorteDoGrupo(indice, corte)}
+                    aoDividir={(quantidadeNoNovo) =>
+                      setGrupos((atual) =>
+                        dividirGrupo(atual, indice, quantidadeNoNovo),
                       )
+                    }
+                    aoRemover={() =>
+                      setGrupos((atual) => removerGrupo(atual, indice))
                     }
                   />
                 ))}

@@ -28,7 +28,7 @@ export function LiberacaoProduto({ produtoId }: { produtoId: string }) {
   const liberarTodas = useDefinirLiberacaoProdutoTodas()
 
   return (
-    <section>
+    <section className="bg-erro-50 rounded-xl p-4">
       <h2 className="font-semibold">Liberado para</h2>
       <p className="text-texto-suave mt-0.5 mb-3 text-sm">
         Quais empresas podem importar este produto do catálogo central.
@@ -68,7 +68,7 @@ export function LiberacaoProduto({ produtoId }: { produtoId: string }) {
           {organizacoes?.map((o) => (
             <li
               key={o.organizacao_id}
-              className="bg-superficie-2 flex items-center justify-between gap-2 rounded-lg px-3 py-2"
+              className="bg-superficie border-erro-100 flex items-center justify-between gap-2 rounded-lg border px-3 py-2"
             >
               <span className="min-w-0 flex-1 truncate text-sm">
                 {o.nome_fantasia}

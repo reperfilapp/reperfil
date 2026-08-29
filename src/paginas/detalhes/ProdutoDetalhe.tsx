@@ -8,7 +8,7 @@ import {
   Pencil,
   ChevronRight,
   ChevronDown,
-  FileText,
+  Printer,
   ArrowDownUp,
   Calculator,
   ClipboardList,
@@ -63,17 +63,22 @@ import {
   CORTE_PADRAO,
   SENTIDO_PADRAO,
   corteValido,
-  cortesPorPecaValidos,
+  criarGrupoUnico,
   descreverCortes,
-  descreverCortesDaLinha,
-  redimensionarCortesPorPeca,
+  descreverGruposDaLinha,
+  dividirGrupo,
+  gruposDeCorteValidos,
+  redimensionarGrupos,
+  removerGrupo,
   sentidoValido,
+  somaQuantidades,
   type CorteDaPeca,
+  type GrupoCorte,
   type SentidoMontagem,
   type TipoCorte,
 } from '@/dominio/corteMontagem'
 import { SeletorCortes } from '@/componentes/produto/SeletorCortes'
-import { CartaoCortePorPeca } from '@/componentes/produto/CartaoCortePorPeca'
+import { CartaoGrupoCorte } from '@/componentes/produto/CartaoGrupoCorte'
 import { formatarMedidaProduto, nomeDoArquivo } from '@/dominio/produto'
 import {
   formatarComprimento,
@@ -155,13 +160,13 @@ export default function ProdutoDetalhe() {
     corte_fim: CORTE_PADRAO as TipoCorte,
   })
   /*
-   * "Definir corte por peça" na correção — mesma ideia de
+   * "Dividir em grupos de corte" na correção — mesma ideia de
    * `AcrescentarMaterial`: a linha continua UMA só, quantidade N; ligar
-   * isto grava a exceção `cortes_por_peca` na mesma linha, desligar limpa a
+   * isto grava a exceção `grupos_de_corte` na mesma linha, desligar limpa a
    * coluna e a linha volta a ser uniforme.
    */
-  const [porPeca, setPorPeca] = useState(false)
-  const [cortesPorPeca, setCortesPorPeca] = useState<CorteDaPeca[]>([])
+  const [porGrupos, setPorGrupos] = useState(false)
+  const [grupos, setGrupos] = useState<GrupoCorte[]>([])
   const [erro, setErro] = useState<string | null>(null)
   const [ampliado, setAmpliado] = useState<string | null>(null)
   /*
@@ -479,10 +484,10 @@ export default function ProdutoDetalhe() {
       return
     }
 
-    // Mesma salvaguarda de `AcrescentarMaterial`: um array de tamanho
+    // Mesma salvaguarda de `AcrescentarMaterial`: uma soma de grupos
     // diferente da quantidade viola a regra do banco, e travar aqui dá uma
     // frase em vez do erro cru do Postgres.
-    if (porPeca && cortesPorPeca.length !== quantidade) {
+    if (porGrupos && somaQuantidades(grupos) !== quantidade) {
       setErro('Defina o corte de todas as peças antes de salvar.')
       return
     }
@@ -493,7 +498,7 @@ export default function ProdutoDetalhe() {
       /*
        * Continua UMA linha, quantidade N — ver o comentário em
        * `AcrescentarMaterial.tsx`. Editar não muda esse contrato: só
-       * anexa ou remove a exceção `cortes_por_peca` da mesma linha.
+       * anexa ou remove a exceção `grupos_de_corte` da mesma linha.
        */
       await editarItem.mutateAsync({
         id: itemEditando.id,
@@ -501,12 +506,10 @@ export default function ProdutoDetalhe() {
           modelo_perfil_id: form.modelo_perfil_id,
           comprimento_mm: comprimento,
           quantidade,
-          sentido: porPeca ? cortesPorPeca[0]!.sentido : form.sentido,
-          corte_inicio: porPeca
-            ? cortesPorPeca[0]!.corte_inicio
-            : form.corte_inicio,
-          corte_fim: porPeca ? cortesPorPeca[0]!.corte_fim : form.corte_fim,
-          cortes_por_peca: porPeca ? cortesPorPeca : null,
+          sentido: porGrupos ? grupos[0]!.sentido : form.sentido,
+          corte_inicio: porGrupos ? grupos[0]!.corte_inicio : form.corte_inicio,
+          corte_fim: porGrupos ? grupos[0]!.corte_fim : form.corte_fim,
+          grupos_de_corte: porGrupos ? grupos : null,
           observacao: itemEditando.observacao,
         },
       })
@@ -520,33 +523,35 @@ export default function ProdutoDetalhe() {
   function mudarQuantidadeForm(nova: number) {
     setForm({ ...form, quantidade: String(nova) })
 
-    if (porPeca) {
-      setCortesPorPeca((atual) =>
-        redimensionarCortesPorPeca(atual, nova, {
-          sentido: form.sentido,
-          corte_inicio: form.corte_inicio,
-          corte_fim: form.corte_fim,
-        }),
-      )
+    if (porGrupos) {
+      setGrupos((atual) => redimensionarGrupos(atual, nova))
     }
   }
 
-  function alternarPorPecaForm() {
-    const ligar = !porPeca
+  function alternarPorGruposForm() {
+    const ligar = !porGrupos
 
-    setPorPeca(ligar)
+    setPorGrupos(ligar)
 
     if (ligar) {
       const quantidadeAtual = Number(form.quantidade) || 1
 
-      setCortesPorPeca((atual) =>
-        redimensionarCortesPorPeca(atual, quantidadeAtual, {
-          sentido: form.sentido,
-          corte_inicio: form.corte_inicio,
-          corte_fim: form.corte_fim,
-        }),
+      setGrupos((atual) =>
+        atual.length === 0
+          ? criarGrupoUnico(quantidadeAtual, {
+              sentido: form.sentido,
+              corte_inicio: form.corte_inicio,
+              corte_fim: form.corte_fim,
+            })
+          : redimensionarGrupos(atual, quantidadeAtual),
       )
     }
+  }
+
+  function mudarCorteDoGrupo(indice: number, corte: CorteDaPeca) {
+    setGrupos((atual) =>
+      atual.map((g, i) => (i === indice ? { ...g, ...corte } : g)),
+    )
   }
 
   function abrirCorte(item: ItemListaTecnica) {
@@ -568,14 +573,14 @@ export default function ProdutoDetalhe() {
     /*
      * Reflete o que o item JÁ TEM, não sempre "modo único".
      *
-     * `cortes_por_peca` mora na mesma linha agora — se o item já veio com a
+     * `grupos_de_corte` mora na mesma linha agora — se o item já veio com a
      * exceção preenchida (lançado assim, ou importado do central), abrir em
      * modo único e salvar apagaria essa diferenciação sem ninguém ter
      * pedido. `null` (não validado) é o caso comum de sempre.
      */
-    const pecas = cortesPorPecaValidos(item.cortes_por_peca)
-    setPorPeca(pecas !== null)
-    setCortesPorPeca(pecas ?? [])
+    const gruposDoItem = gruposDeCorteValidos(item.grupos_de_corte)
+    setPorGrupos(gruposDoItem !== null)
+    setGrupos(gruposDoItem ?? [])
     setTrocandoPerfil(false)
     setErro(null)
     setAberto(true)
@@ -594,8 +599,8 @@ export default function ProdutoDetalhe() {
       corte_inicio: CORTE_PADRAO,
       corte_fim: CORTE_PADRAO,
     })
-    setPorPeca(false)
-    setCortesPorPeca([])
+    setPorGrupos(false)
+    setGrupos([])
     setErro(null)
   }
 
@@ -848,7 +853,7 @@ export default function ProdutoDetalhe() {
        * procurar o "Calcular" lá em cima — e a faixa do topo, aliviada,
        * volta a ser só o que a peça é.
        */}
-      <section className="bg-superficie-2 flex flex-col gap-3 rounded-xl p-4">
+      <section className="bg-acao-100 flex flex-col gap-3 rounded-xl p-4">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {/* A quantidade abre a fileira porque é a primeira decisão: todas
               as outras opções, e as duas contas, respondem sobre ELA. */}
@@ -1011,7 +1016,7 @@ export default function ProdutoDetalhe() {
             imprimir. Por isso a moldura é da fileira, não do botão. */}
         <div
           className={cn(
-            'border-borda bg-superficie-2 flex items-center border pr-2',
+            'border-borda bg-atencao-50 flex items-center border pr-2',
             listaAberta ? 'mb-0 rounded-t-xl' : 'mb-2 rounded-xl',
           )}
         >
@@ -1051,7 +1056,7 @@ export default function ProdutoDetalhe() {
             title="Gerar PDF"
             className="ml-2 shrink-0"
           >
-            <FileText aria-hidden="true" className="size-4" />
+            <Printer aria-hidden="true" className="size-4" />
           </Botao>
         </div>
 
@@ -1228,11 +1233,11 @@ export default function ProdutoDetalhe() {
                                 : 'H —'}
                             </span>
                             <span className="text-xs">
-                              {descreverCortesDaLinha(
+                              {descreverGruposDaLinha(
                                 sentidoValido(item.sentido),
                                 corteValido(item.corte_inicio),
                                 corteValido(item.corte_fim),
-                                cortesPorPecaValidos(item.cortes_por_peca),
+                                gruposDeCorteValidos(item.grupos_de_corte),
                               )}
                             </span>
                           </span>
@@ -1531,7 +1536,7 @@ export default function ProdutoDetalhe() {
                 onClick={() => setImprimindo('materiais')}
                 className="flex-1"
               >
-                <FileText aria-hidden="true" className="size-5" />
+                <Printer aria-hidden="true" className="size-5" />
                 Imprimir / PDF
               </Botao>
             </div>
@@ -1714,10 +1719,10 @@ export default function ProdutoDetalhe() {
               <input
                 type="checkbox"
                 className="size-5"
-                checked={porPeca}
-                onChange={alternarPorPecaForm}
+                checked={porGrupos}
+                onChange={alternarPorGruposForm}
               />
-              Definir corte por peça
+              Dividir em grupos de corte diferentes
             </label>
           )}
 
@@ -1725,18 +1730,22 @@ export default function ProdutoDetalhe() {
               lançado errado é tão comum quanto errar a medida, e obrigar a
               apagar a linha e refazer só por causa da esquadria seria o
               motivo mais bobo para perder a posição numa lista longa. */}
-          {porPeca ? (
+          {porGrupos ? (
             <div className="flex flex-col gap-3">
-              {cortesPorPeca.map((corte, indice) => (
-                <CartaoCortePorPeca
+              {grupos.map((grupo, indice) => (
+                <CartaoGrupoCorte
                   key={indice}
-                  numero={indice + 1}
-                  total={cortesPorPeca.length}
-                  corte={corte}
-                  aoMudar={(novo) =>
-                    setCortesPorPeca((atual) =>
-                      atual.map((c, i) => (i === indice ? novo : c)),
+                  grupo={grupo}
+                  indice={indice}
+                  totalGrupos={grupos.length}
+                  aoMudarCorte={(corte) => mudarCorteDoGrupo(indice, corte)}
+                  aoDividir={(quantidadeNoNovo) =>
+                    setGrupos((atual) =>
+                      dividirGrupo(atual, indice, quantidadeNoNovo),
                     )
+                  }
+                  aoRemover={() =>
+                    setGrupos((atual) => removerGrupo(atual, indice))
                   }
                 />
               ))}

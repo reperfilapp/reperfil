@@ -4,16 +4,20 @@ import {
   CORTE_PADRAO,
   anguloDoCorte,
   corteValido,
-  cortesPorPecaValidos,
+  criarGrupoUnico,
   descreverCorte,
   descreverCortes,
-  descreverCortesDaLinha,
+  descreverGruposDaLinha,
+  dividirGrupo,
+  gruposDeCorteValidos,
   linhasDaPonta,
   outroSentido,
   proximoCorte,
-  redimensionarCortesPorPeca,
+  redimensionarGrupos,
+  removerGrupo,
   rotuloDaPonta,
   sentidoValido,
+  somaQuantidades,
 } from './corteMontagem'
 
 /**
@@ -134,16 +138,12 @@ describe('o que veio do banco', () => {
 })
 
 /**
- * Os cartões de "corte por peça" na tela de acrescentar material. Errar
- * aqui troca de dono um corte já ajustado à mão — silenciosamente, porque
- * do ponto de vista de quem preenche a tela nada pareceu errado.
+ * Os grupos de "corte por peça" na tela de acrescentar material. Errar aqui
+ * troca de dono um corte já ajustado à mão, ou perde peças da conta —
+ * silenciosamente, porque do ponto de vista de quem preenche a tela nada
+ * pareceu errado.
  */
-describe('redimensionar cartões de peça', () => {
-  const PADRAO = {
-    sentido: 'h',
-    corte_inicio: 'reto',
-    corte_fim: 'reto',
-  } as const
+describe('redimensionar grupos de corte', () => {
   const A = {
     sentido: 'v',
     corte_inicio: 'meia_cima',
@@ -155,91 +155,239 @@ describe('redimensionar cartões de peça', () => {
     corte_fim: 'meia_baixo',
   } as const
 
-  it('corta a lista ao diminuir, sem tocar no que sobra', () => {
-    expect(redimensionarCortesPorPeca([A, B], 1, PADRAO)).toEqual([A])
+  it('cria um grupo só, com toda a quantidade, ao ligar a exceção', () => {
+    expect(criarGrupoUnico(4, A)).toEqual([{ ...A, quantidade: 4 }])
   })
 
-  it('some com a lista ao chegar em zero peças', () => {
-    expect(redimensionarCortesPorPeca([A, B], 0, PADRAO)).toEqual([])
+  it('soma as quantidades de todos os grupos', () => {
+    expect(
+      somaQuantidades([
+        { ...A, quantidade: 2 },
+        { ...B, quantidade: 3 },
+      ]),
+    ).toBe(5)
   })
 
-  it('preenche peça nova copiando a ÚLTIMA existente, não o padrão', () => {
-    // O caso comum é "mais uma igual à anterior" — quem já ajustou as
-    // primeiras não quer reajustar a última à mão de novo.
-    expect(redimensionarCortesPorPeca([A, B], 3, PADRAO)).toEqual([A, B, B])
+  it('ao crescer, o ÚLTIMO grupo absorve a diferença', () => {
+    // O caso comum é "mais uma igual à anterior" — a peça nova repete o
+    // último grupo, não o primeiro.
+    const grupos = [
+      { ...A, quantidade: 2 },
+      { ...B, quantidade: 2 },
+    ]
+
+    expect(redimensionarGrupos(grupos, 5)).toEqual([
+      { ...A, quantidade: 2 },
+      { ...B, quantidade: 3 },
+    ])
   })
 
-  it('usa o padrão quando a lista começa vazia', () => {
-    expect(redimensionarCortesPorPeca([], 2, PADRAO)).toEqual([PADRAO, PADRAO])
+  it('ao encolher dentro do último grupo, só ele diminui', () => {
+    const grupos = [
+      { ...A, quantidade: 2 },
+      { ...B, quantidade: 3 },
+    ]
+
+    expect(redimensionarGrupos(grupos, 3)).toEqual([
+      { ...A, quantidade: 2 },
+      { ...B, quantidade: 1 },
+    ])
   })
 
-  it('mantém a lista como está quando o tamanho não muda', () => {
-    expect(redimensionarCortesPorPeca([A, B], 2, PADRAO)).toEqual([A, B])
+  it('ao encolher além do último grupo, ele some e o anterior perde o resto', () => {
+    const grupos = [
+      { ...A, quantidade: 2 },
+      { ...B, quantidade: 1 },
+    ]
+
+    expect(redimensionarGrupos(grupos, 1)).toEqual([{ ...A, quantidade: 1 }])
   })
 
-  it('as cópias são independentes — mudar uma não muda as outras', () => {
-    const resultado = redimensionarCortesPorPeca([A], 3, PADRAO)
+  it('nunca fica vazio: encolher a zero deixa um grupo com a nova quantidade', () => {
+    // Aqui a redução varre os DOIS grupos por completo (nenhum sobra) — o
+    // caso em que o resultado normal ficaria vazio, e a função devolve um
+    // grupo com o corte do ÚLTIMO grupo original em vez disso.
+    const grupos = [
+      { ...A, quantidade: 2 },
+      { ...B, quantidade: 2 },
+    ]
 
-    resultado[1]!.sentido = 'h'
+    expect(redimensionarGrupos(grupos, 0)).toEqual([{ ...B, quantidade: 1 }])
+  })
 
-    expect(resultado[2]!.sentido).toBe('v')
+  it('lista vazia continua vazia — não há "último grupo" para crescer', () => {
+    expect(redimensionarGrupos([], 4)).toEqual([])
+  })
+
+  it('mantém os grupos como estão quando o total não muda', () => {
+    const grupos = [
+      { ...A, quantidade: 2 },
+      { ...B, quantidade: 2 },
+    ]
+
+    expect(redimensionarGrupos(grupos, 4)).toEqual(grupos)
+  })
+
+  it('as cópias são independentes — mudar uma não muda a original', () => {
+    const grupos = [{ ...A, quantidade: 2 }]
+    const resultado = redimensionarGrupos(grupos, 5)
+
+    resultado[0]!.quantidade = 99
+
+    expect(grupos[0]!.quantidade).toBe(2)
+  })
+})
+
+describe('dividir e remover grupos', () => {
+  const A = {
+    sentido: 'v',
+    corte_inicio: 'meia_cima',
+    corte_fim: 'reto',
+  } as const
+
+  it('tira quantidadeNoNovo peças do grupo, num grupo novo logo depois', () => {
+    const grupos = [{ ...A, quantidade: 4 }]
+
+    expect(dividirGrupo(grupos, 0, 1)).toEqual([
+      { ...A, quantidade: 3 },
+      { ...A, quantidade: 1 },
+    ])
+  })
+
+  it('o grupo novo nasce com o MESMO corte do original', () => {
+    // Só muda o que a pessoa tocar depois — dividir sozinho não decide
+    // nenhum corte diferente.
+    const grupos = [{ ...A, quantidade: 4 }]
+    const [, novo] = dividirGrupo(grupos, 0, 2)
+
+    expect(novo).toEqual({ ...A, quantidade: 2 })
+  })
+
+  it('não divide em 0, no total, ou além do total', () => {
+    const grupos = [{ ...A, quantidade: 4 }]
+
+    expect(dividirGrupo(grupos, 0, 0)).toEqual(grupos)
+    expect(dividirGrupo(grupos, 0, 4)).toEqual(grupos)
+    expect(dividirGrupo(grupos, 0, 5)).toEqual(grupos)
+  })
+
+  it('ao remover, a quantidade volta para o grupo ANTERIOR', () => {
+    const grupos = [
+      { ...A, quantidade: 2 },
+      { ...A, quantidade: 2 },
+    ]
+
+    expect(removerGrupo(grupos, 1)).toEqual([{ ...A, quantidade: 4 }])
+  })
+
+  it('sem anterior (é o primeiro), a quantidade vai para o de depois', () => {
+    const grupos = [
+      { ...A, quantidade: 2 },
+      { ...A, quantidade: 2 },
+    ]
+
+    expect(removerGrupo(grupos, 0)).toEqual([{ ...A, quantidade: 4 }])
+  })
+
+  it('não remove o único grupo restante', () => {
+    const grupos = [{ ...A, quantidade: 4 }]
+
+    expect(removerGrupo(grupos, 0)).toEqual(grupos)
   })
 })
 
 /**
- * O que vem do banco em `cortes_por_peca` é JSONB solto — `unknown` de
- * verdade, sem garantia nenhuma de formato. Um elemento quebrado precisa
- * derrubar a lista INTEIRA, não só aquele elemento: mostrar 2 de 3 peças
- * certas e inventar a terceira é pior do que voltar ao comportamento de
- * antes do recurso existir.
+ * O que vem do banco em `grupos_de_corte` é JSONB solto — `unknown` de
+ * verdade, sem garantia nenhuma de formato. Um grupo quebrado precisa
+ * derrubar a lista INTEIRA, não só aquele grupo: mostrar parte dos grupos
+ * certos e inventar o resto é pior do que voltar ao comportamento de antes
+ * do recurso existir.
  */
-describe('validar cortes por peça vindos do banco', () => {
-  const PECA_A = { sentido: 'v', corte_inicio: 'meia_cima', corte_fim: 'reto' }
-  const PECA_B = { sentido: 'h', corte_inicio: 'reto', corte_fim: 'meia_baixo' }
+describe('validar grupos de corte vindos do banco', () => {
+  const GRUPO_A = {
+    quantidade: 2,
+    sentido: 'v',
+    corte_inicio: 'meia_cima',
+    corte_fim: 'reto',
+  }
+  const GRUPO_B = {
+    quantidade: 2,
+    sentido: 'h',
+    corte_inicio: 'reto',
+    corte_fim: 'meia_baixo',
+  }
 
   it('aceita um array bem formado', () => {
-    expect(cortesPorPecaValidos([PECA_A, PECA_B])).toEqual([PECA_A, PECA_B])
+    expect(gruposDeCorteValidos([GRUPO_A, GRUPO_B])).toEqual([GRUPO_A, GRUPO_B])
   })
 
   it('rejeita quando não é array', () => {
-    expect(cortesPorPecaValidos(null)).toBeNull()
-    expect(cortesPorPecaValidos(undefined)).toBeNull()
-    expect(cortesPorPecaValidos({ sentido: 'h' })).toBeNull()
-    expect(cortesPorPecaValidos('h')).toBeNull()
+    expect(gruposDeCorteValidos(null)).toBeNull()
+    expect(gruposDeCorteValidos(undefined)).toBeNull()
+    expect(gruposDeCorteValidos({ sentido: 'h' })).toBeNull()
+    expect(gruposDeCorteValidos('h')).toBeNull()
   })
 
   it('rejeita array vazio — cai no comportamento uniforme, não em zero peças', () => {
-    expect(cortesPorPecaValidos([])).toBeNull()
+    expect(gruposDeCorteValidos([])).toBeNull()
   })
 
-  it('um elemento quebrado derruba a lista inteira', () => {
+  it('rejeita quantidade ausente, zero, negativa ou não inteira', () => {
     expect(
-      cortesPorPecaValidos([PECA_A, { sentido: 'x', corte_inicio: 'reto' }]),
+      gruposDeCorteValidos([{ ...GRUPO_A, quantidade: undefined }]),
     ).toBeNull()
-    expect(cortesPorPecaValidos([PECA_A, null])).toBeNull()
+    expect(gruposDeCorteValidos([{ ...GRUPO_A, quantidade: 0 }])).toBeNull()
+    expect(gruposDeCorteValidos([{ ...GRUPO_A, quantidade: -1 }])).toBeNull()
+    expect(gruposDeCorteValidos([{ ...GRUPO_A, quantidade: 1.5 }])).toBeNull()
+  })
+
+  it('um grupo quebrado derruba a lista inteira', () => {
     expect(
-      cortesPorPecaValidos([PECA_A, { ...PECA_B, corte_fim: 'invertido' }]),
+      gruposDeCorteValidos([GRUPO_A, { ...GRUPO_B, sentido: 'x' }]),
+    ).toBeNull()
+    expect(gruposDeCorteValidos([GRUPO_A, null])).toBeNull()
+    expect(
+      gruposDeCorteValidos([GRUPO_A, { ...GRUPO_B, corte_fim: 'invertido' }]),
     ).toBeNull()
   })
 })
 
 describe('descrever o corte de uma linha inteira', () => {
-  it('sem corte por peça, descreve como sempre foi', () => {
-    expect(descreverCortesDaLinha('h', 'reto', 'reto', null)).toBe(
+  it('sem grupos, descreve como sempre foi', () => {
+    expect(descreverGruposDaLinha('h', 'reto', 'reto', null)).toBe(
       descreverCortes('h', 'reto', 'reto'),
     )
   })
 
-  it('com corte por peça, numera cada uma — não concatena solto', () => {
-    // Concatenar sem número ("LE 90 · LD 90 · LC 45 · LB 45") confundiria
-    // qual ponta pertence a qual peça.
-    const resultado = descreverCortesDaLinha('h', 'reto', 'reto', [
-      { sentido: 'h', corte_inicio: 'reto', corte_fim: 'reto' },
-      { sentido: 'v', corte_inicio: 'meia_cima', corte_fim: 'meia_baixo' },
+  it('com grupos, prefixa a quantidade quando é mais de uma peça', () => {
+    const resultado = descreverGruposDaLinha('h', 'reto', 'reto', [
+      { quantidade: 2, sentido: 'h', corte_inicio: 'reto', corte_fim: 'reto' },
+      {
+        quantidade: 2,
+        sentido: 'v',
+        corte_inicio: 'meia_cima',
+        corte_fim: 'meia_baixo',
+      },
     ])
 
     expect(resultado).toBe(
-      `1) ${descreverCortes('h', 'reto', 'reto')} · 2) ${descreverCortes('v', 'meia_cima', 'meia_baixo')}`,
+      `2× ${descreverCortes('h', 'reto', 'reto')} · 2× ${descreverCortes('v', 'meia_cima', 'meia_baixo')}`,
+    )
+  })
+
+  it('grupo de 1 peça não ganha prefixo "1×"', () => {
+    const resultado = descreverGruposDaLinha('h', 'reto', 'reto', [
+      { quantidade: 1, sentido: 'h', corte_inicio: 'reto', corte_fim: 'reto' },
+      {
+        quantidade: 3,
+        sentido: 'v',
+        corte_inicio: 'meia_cima',
+        corte_fim: 'meia_baixo',
+      },
+    ])
+
+    expect(resultado).toBe(
+      `${descreverCortes('h', 'reto', 'reto')} · 3× ${descreverCortes('v', 'meia_cima', 'meia_baixo')}`,
     )
   })
 })

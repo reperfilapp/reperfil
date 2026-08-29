@@ -64,6 +64,122 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.68 — 29/08/2026
+
+**Três cartões de fundo, na tela do produto, ganharam cor própria.**
+
+- Cabeçalho da lista técnica: amarelo claro (`bg-atencao-100`), aberta ou
+  recolhida — a primeira versão só coloria quando recolhida, e voltava ao
+  cinza de sempre ao abrir; ficou amarelo o tempo todo.
+- Cartão "Produzir" (quantidade, cor, origem do material, os dois botões de
+  conta): azul claro (`bg-acao-100`).
+- "Liberado para" (liberação do produto por empresa): não tinha cartão de
+  fundo nenhum — ganhou um, em vermelho claro (`bg-erro-50`), com as linhas
+  de cada empresa em fundo branco sólido e borda (o cinza claro de antes
+  ficava apagado contra o vermelho claro do cartão).
+
+Todas as cores vêm dos tokens já existentes em `src/index.css` — nenhuma cor
+literal nova.
+
+## 1.7.70 — 29/08/2026
+
+**Amarelo do cabeçalho da lista técnica ficou mais suave (`bg-atencao-50`).**
+
+## 1.7.69 — 29/08/2026
+
+**"Corte por peça" muda de mecanismo outra vez: de peça para GRUPO.**
+
+Se 4 peças da mesma linha tinham só 2 cortes diferentes (2 retas, 2 em
+meia-esquadria), o mecanismo anterior — uma entrada por PEÇA — ainda assim
+pedia 4 cartões preenchidos, um repetindo o corte do outro, e a folha
+impressa desenhava a mesma peça 4 vezes em vez de 2 (pequeno demais para
+conferir contra a peça de verdade).
+
+Agora a exceção é por GRUPO: cada grupo tem o corte e QUANTAS peças o
+usam. Ao ligar "dividir em grupos de corte diferentes", nasce um grupo só
+com toda a quantidade; a tesoura em cada cartão divide um grupo em dois
+(perguntando quantas peças vão para o novo), e a lixeira remove um grupo,
+devolvendo a quantidade para o vizinho. Ao mudar a quantidade da linha
+inteira, o ÚLTIMO grupo absorve a diferença — sem precisar redistribuir à
+mão.
+
+Na lista técnica e no PDF, a leitura ficou mais curta: "2× LC 45° · LB 45°
+· 2× LE 90° · LD 90°" em vez de "1) ... 2) ... 3) ... 4) ...". No PDF,
+menos desenhos repetidos também significa cada um MAIOR — o motivo que
+começou esta correção.
+
+## 1.7.67 — 29/08/2026
+
+**Ícone de gerar PDF/impressão trocado por uma impressora, em todo o app.**
+
+O ícone usado (uma folha de texto, `FileText`) não dizia "isto gera um PDF"
+de relance — parecia mais um documento genérico. Trocado por `Printer` nos
+três lugares que geram folha para impressão/PDF: o botão de PDF da lista
+técnica do produto, o "Imprimir / PDF" da lista de materiais, e "Gerar folha
+para contar na prancheta" do inventário. A etiqueta de sobra já usava esse
+ícone — agora os três seguem o mesmo padrão.
+
+Sobre pré-selecionar a impressora "Microsoft Print to PDF" no diálogo de
+impressão: não é possível. `window.print()` só abre o diálogo nativo do
+sistema operacional, e não existe API de página web para escolher ou
+sugerir qual impressora/destino vem selecionado ali — é uma restrição do
+próprio navegador, não algo que o RePerfil controle.
+
+## 1.7.66 — 29/08/2026
+
+**Rótulo "Corte" do PDF virou "Corte 45° / 90°".**
+
+Deixa explícito, no cabeçalho, o que os graus daquela coluna significam —
+sem precisar já saber ler o desenho para entender do que se trata.
+
+## 1.7.65 — 29/08/2026
+
+**Rótulos "Desenho" e "Corte" centralizados no PDF da lista técnica.**
+
+Complemento da 1.7.64: os dois cabeçalhos ficaram alinhados à esquerda,
+descentralizados em relação ao conteúdo (que é centralizado) das próprias
+colunas. Os demais rótulos (#, Est., Perfil, Qtd., Comprimento) continuam
+como estavam.
+
+## 1.7.64 — 29/08/2026
+
+**Ajustes no PDF da lista técnica: colunas, alinhamento e cortes por peça lado a lado.**
+
+Três correções pedidas depois de ver o PDF impresso:
+
+1. As colunas "Comprimento" e "Corte" estavam emendadas, sem respiro entre
+   elas. A coluna "Perfil" tinha espaço sobrando de mais — encolhida
+   (`w-44`), sobrou espaço para separar as duas outras (`Corte` cresceu de
+   `w-32` para `w-40`, e "Comprimento" ganhou `pr-3`).
+
+2. O grau do corte (ex.: "LC 90° · LB 90°") aparecia desalinhado em relação
+   ao próprio desenho — a peça em pé é mais estreita que a caixa que a
+   guarda, e o texto abaixo, sem centralizar, sobrava para a direita.
+   Agora desenho e texto centralizam juntos, na mesma caixa.
+
+3. Quando a peça tem corte por peça (`cortes_por_peca`), os desenhos
+   empilhavam um embaixo do outro — o que forçava encolher cada um (`h-10`)
+   para a linha não ficar alta demais, e pequeno demais não dá para
+   conferir contra a peça na bancada. Agora ficam lado a lado; a coluna
+   cresce em largura, e cada desenho volta a um tamanho legível (`h-16`,
+   perto do tamanho de uma peça só).
+
+## 1.7.63 — 29/08/2026
+
+**O desenho ampliado abria atrás do modal "Alterar corte".**
+
+Complemento da 1.7.62: o toque no desenho técnico dentro do card de "Alterar
+corte" abria o visualizador de imagem — mas atrás do próprio modal, invisível.
+
+Causa: `Modal` usa `<dialog>` nativo (`showModal()`), que entra na "top
+layer" do navegador — uma camada que fica sempre acima do resto da página,
+não importa o `z-index`. O visualizador de imagem era só uma `div` comum
+com `z-50`; por mais alto que o número, ela nunca vencia a "top layer" de um
+`<dialog>` já aberto. A saída foi fazer o próprio visualizador virar outro
+`<dialog>` nativo: dois `<dialog>` empilham corretamente na "top layer", na
+ordem em que foram abertos — o mais recente por cima. Resolve para todo
+lugar que usa o visualizador, não só dentro de "Alterar corte".
+
 ## 1.7.62 — 29/08/2026
 
 **O desenho técnico no card de "Alterar corte" agora amplia ao tocar.**

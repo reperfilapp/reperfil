@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { CheckCircle2, FileText, Layers, Puzzle } from 'lucide-react'
+import { CheckCircle2, Printer, Layers, Puzzle } from 'lucide-react'
 import {
   useSessaoInventario,
   useItensInventario,
@@ -37,9 +37,12 @@ export default function SessaoInventarioDetalhe() {
   const { perfil } = useAutenticacao()
   const podeMovimentar = podeMovimentarEstoque(perfil)
 
-  const { data: sessao, isPending, error, refetch } = useSessaoInventario(
-    id ?? null,
-  )
+  const {
+    data: sessao,
+    isPending,
+    error,
+    refetch,
+  } = useSessaoInventario(id ?? null)
   const { data: itens } = useItensInventario(id ?? null)
   const { data: capas } = useCapasDesenhos()
   const contar = useContarItemInventario()
@@ -122,9 +125,7 @@ export default function SessaoInventarioDetalhe() {
         `${r.total ?? 0} item(ns) aplicado(s), ${r.alterados ?? 0} com diferença gravada no estoque.`,
       )
     } catch (e) {
-      setErroGeral(
-        e instanceof Error ? e.message : 'Não foi possível aplicar.',
-      )
+      setErroGeral(e instanceof Error ? e.message : 'Não foi possível aplicar.')
     }
   }
 
@@ -176,7 +177,7 @@ export default function SessaoInventarioDetalhe() {
           onClick={() => setImprimindo(true)}
           carregando={imprimindo && !imprimeNoNativo()}
         >
-          <FileText aria-hidden="true" className="size-4" />
+          <Printer aria-hidden="true" className="size-4" />
           Gerar folha para contar na prancheta
         </Botao>
 
@@ -242,7 +243,11 @@ export default function SessaoInventarioDetalhe() {
       </ul>
 
       {imprimindo && (
-        <FolhaInventario sessao={sessao} itens={lista} empresa={APLICACAO.nome} />
+        <FolhaInventario
+          sessao={sessao}
+          itens={lista}
+          empresa={APLICACAO.nome}
+        />
       )}
 
       {ampliado && (
@@ -422,16 +427,15 @@ function ItemContagem({
       {jaContado ? (
         <p className="text-sm">
           Contado: <strong>{item.contagem_quantidade}</strong>
-          {ehPerfil &&
-            item.contagem_comprimento_mm !== null && (
-              <>
-                {' '}
-                de{' '}
-                <strong>
-                  {formatarComprimento(item.contagem_comprimento_mm)}
-                </strong>
-              </>
-            )}{' '}
+          {ehPerfil && item.contagem_comprimento_mm !== null && (
+            <>
+              {' '}
+              de{' '}
+              <strong>
+                {formatarComprimento(item.contagem_comprimento_mm)}
+              </strong>
+            </>
+          )}{' '}
           <span className="text-texto-suave">
             (
             {item.confirmado_sem_alteracao
@@ -443,7 +447,10 @@ function ItemContagem({
       ) : (
         podeMovimentar && (
           <div className="flex flex-col gap-3">
-            <Botao onClick={() => void confirmar()} carregando={aoContar.isPending}>
+            <Botao
+              onClick={() => void confirmar()}
+              carregando={aoContar.isPending}
+            >
               <CheckCircle2 aria-hidden="true" className="size-4" />
               Confirmar — estoque está correto
             </Botao>
@@ -456,9 +463,7 @@ function ItemContagem({
 
             <div className="flex items-end gap-2">
               <label className="flex-1 text-sm">
-                <span className="text-texto-suave mb-1 block">
-                  Quantidade
-                </span>
+                <span className="text-texto-suave mb-1 block">Quantidade</span>
                 <input
                   type="text"
                   inputMode="numeric"

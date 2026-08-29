@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react'
+import { useLayoutEffect, useRef, useState, type PointerEvent } from 'react'
 import { X, ZoomIn, ZoomOut, Maximize } from 'lucide-react'
 
 interface PropsVisualizador {
@@ -55,14 +55,21 @@ export function VisualizadorImagem({
 
   const ampliado = escala > ESCALA_MINIMA
 
-  useEffect(() => {
-    function aoTeclar(evento: KeyboardEvent) {
-      if (evento.key === 'Escape') aoFechar()
-    }
+  const referencia = useRef<HTMLDialogElement>(null)
 
-    document.addEventListener('keydown', aoTeclar)
-    return () => document.removeEventListener('keydown', aoTeclar)
-  }, [aoFechar])
+  /*
+   * `<dialog>` nativo, igual ao `Modal` — e pela mesma razão de fundo: quem
+   * abre este visualizador tocando no desenho de dentro de "Alterar corte"
+   * já está sob OUTRO `<dialog>` aberto. Um `div` comum com `z-50`, por mais
+   * alto que o número, nunca vence a "top layer" de um `<dialog>` — a
+   * imagem abria atrás do modal. Dois `<dialog>` resolvem: a "top layer" os
+   * empilha na ordem em que foram abertos, o mais recente por cima.
+   */
+  useLayoutEffect(() => {
+    const dialogo = referencia.current
+    dialogo?.showModal()
+    return () => dialogo?.close()
+  }, [])
 
   function aplicarEscala(nova: number) {
     const limitada = Math.min(ESCALA_MAXIMA, Math.max(ESCALA_MINIMA, nova))
@@ -81,7 +88,7 @@ export function VisualizadorImagem({
     setDeslocamento({ x: 0, y: 0 })
   }
 
-  function aoDescerPonteiro(evento: PointerEvent<HTMLDivElement>) {
+  function aoDescerPonteiro(evento: PointerEvent<HTMLDialogElement>) {
     ponteiros.current.set(evento.pointerId, {
       x: evento.clientX,
       y: evento.clientY,
@@ -106,7 +113,7 @@ export function VisualizadorImagem({
     }
   }
 
-  function aoMoverPonteiro(evento: PointerEvent<HTMLDivElement>) {
+  function aoMoverPonteiro(evento: PointerEvent<HTMLDialogElement>) {
     if (!ponteiros.current.has(evento.pointerId)) return
 
     ponteiros.current.set(evento.pointerId, {
@@ -134,7 +141,7 @@ export function VisualizadorImagem({
     }
   }
 
-  function aoSubirPonteiro(evento: PointerEvent<HTMLDivElement>) {
+  function aoSubirPonteiro(evento: PointerEvent<HTMLDialogElement>) {
     ponteiros.current.delete(evento.pointerId)
 
     if (ponteiros.current.size < 2) pinca.current = null
@@ -142,11 +149,16 @@ export function VisualizadorImagem({
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
+    <dialog
+      ref={referencia}
       aria-label={alt}
-      className="fixed inset-0 z-50 flex touch-none items-center justify-center overflow-hidden bg-black/90"
+      className="m-0 flex h-full max-h-none w-full max-w-none touch-none items-center justify-center overflow-hidden border-0 bg-black/90 p-0 backdrop:bg-black/90"
+      onCancel={(evento) => {
+        // O Esc dispara `cancel`; deixamos o React fechar, para o estado não
+        // ficar dizendo "aberto" com a janela já fechada.
+        evento.preventDefault()
+        aoFechar()
+      }}
       onPointerDown={aoDescerPonteiro}
       onPointerMove={aoMoverPonteiro}
       onPointerUp={aoSubirPonteiro}
@@ -232,6 +244,6 @@ export function VisualizadorImagem({
       >
         <X aria-hidden="true" className="size-5" />
       </button>
-    </div>
+    </dialog>
   )
 }

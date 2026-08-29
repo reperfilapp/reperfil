@@ -2,8 +2,8 @@ import { formatarMedidaProduto } from '@/dominio/produto'
 import { formatarComprimento } from '@/dominio/medidas'
 import {
   corteValido,
-  cortesPorPecaValidos,
   descreverCortes,
+  gruposDeCorteValidos,
   sentidoValido,
 } from '@/dominio/corteMontagem'
 import { DesenhoPerfil } from './DesenhoCorte'
@@ -11,19 +11,20 @@ import type { ItemListaTecnica, ModeloPerfil, Produto } from '@/tipos/banco'
 
 /**
  * A célula de corte de UMA linha da tabela — sem exceção, mostra a peça
- * inteira; com `cortes_por_peca`, uma peça numerada por linha, todas dentro
- * da MESMA célula. A linha da tabela continua sendo uma só; numerar é o que
- * separa qual desenho é de qual peça, para não parecerem uma confusão só.
+ * inteira; com `grupos_de_corte`, um desenho por GRUPO (com a quantidade ao
+ * lado), todos dentro da MESMA célula. A linha da tabela continua sendo uma
+ * só; um desenho por grupo, e não por peça física, é o que evita repetir o
+ * mesmo desenho várias vezes quando peças iguais se repetem no grupo.
  */
 function CelulaCorte({ item }: { item: ItemListaTecnica }) {
-  const pecas = cortesPorPecaValidos(item.cortes_por_peca)
+  const grupos = gruposDeCorteValidos(item.grupos_de_corte)
 
-  if (pecas === null) {
+  if (grupos === null) {
     const sentido = sentidoValido(item.sentido)
 
     return (
-      <>
-        <span className="block w-28">
+      <div className="flex flex-col items-center">
+        <span className="flex w-28 justify-center">
           <DesenhoPerfil
             sentido={sentido}
             corteInicio={corteValido(item.corte_inicio)}
@@ -32,33 +33,51 @@ function CelulaCorte({ item }: { item: ItemListaTecnica }) {
             className={sentido === 'h' ? 'w-full' : 'h-20'}
           />
         </span>
-        <span className="mt-0.5 block text-xs">
+        <span className="mt-0.5 block text-center text-xs">
           {descreverCortes(
             sentido,
             corteValido(item.corte_inicio),
             corteValido(item.corte_fim),
           )}
         </span>
-      </>
+      </div>
     )
   }
 
+  /*
+   * Um desenho por GRUPO, não por peça — "4 peças, 2 retas e 2 em
+   * meia-esquadria" desenha só duas vezes, cada uma com a quantidade ao
+   * lado ("2×"), em vez de repetir o mesmo desenho pequeno quatro vezes.
+   *
+   * Lado a lado, e não um embaixo do outro: empilhar forçava encolher cada
+   * desenho (h-10) para a linha inteira não ficar alta demais — e um
+   * desenho pequeno demais não dá para conferir contra a peça, que é o
+   * motivo desta folha existir. Lado a lado, cada grupo cresce em LARGURA
+   * (a coluna acomoda), sobrando altura para um desenho quase do tamanho
+   * do caso comum (h-16, contra h-20 de uma peça só).
+   */
   return (
-    <div className="flex flex-col gap-1.5">
-      {pecas.map((peca, indice) => (
-        <div key={indice} className="flex items-center gap-1.5">
-          <span className="w-4 shrink-0 text-xs font-bold">{indice + 1})</span>
-          <span className="block w-16 shrink-0">
+    <div className="flex flex-row flex-wrap justify-center gap-x-3 gap-y-1.5">
+      {grupos.map((grupo, indice) => (
+        <div key={indice} className="flex flex-col items-center gap-0.5">
+          {grupo.quantidade > 1 && (
+            <span className="text-xs font-bold">{grupo.quantidade}×</span>
+          )}
+          <span className="flex w-16 justify-center">
             <DesenhoPerfil
-              sentido={peca.sentido}
-              corteInicio={peca.corte_inicio}
-              corteFim={peca.corte_fim}
+              sentido={grupo.sentido}
+              corteInicio={grupo.corte_inicio}
+              corteFim={grupo.corte_fim}
               impressao
-              className={peca.sentido === 'h' ? 'w-full' : 'h-10'}
+              className={grupo.sentido === 'h' ? 'w-full' : 'h-16'}
             />
           </span>
-          <span className="text-xs">
-            {descreverCortes(peca.sentido, peca.corte_inicio, peca.corte_fim)}
+          <span className="text-center text-xs">
+            {descreverCortes(
+              grupo.sentido,
+              grupo.corte_inicio,
+              grupo.corte_fim,
+            )}
           </span>
         </div>
       ))}
@@ -271,14 +290,14 @@ export function FolhaProduto({
                       >
                         Est.
                       </th>
-                      <th className="w-28 py-1">Desenho</th>
-                      <th className="py-1">Perfil</th>
+                      <th className="w-28 py-1 text-center">Desenho</th>
+                      <th className="w-44 py-1">Perfil</th>
                       <th className="w-20 py-1 text-right">Qtd.</th>
-                      <th className="w-28 py-1 text-right">Comprimento</th>
+                      <th className="w-28 py-1 pr-3 text-right">Comprimento</th>
                       {/* O corte é a última coluna, depois da medida: na
                           bancada lê-se "duas peças de 1.455, meia-esquadria
                           nas duas pontas" — nessa ordem. */}
-                      <th className="w-32 py-1">Corte</th>
+                      <th className="w-40 py-1 text-center">Corte 45° / 90°</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -329,7 +348,7 @@ export function FolhaProduto({
                           <td className="py-2 text-right align-middle font-bold tabular-nums">
                             {item.quantidade}
                           </td>
-                          <td className="py-2 text-right align-middle tabular-nums">
+                          <td className="py-2 pr-3 text-right align-middle tabular-nums">
                             {formatarComprimento(item.comprimento_mm)}
                           </td>
                           <td className="py-2 align-middle">

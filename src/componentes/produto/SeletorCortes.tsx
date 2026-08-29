@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import {
   linhasDaPonta,
   outroSentido,
@@ -112,6 +113,12 @@ export function SeletorCortes({
    * está.
    */
   titulo = 'Posição / Tipo de corte',
+  /**
+   * Ação extra ao lado do título — "dividir"/"remover" de um grupo, no
+   * bloco de corte por peça. Não cabe dentro do próprio título porque essas
+   * ações pertencem ao GRUPO, não ao seletor de posição/corte em si.
+   */
+  acoes,
   className,
 }: {
   sentido: SentidoMontagem
@@ -121,13 +128,17 @@ export function SeletorCortes({
   aoMudarInicio: (corte: TipoCorte) => void
   aoMudarFim: (corte: TipoCorte) => void
   titulo?: string
+  acoes?: ReactNode
   className?: string
 }) {
   const deitado = sentido === 'h'
 
   return (
     <section className={cn('flex flex-col gap-2', className)}>
-      <h2 className="font-semibold">{titulo}</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-semibold">{titulo}</h2>
+        {acoes}
+      </div>
 
       {/*
        * Fundo âmbar, e não o cinza dos demais cartões.

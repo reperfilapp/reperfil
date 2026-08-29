@@ -12,7 +12,7 @@ quando o usuário confirmar explicitamente que rodou no Supabase — nunca
 antes, mesmo que a sintaxe já tenha sido validada com `npm run banco:validar`
 (validar sintaxe não é a mesma coisa que já estar aplicada).
 
-## Status em 28/08/2026: nenhuma pendente
+## Status em 29/08/2026: nenhuma pendente
 
 - [x] 20260815120000_fundacao.sql
 - [x] 20260815120100_cadastros.sql
@@ -81,3 +81,4 @@ antes, mesmo que a sintaxe já tenha sido validada com `npm run banco:validar`
 - [x] 20260828900000_liberacao_produto_por_empresa.sql
 - [x] 20260829000000_importar_produto_sem_duplicar.sql
 - [x] 20260829100000_cortes_por_peca_na_mesma_linha.sql
+- [x] 20260829200000_grupos_de_corte.sql

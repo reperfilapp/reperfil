@@ -7,7 +7,7 @@ import {
 } from '@/lib/armazenamento'
 import type { Produto, ItemListaTecnica } from '@/tipos/banco'
 import type {
-  CorteDaPeca,
+  GrupoCorte,
   SentidoMontagem,
   TipoCorte,
 } from '@/dominio/corteMontagem'
@@ -282,12 +282,13 @@ export interface DadosItemLista {
   /** Corte da ponta direita (deitado) ou de baixo (em pé). */
   corte_fim: TipoCorte
   /**
-   * Corte próprio por peça, quando a linha não é uniforme — mesmo tamanho
-   * de `quantidade`. `null`/ausente: toda peça usa `sentido`/`corte_inicio`/
-   * `corte_fim` acima. A linha continua UMA só; isto é o que a distingue de
-   * "uniforme" sem precisar de mais linhas na lista técnica.
+   * Grupos de corte, quando a linha não é uniforme — a soma das quantidades
+   * bate com `quantidade`. `null`/ausente: toda peça usa
+   * `sentido`/`corte_inicio`/`corte_fim` acima. A linha continua UMA só;
+   * isto é o que a distingue de "uniforme" sem precisar de mais linhas na
+   * lista técnica.
    */
-  cortes_por_peca?: CorteDaPeca[] | null
+  grupos_de_corte?: GrupoCorte[] | null
   observacao: string | null
 }
 

@@ -432,12 +432,13 @@ export interface ItemListaTecnica {
   corte_inicio?: string | null
   corte_fim?: string | null
   /**
-   * Corte próprio por peça, quando a linha não é uniforme — JSONB solto,
-   * sem garantia de formato. Sempre lido pelo domínio
-   * (`cortesPorPecaValidos`), nunca usado direto: um elemento malformado
-   * precisa derrubar a leitura inteira, não só aquele elemento.
+   * Grupos de corte, quando a linha não é uniforme — JSONB solto, sem
+   * garantia de formato. Cada grupo tem sua própria quantidade de peças; a
+   * soma bate com `quantidade`. Sempre lido pelo domínio
+   * (`gruposDeCorteValidos`), nunca usado direto: um grupo malformado
+   * precisa derrubar a leitura inteira, não só aquele grupo.
    */
-  cortes_por_peca?: unknown
+  grupos_de_corte?: unknown
   observacao: string | null
   criado_em: string
 }

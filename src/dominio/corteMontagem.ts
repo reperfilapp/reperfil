@@ -171,7 +171,7 @@ export function sentidoValido(
   return valor === 'h' || valor === 'v' ? valor : SENTIDO_PADRAO
 }
 
-/** O sentido e os dois cortes de UMA peça — o que um cartão de peça guarda. */
+/** O sentido e os dois cortes de UMA peça — a forma de um corte, sem quantidade. */
 export interface CorteDaPeca {
   sentido: SentidoMontagem
   corte_inicio: TipoCorte
@@ -179,60 +179,190 @@ export interface CorteDaPeca {
 }
 
 /**
- * Ajusta a lista de cartões de peça para um novo tamanho, sem jogar fora o
- * que a pessoa já preencheu.
+ * Um GRUPO de peças que compartilham o mesmo corte — o que a linha da lista
+ * técnica guarda quando não é uniforme.
  *
- * ── POR QUE O NOVO CARTÃO COPIA O ÚLTIMO, E NÃO O PADRÃO ─────────────────
+ * ── POR QUE GRUPO, E NÃO UMA ENTRADA POR PEÇA FÍSICA ─────────────────────
  *
- * O caso comum de aumentar a quantidade é "preciso de mais uma igual à
- * anterior" — quatro montantes retos e, no meio de digitar, lembrar que são
- * cinco. Se o quinto nascesse sempre em corte reto, quem já tinha ajustado
- * os quatro para meia-esquadria teria de ajustar o quinto à mão de novo,
- * toda vez. Copiando o último, o caso comum já vem pronto, e o raro (o
- * quinto é diferente) continua custando só um toque.
+ * A primeira versão deste recurso guardava uma entrada por PEÇA: quatro
+ * peças, quatro entradas, mesmo quando só existiam dois cortes diferentes
+ * entre elas (duas retas, duas em meia-esquadria). Isso obrigava a pessoa a
+ * preencher quatro cartões repetindo o mesmo corte duas vezes, e a folha
+ * impressa desenhava a mesma peça quatro vezes em vez de duas — pequeno
+ * demais para conferir, e sem necessidade.
  *
- * Diminuir apenas corta a lista: o que sobrou nas posições removidas nunca
- * é lido de novo, e não precisa ser preservado.
+ * Agora a exceção é por GRUPO: cada grupo tem o corte E quantas peças o
+ * usam. A soma das quantidades dos grupos sempre bate com a quantidade da
+ * linha. "4 peças, 2 retas e 2 em meia-esquadria" vira dois grupos —
+ * `{quantidade: 2, ...reto}` e `{quantidade: 2, ...meia-esquadria}` — em vez
+ * de quatro entradas quase iguais.
  */
-export function redimensionarCortesPorPeca(
-  atual: readonly CorteDaPeca[],
-  tamanho: number,
+export interface GrupoCorte extends CorteDaPeca {
+  /** Quantas peças deste grupo usam este corte. Sempre um inteiro positivo. */
+  quantidade: number
+}
+
+/** Soma das quantidades de todos os grupos — o total de peças que eles cobrem. */
+export function somaQuantidades(grupos: readonly GrupoCorte[]): number {
+  return grupos.reduce((soma, grupo) => soma + grupo.quantidade, 0)
+}
+
+/** O primeiro grupo, ao ligar a exceção: todas as peças, com o corte único de antes. */
+export function criarGrupoUnico(
+  quantidade: number,
   padrao: CorteDaPeca,
-): CorteDaPeca[] {
-  if (tamanho <= atual.length) return atual.slice(0, Math.max(tamanho, 0))
-
-  const ultimo = atual[atual.length - 1] ?? padrao
-  const faltam = tamanho - atual.length
-
-  return [...atual, ...Array.from({ length: faltam }, () => ({ ...ultimo }))]
+): GrupoCorte[] {
+  return [{ ...padrao, quantidade }]
 }
 
 /**
- * Lê `cortes_por_peca` como veio do banco (JSONB solto, `unknown`) e devolve
+ * Ajusta os grupos para uma nova quantidade TOTAL de peças da linha, sem
+ * jogar fora o que a pessoa já dividiu.
+ *
+ * ── POR QUE O ÚLTIMO GRUPO ABSORVE A DIFERENÇA ───────────────────────────
+ *
+ * Aumentar a quantidade da linha (mais uma peça) é, de longe, o caso mais
+ * comum — e a peça nova quase sempre repete o ÚLTIMO grupo, não o
+ * primeiro. Crescer o último grupo resolve isso sem pedir nada de novo: só
+ * ao dividir de propósito é que a pessoa cria um grupo diferente.
+ *
+ * Diminuir tira das últimas peças, removendo grupos inteiros quando a
+ * redução alcança um grupo por completo — o comportamento espelha o de
+ * aumentar, tirando de onde cresceria.
+ */
+export function redimensionarGrupos(
+  atual: readonly GrupoCorte[],
+  novaQuantidadeTotal: number,
+): GrupoCorte[] {
+  if (atual.length === 0) return []
+
+  const diferenca = novaQuantidadeTotal - somaQuantidades(atual)
+  const copia = atual.map((grupo) => ({ ...grupo }))
+
+  if (diferenca === 0) return copia
+
+  if (diferenca > 0) {
+    copia[copia.length - 1]!.quantidade += diferenca
+    return copia
+  }
+
+  let sobrando = -diferenca
+
+  while (sobrando > 0 && copia.length > 0) {
+    const ultimo = copia[copia.length - 1]!
+
+    if (ultimo.quantidade <= sobrando) {
+      sobrando -= ultimo.quantidade
+      copia.pop()
+    } else {
+      ultimo.quantidade -= sobrando
+      sobrando = 0
+    }
+  }
+
+  // Nunca fica vazio: mesmo que a redução tenha varrido todos os grupos,
+  // sobra um, com a nova quantidade (no mínimo 1) e o corte do último grupo
+  // original — é o corte mais recentemente ajustado à mão.
+  if (copia.length === 0) {
+    const ultimoOriginal = atual[atual.length - 1]!
+    copia.push({
+      ...ultimoOriginal,
+      quantidade: Math.max(novaQuantidadeTotal, 1),
+    })
+  }
+
+  return copia
+}
+
+/**
+ * Divide um grupo em dois, tirando `quantidadeNoNovo` peças do grupo em
+ * `indice` para um grupo novo, logo depois dele — que nasce com o MESMO
+ * corte do grupo de origem, para a pessoa só precisar mudar o que é
+ * diferente, não preencher os três campos de novo.
+ *
+ * Nada acontece se o pedido não faz sentido (tirar 0, tirar tudo, ou tirar
+ * mais do que o grupo tem) — dividir em um grupo vazio não seria divisão
+ * nenhuma.
+ */
+export function dividirGrupo(
+  grupos: readonly GrupoCorte[],
+  indice: number,
+  quantidadeNoNovo: number,
+): GrupoCorte[] {
+  const grupo = grupos[indice]
+
+  if (!grupo || quantidadeNoNovo <= 0 || quantidadeNoNovo >= grupo.quantidade) {
+    return grupos.map((g) => ({ ...g }))
+  }
+
+  const restante = { ...grupo, quantidade: grupo.quantidade - quantidadeNoNovo }
+  const novo = { ...grupo, quantidade: quantidadeNoNovo }
+
+  return [
+    ...grupos.slice(0, indice).map((g) => ({ ...g })),
+    restante,
+    novo,
+    ...grupos.slice(indice + 1).map((g) => ({ ...g })),
+  ]
+}
+
+/**
+ * Remove um grupo, devolvendo a quantidade dele para o VIZINHO — nunca para
+ * o total desaparecer no meio da edição. O vizinho é o anterior, para o
+ * grupo continuar "voltando a ser um só" ao remover o último; só o
+ * primeiro grupo (sem anterior) devolve para o de depois.
+ *
+ * Não remove o único grupo restante: isso é "desligar a exceção", uma
+ * decisão de fora desta função.
+ */
+export function removerGrupo(
+  grupos: readonly GrupoCorte[],
+  indice: number,
+): GrupoCorte[] {
+  if (grupos.length <= 1 || !grupos[indice]) {
+    return grupos.map((g) => ({ ...g }))
+  }
+
+  const alvo = indice > 0 ? indice - 1 : indice + 1
+  const copia = grupos.map((g) => ({ ...g }))
+
+  copia[alvo]!.quantidade += copia[indice]!.quantidade
+  copia.splice(indice, 1)
+
+  return copia
+}
+
+/**
+ * Lê `grupos_de_corte` como veio do banco (JSONB solto, `unknown`) e devolve
  * a lista validada, ou `null` se não servir.
  *
- * ── POR QUE `null` NO LUGAR DE CORRIGIR PEÇA A PEÇA ──────────────────────
+ * ── POR QUE `null` NO LUGAR DE CORRIGIR GRUPO A GRUPO ────────────────────
  *
  * `corteValido`/`sentidoValido` corrigem um valor solto para o padrão,
  * porque uma linha sem informação nenhuma ainda precisa de ALGUMA resposta.
- * Aqui o caso é diferente: se um elemento do array vier quebrado, os outros
- * N-1 também não são confiáveis — a peça 3 errada pode significar que a
- * lista inteira foi montada por um código antigo, ou corrompida na volta.
- * `null` cai no comportamento de sempre: toda a linha usa o sentido/corte
- * das colunas soltas, igual a antes deste recurso existir. Mostrar 2 de 3
- * peças certas e inventar a terceira seria pior do que isso.
+ * Aqui o caso é diferente: se um grupo vier quebrado, os outros também não
+ * são confiáveis — pode ser sinal de que a linha inteira foi gravada por um
+ * código antigo, ou corrompida na volta. `null` cai no comportamento de
+ * sempre: toda a linha usa o sentido/corte das colunas soltas, igual a
+ * antes deste recurso existir.
  */
-export function cortesPorPecaValidos(valor: unknown): CorteDaPeca[] | null {
+export function gruposDeCorteValidos(valor: unknown): GrupoCorte[] | null {
   if (!Array.isArray(valor) || valor.length === 0) return null
 
-  const pecas: CorteDaPeca[] = []
+  const grupos: GrupoCorte[] = []
 
   for (const item of valor) {
     if (typeof item !== 'object' || item === null) return null
 
-    const { sentido, corte_inicio, corte_fim } = item as Record<string, unknown>
+    const { quantidade, sentido, corte_inicio, corte_fim } = item as Record<
+      string,
+      unknown
+    >
 
     if (
+      typeof quantidade !== 'number' ||
+      !Number.isInteger(quantidade) ||
+      quantidade <= 0 ||
       (sentido !== 'h' && sentido !== 'v') ||
       !CORTES.includes(corte_inicio as TipoCorte) ||
       !CORTES.includes(corte_fim as TipoCorte)
@@ -240,39 +370,49 @@ export function cortesPorPecaValidos(valor: unknown): CorteDaPeca[] | null {
       return null
     }
 
-    pecas.push({
+    grupos.push({
+      quantidade,
       sentido,
       corte_inicio: corte_inicio as TipoCorte,
       corte_fim: corte_fim as TipoCorte,
     })
   }
 
-  return pecas
+  return grupos
 }
 
 /**
  * A instrução de corte de uma linha inteira da lista técnica, incluindo
  * quando ela não é uniforme.
  *
- * ── POR QUE NUMERADO, E NÃO SÓ LISTADO ────────────────────────────────────
+ * ── POR QUE A QUANTIDADE NA FRENTE, E NÃO UM NÚMERO DE ORDEM ─────────────
  *
- * "LE 90° · LD 90° · LE 45° · LD 45°" de duas peças diferentes lidas em
- * sequência confunde qual ponta é de qual peça. Numerando ("1) ... 2) ..."),
- * a leitura na bancada separa: "essa peça segue o padrão 1, aquela outra
- * segue o padrão 2" — que é exatamente a decisão que motivou o recurso.
+ * A versão anterior numerava peça a peça ("1) ... 2) ... 3) ... 4) ..."),
+ * uma entrada por peça física. Como agora a exceção é por GRUPO, "2×" na
+ * frente do corte já diz quantas peças o seguem — sem repetir a mesma
+ * descrição duas vezes, e sem inventar uma ordem entre peças que, na
+ * prática, são intercambiáveis dentro do próprio grupo. Grupo de 1 peça só
+ * não ganha prefixo: "1× LE 90°" não diz mais que "LE 90°" sozinho.
  */
-export function descreverCortesDaLinha(
+export function descreverGruposDaLinha(
   sentido: SentidoMontagem,
   corteInicio: TipoCorte,
   corteFim: TipoCorte,
-  porPeca: readonly CorteDaPeca[] | null,
+  grupos: readonly GrupoCorte[] | null,
 ): string {
-  if (porPeca === null) return descreverCortes(sentido, corteInicio, corteFim)
+  if (grupos === null) return descreverCortes(sentido, corteInicio, corteFim)
 
-  return porPeca
-    .map(
-      (peca, indice) =>
-        `${indice + 1}) ${descreverCortes(peca.sentido, peca.corte_inicio, peca.corte_fim)}`,
-    )
+  return grupos
+    .map((grupo) => {
+      const descricao = descreverCortes(
+        grupo.sentido,
+        grupo.corte_inicio,
+        grupo.corte_fim,
+      )
+
+      return grupo.quantidade > 1
+        ? `${grupo.quantidade}× ${descricao}`
+        : descricao
+    })
     .join(' · ')
 }
