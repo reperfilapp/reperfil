@@ -3,14 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { supabase, traduzirErro } from '@/lib/supabase'
 import { Botao } from '@/componentes/ui/Botao'
 import { CampoSenha } from '@/componentes/ui/CampoSenha'
-
-/**
- * Mesmo mínimo do primeiro acesso (`PrimeiroAcesso.tsx`) — aqui estava em 8,
- * divergindo de lá. Precisa bater com o "Minimum password length" do painel
- * do Supabase (Authentication → Providers → Email); mudar só aqui não muda o
- * que o servidor aceita.
- */
-const TAMANHO_MINIMO_SENHA = 6
+import {
+  TAMANHO_MINIMO_SENHA,
+  TAMANHO_MAXIMO_SENHA,
+  apenasDigitosSenha,
+  erroSenha,
+} from '@/dominio/senha'
 
 /**
  * Tela alcançada pelo link enviado por e-mail. O Supabase já trocou o código
@@ -28,10 +26,9 @@ export default function DefinirSenha() {
     evento.preventDefault()
     setErro(null)
 
-    if (senha.length < TAMANHO_MINIMO_SENHA) {
-      setErro(
-        `A senha precisa ter pelo menos ${TAMANHO_MINIMO_SENHA} caracteres.`,
-      )
+    const erroDaSenha = erroSenha(senha)
+    if (erroDaSenha) {
+      setErro(erroDaSenha)
       return
     }
 
@@ -59,7 +56,8 @@ export default function DefinirSenha() {
       <header className="space-y-2">
         <h1 className="text-2xl font-bold">Criar senha nova</h1>
         <p className="text-texto-suave">
-          Escolha uma senha de pelo menos {TAMANHO_MINIMO_SENHA} caracteres.
+          Escolha uma senha de {TAMANHO_MINIMO_SENHA} a {TAMANHO_MAXIMO_SENHA}{' '}
+          números.
         </p>
       </header>
 
@@ -67,8 +65,10 @@ export default function DefinirSenha() {
         <CampoSenha
           rotulo="Nova senha"
           autoComplete="new-password"
+          inputMode="numeric"
+          maxLength={TAMANHO_MAXIMO_SENHA}
           value={senha}
-          onChange={(e) => setSenha(e.target.value)}
+          onChange={(e) => setSenha(apenasDigitosSenha(e.target.value))}
           disabled={salvando}
           required
         />
@@ -76,8 +76,10 @@ export default function DefinirSenha() {
         <CampoSenha
           rotulo="Repita a nova senha"
           autoComplete="new-password"
+          inputMode="numeric"
+          maxLength={TAMANHO_MAXIMO_SENHA}
           value={confirmacao}
-          onChange={(e) => setConfirmacao(e.target.value)}
+          onChange={(e) => setConfirmacao(apenasDigitosSenha(e.target.value))}
           disabled={salvando}
           required
         />

@@ -8,10 +8,18 @@ import { CampoMascarado } from '@/componentes/ui/CampoMascarado'
 import { CampoSenha } from '@/componentes/ui/CampoSenha'
 import { MarcaRePerfil } from '@/componentes/MarcaRePerfil'
 import { SeloVersao } from '@/componentes/SeloVersao'
-import { apenasDigitos, erroCpfCnpj, erroTelefone, erroEmail } from '@/dominio/documentos'
-
-/** Mínimo do Supabase. Repetido aqui para avisar antes de ir ao servidor. */
-const MINIMO_SENHA = 6
+import {
+  apenasDigitos,
+  erroCpfCnpj,
+  erroTelefone,
+  erroEmail,
+} from '@/dominio/documentos'
+import {
+  TAMANHO_MINIMO_SENHA,
+  TAMANHO_MAXIMO_SENHA,
+  apenasDigitosSenha,
+  erroSenha,
+} from '@/dominio/senha'
 
 /**
  * Onde uma empresa nova entra sozinha, sem depender do desenvolvedor.
@@ -89,8 +97,9 @@ export default function CriarEmpresa() {
       return
     }
 
-    if (senha.length < MINIMO_SENHA) {
-      setErro(`A senha precisa ter pelo menos ${MINIMO_SENHA} caracteres.`)
+    const erroDaSenha = erroSenha(senha)
+    if (erroDaSenha) {
+      setErro(erroDaSenha)
       return
     }
 
@@ -153,8 +162,8 @@ export default function CriarEmpresa() {
       {pronto ? (
         <div className="flex flex-col gap-5">
           <p className="bg-superficie-2 rounded-xl p-4">
-            Conta criada. Abra a mensagem de confirmação que acabou de chegar
-            no seu e-mail e depois entre aqui.
+            Conta criada. Abra a mensagem de confirmação que acabou de chegar no
+            seu e-mail e depois entre aqui.
           </p>
 
           <Link
@@ -211,9 +220,11 @@ export default function CriarEmpresa() {
           <CampoSenha
             rotulo="Crie uma senha"
             autoComplete="new-password"
+            inputMode="numeric"
+            maxLength={TAMANHO_MAXIMO_SENHA}
             value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            ajuda={`Pelo menos ${MINIMO_SENHA} caracteres.`}
+            onChange={(e) => setSenha(apenasDigitosSenha(e.target.value))}
+            ajuda={`${TAMANHO_MINIMO_SENHA} a ${TAMANHO_MAXIMO_SENHA} números.`}
             disabled={enviando}
             required
           />
@@ -221,8 +232,10 @@ export default function CriarEmpresa() {
           <CampoSenha
             rotulo="Repita a senha"
             autoComplete="new-password"
+            inputMode="numeric"
+            maxLength={TAMANHO_MAXIMO_SENHA}
             value={confirmacao}
-            onChange={(e) => setConfirmacao(e.target.value)}
+            onChange={(e) => setConfirmacao(apenasDigitosSenha(e.target.value))}
             disabled={enviando}
             required
           />

@@ -64,6 +64,29 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.73 — 29/08/2026
+
+**Senha nova passou a ser só números, de 6 a 8 dígitos — como um PIN.**
+
+Decisão do dono do sistema: quem digita a senha está no depósito, no
+celular, às vezes de luva — um teclado numérico grande erra muito menos do
+que acertar maiúscula, símbolo e letra parecida com a vizinha num teclado
+completo. A troca é assumidamente uma senha mais fácil de digitar certo por
+uma menos resistente a adivinhação; não foi pedido (nem implementado) nada
+para compensar isso, como bloqueio após tentativas erradas.
+
+Vale só para senha NOVA — os três lugares que criam ou trocam senha
+("Criar minha empresa", "Primeiro acesso", "Criar/trocar senha" pelo link de
+redefinição). A tela de entrada não muda: quem já tinha senha de letras de
+antes da mudança continua entrando com ela normalmente. O administrador
+nunca define a senha de ninguém diretamente (só manda o e-mail de
+redefinição), então não existe um quarto lugar para atualizar.
+
+Nenhuma migração — o mínimo continua 6, igual ao que já estava configurado
+no painel do Supabase (Authentication → Providers → Email → "Minimum
+password length"); só o máximo (8) e a exigência de só dígitos são
+novos, e vivem inteiramente no aplicativo.
+
 ## 1.7.72 — 29/08/2026
 
 **Os textos "O RePerfil" e "Nossa equipe técnica" (tela Sobre) ficaram editáveis.**

@@ -8,9 +8,12 @@ import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoSenha } from '@/componentes/ui/CampoSenha'
 import { MarcaRePerfil } from '@/componentes/MarcaRePerfil'
 import { SeloVersao } from '@/componentes/SeloVersao'
-
-/** Mínimo do Supabase. Repetido aqui para avisar antes de ir ao servidor. */
-const MINIMO_SENHA = 6
+import {
+  TAMANHO_MINIMO_SENHA,
+  TAMANHO_MAXIMO_SENHA,
+  apenasDigitosSenha,
+  erroSenha,
+} from '@/dominio/senha'
 
 /**
  * Onde o colaborador convidado cria a própria senha.
@@ -56,8 +59,9 @@ export default function PrimeiroAcesso() {
     evento.preventDefault()
     setErro(null)
 
-    if (senha.length < MINIMO_SENHA) {
-      setErro(`A senha precisa ter pelo menos ${MINIMO_SENHA} caracteres.`)
+    const erroDaSenha = erroSenha(senha)
+    if (erroDaSenha) {
+      setErro(erroDaSenha)
       return
     }
 
@@ -115,7 +119,10 @@ export default function PrimeiroAcesso() {
         <h1 className="text-2xl font-bold">Primeiro acesso</h1>
 
         <div className="border-erro-300 bg-erro-50 text-erro-700 flex items-start gap-2 rounded-xl border-2 p-4 text-left text-sm">
-          <TriangleAlert aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
+          <TriangleAlert
+            aria-hidden="true"
+            className="mt-0.5 size-5 shrink-0"
+          />
           <p>
             Só consegue criar acesso quem foi convidado pelo administrador da
             empresa. Sua empresa ainda não usa o RePerfil?{' '}
@@ -160,9 +167,11 @@ export default function PrimeiroAcesso() {
           <CampoSenha
             rotulo="Crie uma senha"
             autoComplete="new-password"
+            inputMode="numeric"
+            maxLength={TAMANHO_MAXIMO_SENHA}
             value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            ajuda={`Pelo menos ${MINIMO_SENHA} caracteres.`}
+            onChange={(e) => setSenha(apenasDigitosSenha(e.target.value))}
+            ajuda={`${TAMANHO_MINIMO_SENHA} a ${TAMANHO_MAXIMO_SENHA} números.`}
             disabled={enviando}
             required
           />
@@ -170,8 +179,10 @@ export default function PrimeiroAcesso() {
           <CampoSenha
             rotulo="Repita a senha"
             autoComplete="new-password"
+            inputMode="numeric"
+            maxLength={TAMANHO_MAXIMO_SENHA}
             value={confirmacao}
-            onChange={(e) => setConfirmacao(e.target.value)}
+            onChange={(e) => setConfirmacao(apenasDigitosSenha(e.target.value))}
             disabled={enviando}
             required
           />
