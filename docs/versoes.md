@@ -64,6 +64,20 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.75 — 29/08/2026
+
+**Teclado numérico da senha, agora de verdade no iOS.**
+
+A correção anterior (`pattern="[0-9]*"` junto do `inputMode`) resolve no
+Android, mas o Safari do iOS ignora os dois quando o campo é
+`type="password"` — mostra sempre o teclado completo, sem exceção. A única
+saída é não usar `type="password"` nesses campos: `CampoSenha` ganhou um
+modo `numerico` que troca para `type="text"` de verdade (o iOS passa a
+respeitar `inputMode`) e mascara os dígitos com uma classe CSS
+(`-webkit-text-security`) em vez da máscara nativa do navegador — o "olho"
+de mostrar/esconder continua funcionando igual. Sem equivalente em Firefox,
+mas o público daqui é o celular, não o navegador de mesa.
+
 ## 1.7.74 — 29/08/2026
 
 **Teclado numérico da senha não aparecia — corrigido.**

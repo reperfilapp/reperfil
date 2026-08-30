@@ -271,6 +271,23 @@
     appearance: none;
     margin: 0;
   }
+
+  /*
+   * Mascara um campo de TEXTO como se fosse senha, sem usar `type="password"`.
+   *
+   * O Safari do iOS ignora `inputMode` E `pattern` num `type="password"` —
+   * mostra sempre o teclado completo, não importa o que se peça. Como a
+   * senha do RePerfil virou só números (ver `CampoSenha.tsx`), a saída é
+   * nunca usar `type="password"`: o campo fica `type="text"` de verdade (o
+   * que faz o iOS respeitar `inputMode="numeric"`), e esta classe desenha os
+   * pontinhos por cima com uma propriedade do WebKit.
+   *
+   * Sem equivalente em Firefox — lá o campo aparece sem mascarar. Aceitável
+   * aqui: o público é o celular (iOS/Android), não o Firefox de mesa.
+   */
+  .mascara-numerica {
+    -webkit-text-security: disc;
+  }
 }
 
 /*

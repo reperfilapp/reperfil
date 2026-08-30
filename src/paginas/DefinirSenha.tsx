@@ -65,8 +65,7 @@ export default function DefinirSenha() {
         <CampoSenha
           rotulo="Nova senha"
           autoComplete="new-password"
-          inputMode="numeric"
-          pattern="[0-9]*"
+          numerico
           maxLength={TAMANHO_MAXIMO_SENHA}
           value={senha}
           onChange={(e) => setSenha(apenasDigitosSenha(e.target.value))}
@@ -77,8 +76,7 @@ export default function DefinirSenha() {
         <CampoSenha
           rotulo="Repita a nova senha"
           autoComplete="new-password"
-          inputMode="numeric"
-          pattern="[0-9]*"
+          numerico
           maxLength={TAMANHO_MAXIMO_SENHA}
           value={confirmacao}
           onChange={(e) => setConfirmacao(apenasDigitosSenha(e.target.value))}

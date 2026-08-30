@@ -9,11 +9,25 @@ import { cn } from '@/lib/utilitarios'
 
 interface PropsCampoSenha extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
-  'type'
+  'type' | 'inputMode' | 'pattern'
 > {
   rotulo: string
   erro?: string | undefined
   ajuda?: ReactNode
+  /**
+   * A senha é um PIN numérico (ver `dominio/senha.ts`) — troca
+   * `type="password"` por `type="text"` mascarado em CSS.
+   *
+   * ── POR QUE NÃO BASTA `inputMode="numeric"` ──────────────────────────────
+   *
+   * O Safari do iOS ignora `inputMode` (e `pattern`) quando o campo é
+   * `type="password"` — mostra sempre o teclado completo, não importa o que
+   * se peça. A única saída é nunca usar `type="password"` num campo que
+   * precisa do teclado numérico: aqui ele vira `type="text"` de verdade (o
+   * que faz o iOS respeitar `inputMode`), e a classe `mascara-numerica`
+   * desenha os pontinhos por cima — ver o comentário dela em `index.css`.
+   */
+  numerico?: boolean
 }
 
 /**
@@ -40,6 +54,7 @@ export function CampoSenha({
   ajuda,
   className,
   id,
+  numerico,
   ...resto
 }: PropsCampoSenha) {
   const idGerado = useId()
@@ -59,7 +74,8 @@ export function CampoSenha({
       <div className="relative">
         <input
           id={idCampo}
-          type={visivel ? 'text' : 'password'}
+          type={numerico ? 'text' : visivel ? 'text' : 'password'}
+          {...(numerico ? { inputMode: 'numeric', pattern: '[0-9]*' } : {})}
           aria-invalid={temErro}
           aria-describedby={cn(temErro && idErro, !temErro && ajuda && idAjuda)}
           className={cn(
@@ -67,6 +83,7 @@ export function CampoSenha({
             // senha longa passaria por baixo dele.
             'bg-superficie min-h-16 w-full rounded-xl border-2 pr-14 pl-4 text-base',
             'placeholder:text-texto-suave',
+            numerico && !visivel && 'mascara-numerica',
             temErro ? 'border-erro-500' : 'border-borda',
             className,
           )}
