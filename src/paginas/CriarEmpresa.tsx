@@ -221,6 +221,7 @@ export default function CriarEmpresa() {
             rotulo="Crie uma senha"
             autoComplete="new-password"
             inputMode="numeric"
+            pattern="[0-9]*"
             maxLength={TAMANHO_MAXIMO_SENHA}
             value={senha}
             onChange={(e) => setSenha(apenasDigitosSenha(e.target.value))}
@@ -233,6 +234,7 @@ export default function CriarEmpresa() {
             rotulo="Repita a senha"
             autoComplete="new-password"
             inputMode="numeric"
+            pattern="[0-9]*"
             maxLength={TAMANHO_MAXIMO_SENHA}
             value={confirmacao}
             onChange={(e) => setConfirmacao(apenasDigitosSenha(e.target.value))}

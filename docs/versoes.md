@@ -64,6 +64,17 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.74 — 29/08/2026
+
+**Teclado numérico da senha não aparecia — corrigido.**
+
+`inputMode="numeric"` sozinho costuma ser ignorado pelo navegador em campos
+`type="password"` (mascarados) — é uma proteção do próprio navegador contra
+sites tentando adivinhar o que está por trás da máscara. A correção
+conhecida é somar `pattern="[0-9]*"` ao lado, que iOS e Android respeitam
+mesmo com o campo mascarado. Aplicado nos três lugares que criam ou trocam
+senha.
+
 ## 1.7.73 — 29/08/2026
 
 **Senha nova passou a ser só números, de 6 a 8 dígitos — como um PIN.**
