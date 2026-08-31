@@ -5,13 +5,13 @@ import {
   useAdicionarDesenho,
   useRemoverDesenho,
 } from '@/dados/desenhosTecnicos'
-import type { TipoImagemPerfil } from '@/dados/desenhosTecnicos'
+import type { TipoImagemPerfil, DesenhoTecnico } from '@/dados/desenhosTecnicos'
 import { enviarDesenhoTecnico, enviarFotoPerfil } from '@/lib/armazenamento'
 import { CampoFoto } from './ui/CampoFoto'
 import { Botao } from './ui/Botao'
+import { Modal } from './ui/Modal'
 import { cn } from '@/lib/utilitarios'
 import type { ModeloPerfil } from '@/tipos/banco'
-import { disparar } from '@/lib/avisoErro'
 
 /** Textos e comportamento de cada tipo de imagem. */
 const CONFIGURACAO = {
@@ -62,6 +62,12 @@ export function GaleriaDesenhos({
   const [legenda, setLegenda] = useState('')
   const [ampliado, setAmpliado] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
+  // Remoção aqui é IMEDIATA — não existe um "salvar" depois que junta as
+  // mudanças da tela. Sem confirmação, um toque errado no lixo apagava o
+  // desenho na hora, sem chance de desfazer fechando a tela sem salvar
+  // (não havia o que "não salvar": já tinha ido para o banco).
+  const [removendo, setRemovendo] = useState<DesenhoTecnico | null>(null)
+  const [erroRemover, setErroRemover] = useState<string | null>(null)
 
   async function enviou(caminho: string) {
     setErro(null)
@@ -80,123 +86,179 @@ export function GaleriaDesenhos({
     }
   }
 
+  async function confirmarRemocao() {
+    if (!removendo) return
+
+    setErroRemover(null)
+
+    try {
+      await remover.mutateAsync({
+        id: removendo.id,
+        caminho: removendo.arquivo_url,
+        modeloPerfilId: modelo.id,
+        tipo,
+      })
+      setRemovendo(null)
+    } catch (e) {
+      setErroRemover(
+        e instanceof Error ? e.message : 'Não foi possível remover.',
+      )
+    }
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h3 className="font-semibold">{config.titulo}</h3>
-        <p className="text-texto-suave text-sm">{config.descricao}</p>
-      </div>
-
-      {isPending && <p className="text-texto-suave text-sm">Carregando…</p>}
-
-      {desenhos && desenhos.length > 0 && (
-        <ul className="grid grid-cols-2 gap-3">
-          {desenhos.map((desenho) => (
-            <li
-              key={desenho.id}
-              className="border-borda overflow-hidden rounded-xl border-2"
-            >
-              {desenho.link ? (
-                <button
-                  type="button"
-                  onClick={() => setAmpliado(desenho.link)}
-                  className="relative block w-full"
-                  aria-label={`Ampliar ${desenho.legenda ?? 'desenho'}`}
-                >
-                  <img
-                    src={desenho.link}
-                    alt={desenho.legenda ?? 'Desenho técnico do perfil'}
-                    className={cn(
-                      'aspect-square w-full object-contain',
-                      config.fundoBranco ? 'bg-white' : 'bg-superficie-2',
-                    )}
-                  />
-                  <span className="bg-grafite-900/70 absolute right-1.5 bottom-1.5 rounded-full p-1.5 text-white">
-                    <ZoomIn aria-hidden="true" className="size-4" />
-                  </span>
-                </button>
-              ) : (
-                <div className="bg-superficie-2 text-texto-suave flex aspect-square items-center justify-center text-xs">
-                  imagem indisponível
-                </div>
-              )}
-
-              <div className="flex items-center gap-2 p-2">
-                <p className="min-w-0 flex-1 truncate text-xs">
-                  {desenho.legenda ?? 'sem legenda'}
-                </p>
-                <button
-                  type="button"
-                  onClick={() =>
-                    disparar(
-                      remover.mutateAsync({
-                        id: desenho.id,
-                        caminho: desenho.arquivo_url,
-                        modeloPerfilId: modelo.id,
-                        tipo,
-                      }),
-                    )
-                  }
-                  aria-label="Remover desenho"
-                  className="text-erro-600 hover:bg-erro-50 rounded p-1.5"
-                >
-                  <Trash2 aria-hidden="true" className="size-4" />
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <div className="border-borda flex flex-col gap-3 rounded-xl border-2 border-dashed p-3">
-        <input
-          type="text"
-          value={legenda}
-          onChange={(e) => setLegenda(e.target.value)}
-          placeholder={config.exemploLegenda}
-          aria-label="Legenda da próxima imagem"
-          className="border-borda bg-superficie min-h-12 rounded-xl border-2 px-3"
-        />
-
-        <CampoFoto
-          ajuda={config.ajuda}
-          aoEnviar={config.enviar}
-          caminho={null}
-          previa={null}
-          aoRemover={() => undefined}
-          aoConcluir={(caminho) => void enviou(caminho)}
-        />
-      </div>
-
-      {erro && (
-        <p role="alert" className="text-erro-600 text-sm">
-          {erro}
-        </p>
-      )}
-
-      {/* Visualizador ampliado */}
-      {ampliado && (
-        <div
-          role="dialog"
-          aria-label="Desenho ampliado"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
-          onClick={() => setAmpliado(null)}
-        >
-          <img
-            src={ampliado}
-            alt="Desenho técnico ampliado"
-            className="max-h-full max-w-full object-contain"
-          />
-          <Botao
-            variante="secundaria"
-            onClick={() => setAmpliado(null)}
-            aria-label="Fechar"
-            className="absolute top-4 right-4"
-          >
-            <X aria-hidden="true" className="size-5" />
-          </Botao>
+    <>
+      <div className="flex flex-col gap-4">
+        <div>
+          <h3 className="font-semibold">{config.titulo}</h3>
+          <p className="text-texto-suave text-sm">{config.descricao}</p>
         </div>
-      )}
-    </div>
+
+        {isPending && <p className="text-texto-suave text-sm">Carregando…</p>}
+
+        {desenhos && desenhos.length > 0 && (
+          <ul className="grid grid-cols-2 gap-3">
+            {desenhos.map((desenho) => (
+              <li
+                key={desenho.id}
+                className="border-borda overflow-hidden rounded-xl border-2"
+              >
+                {desenho.link ? (
+                  <button
+                    type="button"
+                    onClick={() => setAmpliado(desenho.link)}
+                    className="relative block w-full"
+                    aria-label={`Ampliar ${desenho.legenda ?? 'desenho'}`}
+                  >
+                    <img
+                      src={desenho.link}
+                      alt={desenho.legenda ?? 'Desenho técnico do perfil'}
+                      className={cn(
+                        'aspect-square w-full object-contain',
+                        config.fundoBranco ? 'bg-white' : 'bg-superficie-2',
+                      )}
+                    />
+                    <span className="bg-grafite-900/70 absolute right-1.5 bottom-1.5 rounded-full p-1.5 text-white">
+                      <ZoomIn aria-hidden="true" className="size-4" />
+                    </span>
+                  </button>
+                ) : (
+                  <div className="bg-superficie-2 text-texto-suave flex aspect-square items-center justify-center text-xs">
+                    imagem indisponível
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2 p-2">
+                  <p className="min-w-0 flex-1 truncate text-xs">
+                    {desenho.legenda ?? 'sem legenda'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRemovendo(desenho)
+                      setErroRemover(null)
+                    }}
+                    aria-label="Remover desenho"
+                    className="text-erro-600 hover:bg-erro-50 rounded p-1.5"
+                  >
+                    <Trash2 aria-hidden="true" className="size-4" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="border-borda flex flex-col gap-3 rounded-xl border-2 border-dashed p-3">
+          <input
+            type="text"
+            value={legenda}
+            onChange={(e) => setLegenda(e.target.value)}
+            placeholder={config.exemploLegenda}
+            aria-label="Legenda da próxima imagem"
+            className="border-borda bg-superficie min-h-12 rounded-xl border-2 px-3"
+          />
+
+          <CampoFoto
+            ajuda={config.ajuda}
+            aoEnviar={config.enviar}
+            caminho={null}
+            previa={null}
+            aoRemover={() => undefined}
+            aoConcluir={(caminho) => void enviou(caminho)}
+          />
+        </div>
+
+        {erro && (
+          <p role="alert" className="text-erro-600 text-sm">
+            {erro}
+          </p>
+        )}
+
+        {/* Visualizador ampliado */}
+        {ampliado && (
+          <div
+            role="dialog"
+            aria-label="Desenho ampliado"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+            onClick={() => setAmpliado(null)}
+          >
+            <img
+              src={ampliado}
+              alt="Desenho técnico ampliado"
+              className="max-h-full max-w-full object-contain"
+            />
+            <Botao
+              variante="secundaria"
+              onClick={() => setAmpliado(null)}
+              aria-label="Fechar"
+              className="absolute top-4 right-4"
+            >
+              <X aria-hidden="true" className="size-5" />
+            </Botao>
+          </div>
+        )}
+      </div>
+
+      <Modal
+        aberto={removendo !== null}
+        aoFechar={() => setRemovendo(null)}
+        titulo="Remover desenho"
+      >
+        <div className="flex flex-col gap-4">
+          <p>
+            Remover <strong>{removendo?.legenda ?? 'este desenho'}</strong>? A
+            imagem some do perfil — não tem como desfazer depois.
+          </p>
+
+          {erroRemover && (
+            <p role="alert" className="text-erro-600 text-sm">
+              {erroRemover}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <Botao
+              type="button"
+              variante="secundaria"
+              onClick={() => setRemovendo(null)}
+              className="flex-1"
+            >
+              Cancelar
+            </Botao>
+            <Botao
+              type="button"
+              variante="destrutiva"
+              onClick={() => void confirmarRemocao()}
+              carregando={remover.isPending}
+              className="flex-1"
+            >
+              <Trash2 aria-hidden="true" className="size-4" />
+              Remover
+            </Botao>
+          </div>
+        </div>
+      </Modal>
+    </>
   )
 }

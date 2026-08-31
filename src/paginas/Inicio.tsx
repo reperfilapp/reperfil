@@ -21,7 +21,7 @@ import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
 import { cn } from '@/lib/utilitarios'
 
 export default function Inicio() {
-  const { perfil } = useAutenticacao()
+  const { perfil, sair } = useAutenticacao()
   const { data: resumo, isPending } = useResumoEstoque()
   const { data: config } = useConfiguracoes()
   const { data: org } = useOrganizacao()
@@ -62,6 +62,7 @@ export default function Inicio() {
                   logoUrl={logoUrl}
                   nomeFantasia={org.nome_fantasia}
                   tamanho="gigante"
+                  className="size-36"
                 />
               </button>
             ) : (
@@ -69,13 +70,14 @@ export default function Inicio() {
                 logoUrl={logoUrl}
                 nomeFantasia={org.nome_fantasia}
                 tamanho="gigante"
+                className="size-36"
               />
             )}
             <div className="bg-borda/50 h-10 w-px" aria-hidden="true" />
             <Link to="/sobre" aria-label="Sobre o RePerfil">
               <MarcaRePerfil
                 variante="simbolo"
-                className="h-28 w-28 shrink-0 rounded-xl bg-white p-4"
+                className="h-36 w-36 shrink-0 rounded-xl bg-white p-4"
               />
             </Link>
           </>
@@ -220,6 +222,14 @@ export default function Inicio() {
         <Link to="/politica-privacidade" className="hover:underline">
           Política de privacidade
         </Link>
+        <span aria-hidden="true">·</span>
+        <button
+          type="button"
+          onClick={() => void sair()}
+          className="hover:underline"
+        >
+          Sair
+        </button>
       </nav>
 
       {logoAmpliado && logoUrl && org && (

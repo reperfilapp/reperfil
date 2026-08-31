@@ -64,6 +64,56 @@ publicada — são um vão deixado de propósito.
 
 ---
 
+## 1.7.80 — 29/08/2026
+
+**"Sair" na tela inicial, como link de texto no rodapé.**
+
+Junto de "Sobre · Termos de uso · Política de privacidade", discreto — sem
+disputar espaço com os quatro atalhos principais da tela.
+
+## 1.7.79 — 29/08/2026
+
+**A lixeira do desenho técnico do perfil passou a confirmar antes de remover.**
+
+Bug real: remover um desenho ou foto ali é uma ação IMEDIATA, gravada na
+hora — não existe um "salvar" depois, então fechar a tela sem salvar não
+desfazia nada, porque não havia o que desfazer. Um toque errado no ícone de
+lixeira já apagava o arquivo para sempre. Agora abre uma confirmação
+("Remover desenho / Cancelar") antes de gravar, no mesmo padrão já usado
+para remover item da lista técnica.
+
+## 1.7.78 — 29/08/2026
+
+**Os dois logos no topo da tela inicial ficaram maiores.**
+
+Logo da empresa e símbolo do RePerfil, lado a lado — de 112px para 144px,
+os dois juntos para continuarem do mesmo tamanho um do outro.
+
+## 1.7.77 — 29/08/2026
+
+**Botão "Sair" (tela Mais) ganhou vermelho claro.**
+
+## 1.7.76 — 29/08/2026
+
+**Tela "Mais" reorganizada em três seções coloridas.**
+
+Antes eram duas ("Fabricação" e "Administração"), com fundos quase iguais
+(cinza claro x branco). Agora são três, cada uma com sua cor de fundo:
+
+- **Administração do estoque** (azul) — Estoque de sobras, Procurar sobra,
+  Estoque de acessórios, Inventário, O que dá para produzir, Identificar
+  perfil, Relatórios.
+- **Administração de cadastros** (amarelo) — Linhas e sistemas, Modelos de
+  perfil, Produtos e listas técnicas, Catálogo de acessórios, Cores e
+  acabamentos, Localizações.
+- **Administração geral do app** (lilás) — Configurações do cálculo, Minha
+  conta, Dados da empresa, Equipe, Clientes, Empresas, Sobre.
+
+"Relatórios" saiu da administração e entrou no estoque; "Clientes" fez o
+caminho inverso. O lilás é cor nova no sistema — token próprio em
+`index.css`, seguindo o mesmo padrão das demais famílias de cor (não é cor
+literal solta no componente).
+
 ## 1.7.75 — 29/08/2026
 
 **Teclado numérico da senha, agora de verdade no iOS.**

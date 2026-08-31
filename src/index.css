@@ -88,6 +88,12 @@
   --color-erro-600: oklch(0.52 0.21 27);
   --color-erro-700: oklch(0.45 0.19 27);
 
+  /* Lilás — administração geral do app, na tela "Mais" */
+  --color-lilas-50: oklch(0.96 0.02 305);
+  --color-lilas-100: oklch(0.91 0.045 305);
+  --color-lilas-600: oklch(0.52 0.14 305);
+  --color-lilas-700: oklch(0.44 0.13 305);
+
   /* Cinza do logotipo — usado no traço secundário da marca */
   --color-marca-cinza: oklch(0.71 0.004 260);
 

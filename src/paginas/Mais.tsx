@@ -55,16 +55,15 @@ export default function Mais() {
   const { tema, definirTema } = useTema()
   const { data: org } = useOrganizacao()
 
-  /**
-   * O que toca a fabricação, na ordem em que o trabalho acontece.
-   *
-   * Do material que existe (sobras) para o que ele pode virar (produtos e
-   * viabilidade), e depois o que descreve e localiza esse material. Antes,
-   * "Clientes" aparecia em segundo lugar e empurrava "Modelos de perfil" e
-   * "Linhas" para baixo — cadastro de escritório separando duas telas que se
-   * usam juntas.
-   */
-  const producao = [
+  /** O dia a dia do depósito: o material que existe e o que fazer com ele. */
+  const estoque = [
+    {
+      para: '/sobras',
+      rotulo: 'Estoque de sobras',
+      descricao: 'Todas as peças, com etiqueta e QR Code',
+      Icone: Package,
+      visivel: true,
+    },
     {
       para: '/procurar',
       rotulo: 'Procurar sobra',
@@ -73,12 +72,44 @@ export default function Mais() {
       visivel: true,
     },
     {
-      para: '/sobras',
-      rotulo: 'Estoque de sobras',
-      descricao: 'Todas as peças, com etiqueta e QR Code',
-      Icone: Package,
+      para: '/estoque-acessorios',
+      rotulo: 'Estoque de acessórios',
+      descricao: 'Dobradiça, roldana, puxador — sem comprimento a controlar',
+      Icone: Puzzle,
       visivel: true,
     },
+    {
+      para: '/inventario',
+      rotulo: 'Inventário',
+      descricao: 'Contagem física de perfis e acessórios',
+      Icone: ClipboardList,
+      visivel: true,
+    },
+    {
+      para: '/o-que-produzir',
+      rotulo: 'O que dá para produzir',
+      descricao: 'Portas e janelas que saem das sobras de hoje',
+      Icone: PackageSearch,
+      visivel: true,
+    },
+    {
+      para: '/identificar',
+      rotulo: 'Identificar perfil',
+      descricao: 'Descobrir o perfil de uma ponta sem etiqueta',
+      Icone: Ruler,
+      visivel: true,
+    },
+    {
+      para: '/relatorios',
+      rotulo: 'Relatórios',
+      descricao: 'Estoque, sobras paradas e movimentações em CSV',
+      Icone: FileSpreadsheet,
+      visivel: true,
+    },
+  ].filter((item) => item.visivel)
+
+  /** O catálogo: o que a empresa fabrica e o vocabulário por trás disso. */
+  const cadastros = [
     {
       para: '/linhas',
       rotulo: 'Linhas e sistemas',
@@ -101,13 +132,6 @@ export default function Mais() {
       visivel: true,
     },
     {
-      para: '/estoque-acessorios',
-      rotulo: 'Estoque de acessórios',
-      descricao: 'Dobradiça, roldana, puxador — sem comprimento a controlar',
-      Icone: Puzzle,
-      visivel: true,
-    },
-    {
       para: '/acessorios',
       rotulo: 'Catálogo de acessórios',
       descricao: 'Os acessórios que a empresa usa',
@@ -115,38 +139,10 @@ export default function Mais() {
       visivel: true,
     },
     {
-      para: '/inventario',
-      rotulo: 'Inventário',
-      descricao: 'Contagem física de perfis e acessórios',
-      Icone: ClipboardList,
-      visivel: true,
-    },
-    {
-      para: '/o-que-produzir',
-      rotulo: 'O que dá para produzir',
-      descricao: 'Portas e janelas que saem das sobras de hoje',
-      Icone: PackageSearch,
-      visivel: true,
-    },
-    {
       para: '/acabamentos',
       rotulo: 'Cores e acabamentos',
       descricao: 'Pinturas, anodizados e códigos RAL',
       Icone: Palette,
-      visivel: true,
-    },
-    {
-      para: '/configuracoes',
-      rotulo: 'Configurações do cálculo',
-      descricao: 'Serra, margem e mínimo de sobra',
-      Icone: Settings,
-      visivel: eAdministrador(perfil),
-    },
-    {
-      para: '/identificar',
-      rotulo: 'Identificar perfil',
-      descricao: 'Descobrir o perfil de uma ponta sem etiqueta',
-      Icone: Ruler,
       visivel: true,
     },
     {
@@ -158,8 +154,15 @@ export default function Mais() {
     },
   ].filter((item) => item.visivel)
 
-  /** O que é escritório: pessoas, clientes e papel. */
-  const administracao = [
+  /** O que é do app e do escritório: pessoas, empresa e papel. */
+  const geral = [
+    {
+      para: '/configuracoes',
+      rotulo: 'Configurações do cálculo',
+      descricao: 'Serra, margem e mínimo de sobra',
+      Icone: Settings,
+      visivel: eAdministrador(perfil),
+    },
     {
       para: `/colaboradores/${perfil?.id ?? ''}`,
       rotulo: 'Minha conta',
@@ -198,13 +201,6 @@ export default function Mais() {
       visivel: eAdministrador(perfil) && Boolean(org?.eh_catalogo_central),
     },
     {
-      para: '/relatorios',
-      rotulo: 'Relatórios',
-      descricao: 'Estoque, sobras paradas e movimentações em CSV',
-      Icone: FileSpreadsheet,
-      visivel: true,
-    },
-    {
       para: '/sobre',
       rotulo: 'Sobre',
       descricao: 'Quem desenvolve, contato e documentos legais',
@@ -223,12 +219,19 @@ export default function Mais() {
         </p>
       </header>
 
-      {/* Duas seções, com fundos diferentes: o que afeta a fabricação e o
-          que é escritório. A cor distingue à distância — no depósito, com o
-          celular na mão, ninguém lê subtítulo antes de tocar. */}
-      <Grupo titulo="Fabricação" itens={producao} destaque />
+      {/* Três seções, cada uma com sua cor de fundo — o que mexe no
+          estoque, o que é catálogo (cadastro) e o que é do app/escritório.
+          A cor distingue à distância — no depósito, com o celular na mão,
+          ninguém lê subtítulo antes de tocar. */}
+      <Grupo titulo="Administração do estoque" itens={estoque} cor="azul" />
 
-      <Grupo titulo="Administração" itens={administracao} />
+      <Grupo
+        titulo="Administração de cadastros"
+        itens={cadastros}
+        cor="amarelo"
+      />
+
+      <Grupo titulo="Administração geral do app" itens={geral} cor="lilas" />
 
       {!podeMovimentarEstoque(perfil) && (
         <p className="bg-superficie-2 text-texto-suave mb-6 rounded-xl px-4 py-3 text-sm">
@@ -266,6 +269,7 @@ export default function Mais() {
         variante="contorno"
         tamanho="largura_total"
         onClick={() => void sair()}
+        className="bg-erro-50 text-erro-700 border-erro-100 hover:bg-erro-100"
       >
         <LogOut aria-hidden="true" className="size-5" />
         Sair
@@ -283,23 +287,30 @@ interface ItemMenu {
   Icone: typeof Sun
 }
 
+type CorGrupo = 'azul' | 'amarelo' | 'lilas'
+
+const CLASSES_POR_COR: Record<CorGrupo, string> = {
+  azul: 'bg-acao-50 hover:bg-acao-100',
+  amarelo: 'bg-atencao-50 hover:bg-atencao-100',
+  lilas: 'bg-lilas-50 hover:bg-lilas-100',
+}
+
 /**
- * Uma seção do menu.
+ * Uma seção do menu, com a cor de fundo própria da seção.
  *
- * `destaque` marca o grupo da fabricação com fundo próprio. É a distinção
- * que serve de longe: no depósito, com o celular na mão e às vezes de luva,
- * ninguém lê o subtítulo da seção antes de tocar — mas a mancha de cor
- * diferente separa "isto mexe na produção" de "isto é escritório" antes da
- * leitura.
+ * A cor é o que distingue de longe: no depósito, com o celular na mão e às
+ * vezes de luva, ninguém lê o subtítulo antes de tocar — mas a mancha de
+ * cor diferente separa "isto é estoque" de "isto é cadastro" de "isto é do
+ * app" antes da leitura.
  */
 function Grupo({
   titulo,
   itens,
-  destaque = false,
+  cor,
 }: {
   titulo: string
   itens: readonly ItemMenu[]
-  destaque?: boolean
+  cor: CorGrupo
 }) {
   if (itens.length === 0) return null
 
@@ -316,9 +327,7 @@ function Grupo({
             to={para}
             className={cn(
               'flex min-h-16 items-center gap-4 rounded-xl p-4 shadow-sm',
-              destaque
-                ? 'bg-superficie-2 hover:bg-borda border-borda border'
-                : 'bg-superficie hover:bg-superficie-2',
+              CLASSES_POR_COR[cor],
             )}
           >
             <Icone aria-hidden="true" className="text-acao-600 size-6" />
