@@ -35,6 +35,31 @@ const EMAIL_CONTATO = 'reperfilapp@gmail.com'
 const WHATSAPP_NUMERO = '5564981808090'
 const WHATSAPP_EXIBICAO = '(64) 98180-8090'
 
+const REGEX_URL = /(https?:\/\/[^\s]+)/g
+
+/**
+ * Os textos institucionais são texto simples (sem editor de rich text) —
+ * mas um endereço colado ali dentro precisa continuar clicável, senão
+ * "o link para acesso é: https://..." vira decoração morta na tela.
+ */
+function comLinks(texto: string) {
+  return texto.split(REGEX_URL).map((trecho, i) =>
+    /^https?:\/\//.test(trecho) ? (
+      <a
+        key={i}
+        href={trecho}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-acao-600 break-all underline"
+      >
+        {trecho}
+      </a>
+    ) : (
+      <span key={i}>{trecho}</span>
+    ),
+  )
+}
+
 export default function Sobre() {
   const { perfil } = useAutenticacao()
   const podeEditar = eAdministrador(perfil)
@@ -248,7 +273,7 @@ export default function Sobre() {
             .split('\n')
             .filter(Boolean)
             .map((paragrafo, i) => (
-              <p key={i}>{paragrafo}</p>
+              <p key={i}>{comLinks(paragrafo)}</p>
             ))}
         </div>
       </section>
@@ -274,7 +299,7 @@ export default function Sobre() {
             .split('\n')
             .filter(Boolean)
             .map((paragrafo, i) => (
-              <p key={i}>{paragrafo}</p>
+              <p key={i}>{comLinks(paragrafo)}</p>
             ))}
         </div>
       </section>

@@ -12,8 +12,11 @@ quando o usuário confirmar explicitamente que rodou no Supabase — nunca
 antes, mesmo que a sintaxe já tenha sido validada com `npm run banco:validar`
 (validar sintaxe não é a mesma coisa que já estar aplicada).
 
-## Status em 31/08/2026: nenhuma pendente
+## Status em 31/08/2026: 1 pendente
 
+- [ ] 20260831800000_sincronizar_foto_sem_nova_revisao.sql
+- [x] 20260831700000_priorizar_foto_na_busca_visual.sql
+- [x] 20260831600000_embedding_na_sincronizacao_central.sql
 - [x] 20260831500000_atalho_linhas_e_sistemas.sql
 - [x] 20260831400000_cards_tela_inicial_configuraveis.sql
 - [x] 20260831300000_personalizar_tela_inicial.sql
