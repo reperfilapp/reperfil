@@ -23,6 +23,12 @@ versão 0.5.0 · build 20260815.1432
 AAAAMMDD.HHMM. Cresce sozinho a cada publicação, sem ninguém precisar
 lembrar de nada.
 
+**Y nunca passa de 99.** Ao estourar (`X.98` → `X.99` → viraria `X.100`),
+sobe 1 no número do meio e zera este: `1.6.99` vira `1.7.00`, nunca
+`1.6.100`. Regra aplicada tanto pelo script (`scripts/subir-versao.mjs`,
+que faz isso sozinho) quanto nas entradas deste changelog, numeradas à
+mão.
+
 ## Para que serve na prática
 
 **"O celular do depósito já pegou a correção?"** Compare o número de build no
@@ -62,7 +68,48 @@ que serve de verdade para rastrear um erro é o número de build e o hash do
 commit, não este número. Por isso 1.6.47 a 1.6.51 nunca existiram como versão
 publicada — são um vão deixado de propósito.
 
+Aconteceu de novo em 29/08/2026, bem maior: quase toda mudança pequena
+ganhou entrada própria em vez de esperar a publicação, e o changelog chegou
+a "1.7.83" enquanto o `package.json` publicado de verdade seguia em 1.6.98
+— um vão de quase noventa números. Desta vez a correção foi ao contrário
+da de 20/08: em vez de subir o `package.json` até alcançar o changelog, a
+PRÓXIMA entrada voltou a seguir o número real (`1.6.99`, o que vem depois
+de 1.6.98). As entradas já escritas entre ~1.7.5x e 1.7.83 ficam como
+estão — nunca existiram como versão publicada; para saber o que valia em
+cada uma, use a data e o hash do commit, não o número.
+
 ---
+
+## 1.6.99 — 29/08/2026
+
+**A numeração da versão nunca passa de 99 no meio/final — regra nova.**
+
+`1.6.98` → `1.6.99` → `1.7.00` (não `1.6.100`). Corrigido em
+`scripts/subir-versao.mjs` (usado por `npm run versao:correcao` etc.), que
+agora soma 1 na casa à esquerda e zera a atual sempre que uma posição
+estoura 99 — cascata inclusa (`1.99.99` vira `2.0.0`). Regra documentada no
+topo deste arquivo para valer também nas entradas do changelog, numeradas
+à mão.
+
+## 1.7.82 — 29/08/2026
+
+**"Sair" (tela inicial) virou uma pílula vermelho claro, sozinho numa linha própria.**
+
+Antes dividia a linha com "Sobre · Termos de uso · Política de
+privacidade", como mais um link de texto. Agora tem linha só dele, embaixo
+dos outros, e o texto fica dentro de uma pílula vermelho claro — mais fácil
+de notar sem competir com o resto do rodapé.
+
+## 1.7.81 — 29/08/2026
+
+**"Administrar produtos por empresa": célula do produto só com miniatura e nome.**
+
+Tinha o código do produto junto do nome (`JAN-COR-2F-SUPREMA Janela de
+correr 2F`); saiu, e entrou a miniatura do desenho técnico — mesma que já
+aparece na lista principal de produtos, reaproveitando o link já resolvido
+(`useCapasProdutos`, sem consulta nova). O nome também parou de cortar com
+reticências: quando não cabe numa linha, quebra em duas ou mais, mas nunca
+esconde parte do nome.
 
 ## 1.7.80 — 29/08/2026
 

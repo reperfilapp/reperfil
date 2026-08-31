@@ -1,6 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
-import { Search, ZoomIn, ExternalLink, Pencil, RefreshCw } from 'lucide-react'
+import {
+  Search,
+  ZoomIn,
+  ExternalLink,
+  Pencil,
+  RefreshCw,
+  TriangleAlert,
+} from 'lucide-react'
 import {
   useModelosPerfil,
   useEditarModeloPerfil,
@@ -395,6 +402,23 @@ export default function PerfilDetalhe() {
                   <span className="bg-grafite-900/70 absolute right-1.5 bottom-1.5 rounded-full p-1.5 text-white">
                     <ZoomIn aria-hidden="true" className="size-4" />
                   </span>
+
+                  {/* Marcador da busca visual por foto: se já entra na
+                      busca (verde) ou ainda não (vermelho — falhou ou o
+                      cálculo ainda não terminou). */}
+                  {d.embedding_ok ? (
+                    <span className="bg-economia-50 text-economia-700 absolute top-1.5 right-1.5 rounded-full px-2 py-0.5 text-[0.65rem] font-medium whitespace-nowrap">
+                      <span className="font-bold">✓</span> Processado por IA
+                    </span>
+                  ) : (
+                    <span
+                      title={d.embedding_erro ?? undefined}
+                      className="bg-erro-50 text-erro-700 absolute top-1.5 right-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.65rem] font-medium whitespace-nowrap"
+                    >
+                      <TriangleAlert aria-hidden="true" className="size-3" />
+                      Aguardando processamento IA
+                    </span>
+                  )}
                 </button>
               ) : null,
             )}
@@ -428,6 +452,20 @@ export default function PerfilDetalhe() {
                   <span className="bg-grafite-900/70 absolute right-1.5 bottom-1.5 rounded-full p-1.5 text-white">
                     <ZoomIn aria-hidden="true" className="size-4" />
                   </span>
+
+                  {f.embedding_ok ? (
+                    <span className="bg-economia-50 text-economia-700 absolute top-1.5 right-1.5 rounded-full px-2 py-0.5 text-[0.65rem] font-medium whitespace-nowrap">
+                      <span className="font-bold">✓</span> Processado por IA
+                    </span>
+                  ) : (
+                    <span
+                      title={f.embedding_erro ?? undefined}
+                      className="bg-erro-50 text-erro-700 absolute top-1.5 right-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.65rem] font-medium whitespace-nowrap"
+                    >
+                      <TriangleAlert aria-hidden="true" className="size-3" />
+                      Aguardando processamento IA
+                    </span>
+                  )}
                   {f.legenda && (
                     <span className="bg-grafite-900/70 absolute inset-x-0 bottom-0 truncate px-2 py-1 text-left text-xs text-white">
                       {f.legenda}

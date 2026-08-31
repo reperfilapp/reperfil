@@ -8,6 +8,7 @@ import {
   SEM_LINHA,
 } from '@/dados/modelosPerfil'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
+import { useIdentificarPorFoto } from '@/dados/identificacaoPorFoto'
 import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
@@ -22,6 +23,7 @@ import {
   formatarMedidasSecao,
   areaSecaoMm2,
 } from '@/dominio/secao'
+import { combinarCandidatos } from '@/dominio/identificacaoPerfil'
 import { interpretarMedidaDigitada } from '@/dominio/medidas'
 import type { UnidadeMedida } from '@/config/aplicacao'
 import type { ModeloPerfil } from '@/tipos/banco'
@@ -74,6 +76,7 @@ export default function IdentificarPerfil() {
 
   const [foto, setFoto] = useState<string | null>(null)
   const [ampliada, setAmpliada] = useState<string | null>(null)
+  const identificar = useIdentificarPorFoto()
   /*
    * Um campo só, com as medidas separadas por espaço — não quatro campos.
    * Quem está com a ponta na mão mede o que dá — a largura por fora, a
@@ -109,6 +112,12 @@ export default function IdentificarPerfil() {
       if (anterior) URL.revokeObjectURL(anterior)
       return URL.createObjectURL(arquivo)
     })
+
+    // Dispara a busca visual assim que a foto é escolhida — sem precisar
+    // de um botão "buscar" separado. `reset()` primeiro: sem isso, o
+    // resultado da foto anterior ficaria na tela até este pedido terminar.
+    identificar.reset()
+    identificar.mutate(arquivo)
   }
 
   // Vírgula é como se escreve 23,8 aqui; "x" e "×" também separam, porque é
@@ -142,7 +151,7 @@ export default function IdentificarPerfil() {
    * sem nada, não há o que listar, porque mostrar os 82 de uma vez seria
    * repetir a lista de perfis, que já existe noutra tela.
    */
-  const candidatos: { perfil: ModeloPerfil; nota: string | null }[] = mediuSecao
+  const candidatosBase: { perfil: ModeloPerfil; nota: string | null }[] = mediuSecao
     ? candidatosPorMedida(universo, medidas).map((c) => ({
         perfil: c.perfil,
         nota:
@@ -162,9 +171,18 @@ export default function IdentificarPerfil() {
         ? universo.map((perfil) => ({ perfil, nota: null }))
         : []
 
+  // A busca por foto participa mesmo sem medida nem linha escolhidas — é
+  // o próprio ponto da foto ter passado a comparar de verdade.
+  const candidatos = combinarCandidatos(
+    candidatosBase,
+    identificar.data ?? [],
+    universo,
+  )
+
   // `== null` cobre nulo e ausente: antes da migração a coluna nem vem.
   const semMedida = universo.filter((m) => m.largura_secao_mm == null).length
-  const filtrouAlgo = mediuSecao || medido !== null || linha !== ''
+  const filtrouAlgo =
+    mediuSecao || medido !== null || linha !== '' || foto !== null
 
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
@@ -204,11 +222,25 @@ export default function IdentificarPerfil() {
                 <p className="text-texto-suave mb-2 text-sm">
                   Ela fica na tela enquanto você compara com os desenhos abaixo.
                 </p>
+                {identificar.isPending && (
+                  <p className="text-texto-suave mb-2 text-sm">
+                    Comparando com o catálogo…
+                  </p>
+                )}
+                {identificar.error && (
+                  <p role="alert" className="text-erro-600 mb-2 text-sm">
+                    {identificar.error instanceof Error
+                      ? identificar.error.message
+                      : 'Não foi possível comparar a foto.'}{' '}
+                    A medida e a linha continuam funcionando normalmente.
+                  </p>
+                )}
                 <button
                   type="button"
                   onClick={() => {
                     URL.revokeObjectURL(foto)
                     setFoto(null)
+                    identificar.reset()
                   }}
                   className="text-acao-600 inline-flex items-center gap-1 text-sm font-medium hover:underline"
                 >
@@ -257,7 +289,8 @@ export default function IdentificarPerfil() {
           />
 
           <p className="text-texto-suave mt-2 text-xs">
-            A foto não é enviada nem gravada — serve só para comparar aqui.
+            A foto viaja até o servidor para comparar com o catálogo, mas não
+            fica gravada em lugar nenhum — some assim que a comparação termina.
           </p>
         </section>
 
@@ -381,7 +414,7 @@ export default function IdentificarPerfil() {
           </p>
 
           <ul className="flex flex-col gap-2">
-            {candidatos.map(({ perfil, nota }) => (
+            {candidatos.map(({ perfil, nota, parecencaFoto }) => (
               <li key={perfil.id}>
                 <Link
                   to={destinoDo(perfil.id)}
@@ -416,8 +449,14 @@ export default function IdentificarPerfil() {
                           com o que a trena deu. */}
                       {formatarMedidasSecao(perfil) ?? 'sem medida no catálogo'}
                     </span>
-                    {nota && (
+                    {(nota || parecencaFoto !== null) && (
                       <span className="text-texto-suave block text-xs">
+                        {parecencaFoto !== null && (
+                          <span className="text-acao-600 font-medium">
+                            {parecencaFoto}% parecido na foto
+                          </span>
+                        )}
+                        {nota && parecencaFoto !== null && ' · '}
                         {nota}
                       </span>
                     )}

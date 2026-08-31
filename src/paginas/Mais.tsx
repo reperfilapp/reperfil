@@ -22,6 +22,7 @@ import {
   ClipboardList,
   Info,
   UserCircle2,
+  LayoutGrid,
 } from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import {
@@ -161,6 +162,13 @@ export default function Mais() {
       rotulo: 'Configurações do cálculo',
       descricao: 'Serra, margem e mínimo de sobra',
       Icone: Settings,
+      visivel: eAdministrador(perfil),
+    },
+    {
+      para: '/personalizar-inicio',
+      rotulo: 'Personalizar tela inicial',
+      descricao: 'Escolha quais cards aparecem e as cores de cada um',
+      Icone: LayoutGrid,
       visivel: eAdministrador(perfil),
     },
     {

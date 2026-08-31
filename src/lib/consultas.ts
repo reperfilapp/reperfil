@@ -46,4 +46,5 @@ export const chaves = {
   lotesAcessorio: ['lotes-acessorio'] as const,
   inventario: ['inventario'] as const,
   textosInstitucionais: ['textos-institucionais'] as const,
+  cardsTelaInicial: ['cards-tela-inicial'] as const,
 } as const

@@ -21,6 +21,7 @@ import PesquisarSobras from '@/paginas/PesquisarSobras'
 import Reservas from '@/paginas/Reservas'
 import Mais from '@/paginas/Mais'
 import Configuracoes from '@/paginas/Configuracoes'
+import PersonalizarInicio from '@/paginas/PersonalizarInicio'
 import Relatorios from '@/paginas/Relatorios'
 import ModelosPerfil from '@/paginas/cadastros/ModelosPerfil'
 import Linhas from '@/paginas/cadastros/Linhas'
@@ -144,6 +145,10 @@ export default function App() {
                 <Route path="/mais" element={<Mais />} />
                 <Route path="/relatorios" element={<Relatorios />} />
                 <Route path="/configuracoes" element={<Configuracoes />} />
+                <Route
+                  path="/personalizar-inicio"
+                  element={<PersonalizarInicio />}
+                />
                 <Route path="/empresa" element={<DadosEmpresa />} />
                 <Route path="/acessorios" element={<ModelosAcessorio />} />
                 <Route path="/estoque-acessorios" element={<Acessorios />} />

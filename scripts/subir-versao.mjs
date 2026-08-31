@@ -43,6 +43,17 @@ for (let i = posicao + 1; i < partes.length; i++) {
   partes[i] = 0
 }
 
+// Nenhuma posição, fora a primeira ("fase"), passa de 99 — ao estourar,
+// soma 1 na posição à esquerda e zera esta: 1.6.99 vira 1.7.00, não
+// 1.6.100. A primeira posição fica sem teto: fase é contada à mão e não
+// corre o risco de chegar perto de 99.
+for (let i = partes.length - 1; i > 0; i--) {
+  if (partes[i] > 99) {
+    partes[i] = 0
+    partes[i - 1] += 1
+  }
+}
+
 pacote.version = partes.join('.')
 
 fs.writeFileSync(caminho, `${JSON.stringify(pacote, null, 2)}\n`)

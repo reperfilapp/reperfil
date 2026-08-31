@@ -44,6 +44,10 @@ export interface DesenhoTecnico {
   criado_em: string
   /** Link temporário para exibir; o balde é privado. */
   link: string | null
+  /** true quando a busca visual por foto já enxerga este arquivo. */
+  embedding_ok: boolean
+  /** Mensagem da última falha ao calcular, se houver. */
+  embedding_erro: string | null
 }
 
 export function useDesenhosTecnicos(
@@ -57,7 +61,7 @@ export function useDesenhosTecnicos(
       const { data, error } = await supabase
         .from('arquivos_vetoriais')
         .select(
-          'id, modelo_perfil_id, arquivo_url, legenda, ordem, largura_mm, altura_mm, criado_em',
+          'id, modelo_perfil_id, arquivo_url, legenda, ordem, largura_mm, altura_mm, criado_em, embedding_ok, embedding_erro',
         )
         .eq('modelo_perfil_id', modeloPerfilId)
         .eq('tipo', tipo)
@@ -99,18 +103,37 @@ export function useAdicionarDesenho() {
       ordem: number
       tipo: TipoImagemPerfil
     }) => {
-      const { error } = await supabase.from('arquivos_vetoriais').insert({
-        modelo_perfil_id: modeloPerfilId,
-        tipo,
-        arquivo_url: caminho,
-        legenda,
-        ordem,
-        // `sanitizado` só importa para SVG importado, que é da Fase 2.
-        // Imagem enviada pela câmera não executa nada.
-        sanitizado: true,
-      })
+      const { data, error } = await supabase
+        .from('arquivos_vetoriais')
+        .insert({
+          modelo_perfil_id: modeloPerfilId,
+          tipo,
+          arquivo_url: caminho,
+          legenda,
+          ordem,
+          // `sanitizado` só importa para SVG importado, que é da Fase 2.
+          // Imagem enviada pela câmera não executa nada.
+          sanitizado: true,
+        })
+        .select('id')
+        .single()
 
       if (error) throw new Error(error.message)
+
+      // Dispara e esquece: a busca visual por foto é um extra, não algo
+      // que o cadastro do desenho deva esperar ou que possa travá-lo. Se
+      // falhar (rede, Cohere fora do ar), o pior caso é este arquivo ficar
+      // sem embedding até o próximo backfill manual.
+      void supabase.functions
+        .invoke('calcular-embedding-perfil', { body: { arquivoId: data.id } })
+        .then(({ error: erroEmbedding }) => {
+          if (erroEmbedding) {
+            console.error('Não foi possível calcular o embedding do arquivo:', erroEmbedding)
+          }
+          // A função grava o status (ok ou erro) na própria linha — só
+          // falta a galeria buscar de novo para mostrar o marcador certo.
+          void cliente.invalidateQueries({ queryKey: ['imagens-perfil'] })
+        })
     },
     onSuccess: () => {
       void cliente.invalidateQueries({ queryKey: ['imagens-perfil'] })

@@ -301,18 +301,6 @@ export function FormularioModeloPerfil({
             }
           />
         </div>
-
-        {/* Aqui a ORDEM IMPORTA, ao contrário da tela de identificação:
-              é ela que casa com o que a ficha mostra e com o que o cálculo
-              do desenho grava. Por isso o texto abaixo diz o que é cada
-              número, já que os rótulos não dizem mais. */}
-        <p className="text-texto-suave mt-2 text-sm">
-          As duas primeiras são a largura e a altura por fora, e vêm calculadas
-          do peso e do desenho — corrija se a peça disser outra coisa. As duas
-          últimas são cotas internas (aba, câmara, encaixe), que só saem
-          medindo. Todas opcionais: quanto mais o catálogo souber, mais estreita
-          fica a lista na identificação.
-        </p>
       </fieldset>
 
       {/* Desenho e foto no mesmo lugar do resto do cadastro: eram uma

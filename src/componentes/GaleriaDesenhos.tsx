@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Trash2, ZoomIn, X } from 'lucide-react'
+import { Trash2, ZoomIn, X, TriangleAlert } from 'lucide-react'
 import {
   useDesenhosTecnicos,
   useAdicionarDesenho,
@@ -141,6 +141,23 @@ export function GaleriaDesenhos({
                     <span className="bg-grafite-900/70 absolute right-1.5 bottom-1.5 rounded-full p-1.5 text-white">
                       <ZoomIn aria-hidden="true" className="size-4" />
                     </span>
+
+                    {/* Marcador da busca visual por foto: se já entra na
+                        busca (verde) ou ainda não (vermelho — falhou ou o
+                        cálculo ainda não terminou). */}
+                    {desenho.embedding_ok ? (
+                      <span className="bg-economia-50 text-economia-700 absolute top-1.5 right-1.5 rounded-full px-2 py-0.5 text-[0.65rem] font-medium whitespace-nowrap">
+                        <span className="font-bold">✓</span> Processado por IA
+                      </span>
+                    ) : (
+                      <span
+                        title={desenho.embedding_erro ?? undefined}
+                        className="bg-erro-50 text-erro-700 absolute top-1.5 right-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.65rem] font-medium whitespace-nowrap"
+                      >
+                        <TriangleAlert aria-hidden="true" className="size-3" />
+                        Aguardando processamento IA
+                      </span>
+                    )}
                   </button>
                 ) : (
                   <div className="bg-superficie-2 text-texto-suave flex aspect-square items-center justify-center text-xs">

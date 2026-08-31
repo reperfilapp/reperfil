@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type PointerEvent } from 'react'
-import { X, ZoomIn, ZoomOut, Maximize } from 'lucide-react'
+import { X, ZoomIn, ZoomOut, Maximize, Share2, Copy } from 'lucide-react'
 
 interface PropsVisualizador {
   src: string
@@ -57,6 +57,11 @@ export function VisualizadorImagem({
 
   const referencia = useRef<HTMLDialogElement>(null)
 
+  const [processando, setProcessando] = useState<'exportar' | 'copiar' | null>(
+    null,
+  )
+  const [erroAcao, setErroAcao] = useState<string | null>(null)
+
   /*
    * `<dialog>` nativo, igual ao `Modal` — e pela mesma razão de fundo: quem
    * abre este visualizador tocando no desenho de dentro de "Alterar corte"
@@ -86,6 +91,91 @@ export function VisualizadorImagem({
   function reiniciar() {
     setEscala(ESCALA_MINIMA)
     setDeslocamento({ x: 0, y: 0 })
+  }
+
+  async function baixarComoBlob(): Promise<Blob> {
+    const resposta = await fetch(src)
+    if (!resposta.ok) throw new Error('Não foi possível baixar a imagem.')
+    return resposta.blob()
+  }
+
+  /**
+   * Só para copiar: o Clipboard API dá suporte confiável a PNG em todo
+   * navegador — JPEG varia. Reconverter aqui evita "não foi possível
+   * copiar" numa foto que é JPEG só porque o navegador é mais restrito.
+   */
+  async function paraPng(origem: Blob): Promise<Blob> {
+    if (origem.type === 'image/png') return origem
+
+    const bitmap = await createImageBitmap(origem)
+    const tela = document.createElement('canvas')
+    tela.width = bitmap.width
+    tela.height = bitmap.height
+    const contexto = tela.getContext('2d')
+    bitmap.close()
+
+    if (!contexto) {
+      throw new Error('Não foi possível processar a imagem neste navegador.')
+    }
+
+    contexto.drawImage(bitmap, 0, 0)
+
+    return new Promise((resolve, reject) => {
+      tela.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error('Falha ao converter a imagem.'))),
+        'image/png',
+      )
+    })
+  }
+
+  async function exportar() {
+    setErroAcao(null)
+    setProcessando('exportar')
+    try {
+      const blob = await baixarComoBlob()
+      const extensao = blob.type.split('/')[1] ?? 'jpg'
+      const nome = `${(titulo ?? alt).replace(/[^\w-]+/g, '-')}.${extensao}`
+      const arquivo = new File([blob], nome, { type: blob.type })
+
+      // Com suporte a compartilhar arquivo (celular, principalmente): abre
+      // o menu do sistema — salvar em Arquivos, mandar por WhatsApp, etc.
+      if (navigator.canShare?.({ files: [arquivo] })) {
+        await navigator.share({ files: [arquivo], title: nome })
+        return
+      }
+
+      // Sem esse suporte (comum em navegador de computador): baixa direto,
+      // como qualquer download.
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = nome
+      link.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      // Cancelar o menu de compartilhar não é erro — é desistência.
+      if (e instanceof DOMException && e.name === 'AbortError') return
+      setErroAcao(
+        e instanceof Error ? e.message : 'Não foi possível exportar a imagem.',
+      )
+    } finally {
+      setProcessando(null)
+    }
+  }
+
+  async function copiar() {
+    setErroAcao(null)
+    setProcessando('copiar')
+    try {
+      const blob = await paraPng(await baixarComoBlob())
+      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })])
+    } catch (e) {
+      setErroAcao(
+        e instanceof Error ? e.message : 'Não foi possível copiar a imagem.',
+      )
+    } finally {
+      setProcessando(null)
+    }
   }
 
   function aoDescerPonteiro(evento: PointerEvent<HTMLDialogElement>) {
@@ -198,7 +288,16 @@ export function VisualizadorImagem({
 
       {/* Controles por cima da imagem. `pointer-events-none` no container
           para não roubar o arrasto; os botões reativam o toque. */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">
+      <div className="pointer-events-none absolute inset-x-0 bottom-6 flex flex-col items-center gap-2">
+        {erroAcao && (
+          <p
+            role="alert"
+            className="pointer-events-auto max-w-[85vw] rounded-lg bg-white/95 px-3 py-1.5 text-center text-sm text-erro-700"
+          >
+            {erroAcao}
+          </p>
+        )}
+
         <div className="pointer-events-auto flex items-center gap-1 rounded-xl bg-white/95 p-1 shadow-lg">
           <button
             type="button"
@@ -232,6 +331,28 @@ export function VisualizadorImagem({
             className="text-grafite-900 rounded-lg p-3 hover:bg-black/10 disabled:opacity-30"
           >
             <Maximize aria-hidden="true" className="size-5" />
+          </button>
+
+          <div aria-hidden="true" className="bg-grafite-900/15 mx-0.5 h-6 w-px" />
+
+          <button
+            type="button"
+            onClick={() => void copiar()}
+            disabled={processando !== null}
+            aria-label="Copiar imagem"
+            className="text-grafite-900 rounded-lg p-3 hover:bg-black/10 disabled:opacity-30"
+          >
+            <Copy aria-hidden="true" className="size-5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void exportar()}
+            disabled={processando !== null}
+            aria-label="Exportar imagem"
+            className="text-grafite-900 rounded-lg p-3 hover:bg-black/10 disabled:opacity-30"
+          >
+            <Share2 aria-hidden="true" className="size-5" />
           </button>
         </div>
       </div>

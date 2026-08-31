@@ -370,6 +370,24 @@ export interface ConfiguracoesAplicacao {
 }
 
 /**
+ * Um card escolhido pela organização para a tela inicial — uma linha por
+ * card. `item` e `cor` são chaves do catálogo fixo em
+ * `src/dominio/telaInicial.ts`, nunca texto livre. Zero linhas de um grupo
+ * significa nenhum card daquele grupo aparece.
+ */
+export type GrupoCardTelaInicial = 'resumo' | 'atalho'
+
+export interface CardTelaInicial {
+  id: string
+  organizacao_id: string
+  grupo: GrupoCardTelaInicial
+  item: string
+  cor: string
+  ordem: number
+  criado_em: string
+}
+
+/**
  * Textos da tela "Sobre" — registro único (singleton), comum a toda
  * organização. Só a organização central edita; as demais só leem.
  */

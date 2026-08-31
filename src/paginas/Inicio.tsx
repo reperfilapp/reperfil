@@ -1,19 +1,25 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  PackagePlus,
-  Package,
-  Ruler,
-  Layers,
-  Boxes,
-  Scissors,
-} from 'lucide-react'
+import { Package, Layers } from 'lucide-react'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { useResumoEstoque } from '@/dados/sobras'
 import { useModelosPerfil } from '@/dados/modelosPerfil'
+import { useProdutos } from '@/dados/produtos'
 import { useConfiguracoes } from '@/dados/configuracoes'
+import { useCardsTelaInicial } from '@/dados/cardsTelaInicial'
 import { useOrganizacao, useLogoOrganizacao } from '@/dados/organizacao'
+import {
+  CATALOGO_RESUMO,
+  CATALOGO_ATALHO,
+  ITEM_ATALHO_RESTRITO,
+  PADRAO_RESUMO,
+  PADRAO_ATALHO,
+  classeCardResumo,
+  classeAtalho,
+  type ItemResumo,
+  type ItemAtalho,
+} from '@/dominio/telaInicial'
 import { MarcaRePerfil } from '@/componentes/MarcaRePerfil'
 import { SeloVersao } from '@/componentes/SeloVersao'
 import { LogoEmpresa } from '@/componentes/LogoEmpresa'
@@ -24,9 +30,11 @@ export default function Inicio() {
   const { perfil, sair } = useAutenticacao()
   const { data: resumo, isPending } = useResumoEstoque()
   const { data: config } = useConfiguracoes()
+  const { data: cards } = useCardsTelaInicial()
   const { data: org } = useOrganizacao()
   const { data: logoUrl } = useLogoOrganizacao(org?.logo_caminho)
   const { data: modelos, isPending: perfisCarregando } = useModelosPerfil()
+  const { data: produtos, isPending: produtosCarregando } = useProdutos()
   const [logoAmpliado, setLogoAmpliado] = useState(false)
 
   const metros =
@@ -42,6 +50,17 @@ export default function Inicio() {
   const totalLinhas = new Set(
     (modelos ?? []).map((m) => m.linha).filter((l): l is string => Boolean(l)),
   ).size
+  const totalProdutos = produtos?.length ?? 0
+
+  // Enquanto a configuração não chega (ou para a rara organização sem
+  // linha ainda), o visual de hoje continua valendo — os mesmos 7 cards.
+  const resumoCards = cards
+    ? cards.filter((c) => c.grupo === 'resumo')
+    : PADRAO_RESUMO
+  const atalhosEscolhidos = (cards ? cards.filter((c) => c.grupo === 'atalho') : PADRAO_ATALHO)
+    // "Cadastrar estoque" some para quem não pode movimentar estoque, mesmo
+    // que a empresa tenha escolhido esse card.
+    .filter((c) => c.item !== ITEM_ATALHO_RESTRITO || podeMovimentarEstoque(perfil))
 
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
@@ -117,93 +136,128 @@ export default function Inicio() {
         </Link>
       )}
 
-      <section
-        aria-label="Resumo do estoque"
-        className="mb-6 grid grid-cols-3 gap-3"
-      >
-        <Indicador
-          Icone={Package}
-          rotulo="Disponíveis"
-          valor={isPending ? '—' : String(resumo?.pecasDisponiveis ?? 0)}
-          para="/sobras"
-        />
-        <Indicador
-          Icone={Ruler}
-          rotulo="Metros"
-          valor={isPending ? '—' : (metros ?? '0')}
-          para="/sobras"
-        />
-        <Link
-          to="/perfis"
-          className="bg-celula border-borda hover:bg-superficie-2 block rounded-xl border-2 p-4 text-center shadow-sm transition-colors"
+      {resumoCards.length > 0 && (
+        <section
+          aria-label="Resumo do estoque"
+          className="mb-6 grid grid-cols-3 gap-3"
         >
-          <Layers
-            aria-hidden="true"
-            className="text-acao-600 mx-auto mb-1 size-5"
-          />
-          <p className="text-xl font-bold tabular-nums">
-            {perfisCarregando ? '—' : totalPerfis}
-          </p>
-          {/* "Perfis" e a contagem de linhas em DUAS linhas de texto, com a
-              segunda entre parênteses.
+          {resumoCards.map(({ item, cor }) => {
+            const def = CATALOGO_RESUMO[item as ItemResumo]
+            if (!def) return null
 
-              Antes era "Perfis · 25 linhas" numa linha só, que quebrava
-              sozinha no meio em tela estreita e virava "Perfis · 25" /
-              "linhas" — lido assim, o 25 parecia qualificar o número
-              grande logo acima. Separado e entre parênteses, não há como
-              confundir: 363 perfis, distribuídos em 25 linhas. */}
-          <p className="text-texto-suave text-xs">Perfis</p>
-          {!perfisCarregando && (
-            <p className="text-texto-suave text-xs">({totalLinhas} linhas)</p>
-          )}
-        </Link>
-      </section>
+            switch (item) {
+              case 'disponiveis':
+                return (
+                  <Indicador
+                    key={item}
+                    Icone={def.Icone}
+                    rotulo={def.rotulo}
+                    valor={isPending ? '—' : String(resumo?.pecasDisponiveis ?? 0)}
+                    para={def.para}
+                    cor={classeCardResumo(cor)}
+                  />
+                )
+              case 'metros':
+                return (
+                  <Indicador
+                    key={item}
+                    Icone={def.Icone}
+                    rotulo={def.rotulo}
+                    valor={isPending ? '—' : (metros ?? '0')}
+                    para={def.para}
+                    cor={classeCardResumo(cor)}
+                  />
+                )
+              case 'perfis':
+                return (
+                  <Link
+                    key={item}
+                    to="/perfis"
+                    className={cn(
+                      'border-borda block rounded-xl border-2 p-4 text-center shadow-sm transition-colors',
+                      classeCardResumo(cor),
+                    )}
+                  >
+                    <Layers
+                      aria-hidden="true"
+                      className="text-acao-600 mx-auto mb-1 size-5"
+                    />
+                    <p className="text-xl font-bold tabular-nums">
+                      {perfisCarregando ? '—' : totalPerfis}
+                    </p>
+                    {/* "Perfis" e a contagem de linhas em DUAS linhas de
+                        texto, com a segunda entre parênteses.
+
+                        Antes era "Perfis · 25 linhas" numa linha só, que
+                        quebrava sozinha no meio em tela estreita e virava
+                        "Perfis · 25" / "linhas" — lido assim, o 25 parecia
+                        qualificar o número grande logo acima. Separado e
+                        entre parênteses, não há como confundir: 363
+                        perfis, distribuídos em 25 linhas. */}
+                    <p className="text-texto-suave text-xs">Perfis</p>
+                    {!perfisCarregando && (
+                      <p className="text-texto-suave text-xs">
+                        ({totalLinhas} linhas)
+                      </p>
+                    )}
+                  </Link>
+                )
+              case 'linhas':
+                return (
+                  <Indicador
+                    key={item}
+                    Icone={def.Icone}
+                    rotulo={def.rotulo}
+                    valor={perfisCarregando ? '—' : String(totalLinhas)}
+                    para={def.para}
+                    cor={classeCardResumo(cor)}
+                  />
+                )
+              case 'produtos':
+                return (
+                  <Indicador
+                    key={item}
+                    Icone={def.Icone}
+                    rotulo={def.rotulo}
+                    valor={produtosCarregando ? '—' : String(totalProdutos)}
+                    para={def.para}
+                    cor={classeCardResumo(cor)}
+                  />
+                )
+              default:
+                return null
+            }
+          })}
+        </section>
+      )}
 
       {/*
-       * Os quatro caminhos principais, do mesmo tamanho.
+       * Os caminhos principais, todos do mesmo tamanho — cada empresa
+       * escolhe quais e quantos (ver "Personalizar tela inicial" em Mais).
        *
-       * Antes eram dois, com tamanhos diferentes — o de cadastrar sobra era
-       * o dobro do outro, porque era a ação do dia a dia. Com quatro
-       * destinos, tamanhos diferentes viram hierarquia inventada: quem abre
-       * o aplicativo para consultar o catálogo não está fazendo nada menos
-       * importante do que quem vai lançar uma peça.
-       *
-       * A cor distingue o que cada um faz. Todos escuros, com matizes
-       * próximos: são atalhos da mesma família, e cores berrantes e
+       * A cor distingue o que cada um faz. Por padrão todos escuros, com
+       * matizes próximos: são atalhos da mesma família, e cores berrantes e
        * distintas fariam a tela inicial parecer um painel de alertas.
        */}
-      <nav aria-label="Atalhos" className="grid grid-cols-2 gap-3">
-        {podeMovimentarEstoque(perfil) && (
-          <Atalho
-            para="/cadastrar"
-            Icone={PackagePlus}
-            rotulo="Cadastrar estoque"
-            cor="bg-acao-600 hover:bg-acao-700"
-          />
-        )}
+      {atalhosEscolhidos.length > 0 && (
+        <nav aria-label="Atalhos" className="grid grid-cols-2 gap-3">
+          {atalhosEscolhidos.map(({ item, cor }) => {
+            const def = CATALOGO_ATALHO[item as ItemAtalho]
+            if (!def) return null
 
-        <Atalho
-          para="/sobras"
-          Icone={Scissors}
-          rotulo="Utilizar material"
-          subrotulo="(estoque)"
-          cor="bg-acao-700 hover:bg-acao-800"
-        />
-
-        <Atalho
-          para="/perfis"
-          Icone={Layers}
-          rotulo="Modelos de perfil"
-          cor="bg-grafite-700 hover:bg-grafite-800"
-        />
-
-        <Atalho
-          para="/produtos"
-          Icone={Boxes}
-          rotulo="Produtos e listas técnicas"
-          cor="bg-economia-700 hover:bg-economia-600"
-        />
-      </nav>
+            return (
+              <Atalho
+                key={item}
+                para={def.para}
+                Icone={def.Icone}
+                rotulo={def.rotulo}
+                subrotulo={'subrotulo' in def ? def.subrotulo : undefined}
+                cor={classeAtalho(cor)}
+              />
+            )
+          })}
+        </nav>
+      )}
 
       <SeloVersao className="mt-8" />
 
@@ -222,15 +276,17 @@ export default function Inicio() {
         <Link to="/politica-privacidade" className="hover:underline">
           Política de privacidade
         </Link>
-        <span aria-hidden="true">·</span>
+      </nav>
+
+      <div className="mt-3 flex justify-center">
         <button
           type="button"
           onClick={() => void sair()}
-          className="hover:underline"
+          className="bg-erro-50 text-erro-700 hover:bg-erro-100 rounded-full px-3 py-1 text-xs font-medium"
         >
           Sair
         </button>
-      </nav>
+      </div>
 
       {logoAmpliado && logoUrl && org && (
         <VisualizadorImagem
@@ -259,7 +315,7 @@ function Atalho({
   para: string
   Icone: typeof Package
   rotulo: string
-  subrotulo?: string
+  subrotulo?: string | undefined
   /** Classes de fundo. Texto sempre branco — todos os tons são escuros. */
   cor: string
 }) {
@@ -290,11 +346,14 @@ function Indicador({
   rotulo,
   valor,
   para,
+  cor,
 }: {
   Icone: typeof Package
   rotulo: string
   valor: string
   para?: string
+  /** Classes de fundo/hover. Sem elas, mantém o cinza de sempre. */
+  cor?: string
 }) {
   const conteudo = (
     <>
@@ -304,12 +363,14 @@ function Indicador({
     </>
   )
 
-  const classes =
-    'bg-celula border-2 border-borda rounded-xl p-4 text-center shadow-sm block transition-colors'
+  const classes = cn(
+    'border-2 border-borda rounded-xl p-4 text-center shadow-sm block transition-colors',
+    cor ?? 'bg-celula hover:bg-superficie-2',
+  )
 
   if (para) {
     return (
-      <Link to={para} className={`${classes} hover:bg-superficie-2`}>
+      <Link to={para} className={classes}>
         {conteudo}
       </Link>
     )

@@ -5,11 +5,13 @@ import {
   useProdutosParaOrganizacao,
   useDefinirLiberacaoProduto,
   useDefinirLiberacaoTodosProdutosOrganizacao,
+  useCapasProdutos,
 } from '@/dados/produtos'
 import { useOrganizacao } from '@/dados/organizacao'
 import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { PaginaLista } from '@/componentes/ui/PaginaLista'
+import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { cn } from '@/lib/utilitarios'
 import { disparar } from '@/lib/avisoErro'
 
@@ -43,6 +45,7 @@ export default function AdministrarProdutosEmpresas() {
 
   const { data: produtos, isPending: produtosCarregando } =
     useProdutosParaOrganizacao(empresaSelecionada?.id ?? null)
+  const { data: capas } = useCapasProdutos()
   const liberarProduto = useDefinirLiberacaoProduto()
   const liberarTodos = useDefinirLiberacaoTodosProdutosOrganizacao()
 
@@ -182,16 +185,15 @@ export default function AdministrarProdutosEmpresas() {
           {produtos?.map((p) => (
             <li
               key={p.produto_id}
-              className="bg-celula border-borda flex items-center justify-between gap-2 rounded-xl border-2 px-3 py-2.5"
+              className="bg-celula border-borda flex items-center gap-3 rounded-xl border-2 px-3 py-2.5"
             >
-              <span className="min-w-0 flex-1 truncate font-medium">
-                {/* O código junto do nome: dois produtos podem se chamar
-                    "Janela integrada" e diferir só na medida. */}
-                <span className="text-texto-suave me-1.5 font-mono text-xs">
-                  {p.codigo}
-                </span>
-                {p.nome}
-              </span>
+              <MiniaturaPerfil
+                link={capas?.get(p.produto_id) ?? null}
+                codigo={p.codigo}
+                alt={`Desenho técnico de ${p.nome}`}
+                className="shrink-0"
+              />
+              <span className="min-w-0 flex-1 font-medium">{p.nome}</span>
               <button
                 type="button"
                 onClick={() =>
