@@ -237,6 +237,36 @@ export function useCancelarExclusao() {
   })
 }
 
+/**
+ * Liga/desliga a participação no disparo em lote da central — não é a
+ * central quem aciona a sincronização sozinha, só decide quem entra na
+ * lista quando ela apertar o botão. O RLS de sempre já cobre isto (a
+ * mesma política que deixa a própria organização editar seus dados).
+ */
+export function useDefinirSincronizacaoAutomatica() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ativa,
+    }: {
+      id: string
+      ativa: boolean
+    }): Promise<void> => {
+      const { error } = await supabase
+        .from('organizacoes')
+        .update({ sincronizacao_automatica: ativa })
+        .eq('id', id)
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.organizacao })
+    },
+  })
+}
+
 /** Uma empresa como a organização central a vê. */
 export interface EmpresaNaCentral {
   organizacao_id: string
@@ -245,6 +275,7 @@ export interface EmpresaNaCentral {
   colaboradores: number
   exclusao_solicitada_em: string | null
   exclusao_motivo: string | null
+  sincronizacao_automatica: boolean
 }
 
 export function useEmpresasParaCentral() {

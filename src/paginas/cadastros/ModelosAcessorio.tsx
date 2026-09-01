@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Plus,
   Pencil,
@@ -8,6 +8,8 @@ import {
   ArchiveRestore,
   Trash2,
   Puzzle,
+  Building2,
+  DownloadCloud,
 } from 'lucide-react'
 import {
   useModelosAcessorio,
@@ -15,11 +17,13 @@ import {
   useEditarModeloAcessorio,
   useDesativarModeloAcessorio,
   useExcluirModeloAcessorio,
+  useSincronizarAcessoriosCentral,
   agruparPorCategoria,
   VAZIO_ACESSORIO,
   type DadosModeloAcessorio,
 } from '@/dados/modelosAcessorio'
 import { useLotesAcessorio } from '@/dados/acessorios'
+import { useOrganizacao } from '@/dados/organizacao'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeGerenciarCadastros } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
@@ -34,6 +38,7 @@ import { disparar } from '@/lib/avisoErro'
 const UNIDADES = ['peça', 'metro', 'kg', 'conjunto', 'par', 'caixa']
 
 export default function ModelosAcessorio() {
+  const navegar = useNavigate()
   const { perfil } = useAutenticacao()
   const podeEditar = podeGerenciarCadastros(perfil)
 
@@ -44,6 +49,43 @@ export default function ModelosAcessorio() {
   const editar = useEditarModeloAcessorio()
   const desativar = useDesativarModeloAcessorio()
   const excluir = useExcluirModeloAcessorio()
+
+  // As duas pontas do catálogo central na mesma lista — mesmo padrão de
+  // `Produtos.tsx`: quem administra o central libera; quem é empresa
+  // importa. Nenhuma organização vê os dois botões.
+  const { data: organizacao } = useOrganizacao()
+  const souCentral = Boolean(organizacao?.eh_catalogo_central)
+  const sincronizar = useSincronizarAcessoriosCentral()
+  const [resultadoImportar, setResultadoImportar] = useState<string | null>(
+    null,
+  )
+
+  async function importarDoCentral() {
+    setResultadoImportar(null)
+
+    try {
+      const r = await sincronizar.mutateAsync()
+      const partes = [
+        `${r.acessorios_novos} ${r.acessorios_novos === 1 ? 'novo' : 'novos'}`,
+        `${r.acessorios_atualizados} ${r.acessorios_atualizados === 1 ? 'atualizado' : 'atualizados'}`,
+      ]
+      if (r.imagens_novas > 0) {
+        partes.push(
+          `${r.imagens_novas} ${r.imagens_novas === 1 ? 'imagem nova' : 'imagens novas'}`,
+        )
+      }
+      if (r.codigos_novos > 0) {
+        partes.push(
+          `${r.codigos_novos} ${r.codigos_novos === 1 ? 'código novo' : 'códigos novos'} de fabricante`,
+        )
+      }
+      setResultadoImportar(partes.join(' · '))
+    } catch (e) {
+      setResultadoImportar(
+        e instanceof Error ? e.message : 'Não foi possível importar.',
+      )
+    }
+  }
 
   const [busca, setBusca] = useState('')
   const [aberto, setAberto] = useState(false)
@@ -133,6 +175,37 @@ export default function ModelosAcessorio() {
               </Botao>
             )}
           </header>
+
+          {podeEditar && (
+            <div className="mb-4">
+              {souCentral ? (
+                <Botao
+                  variante="secundaria"
+                  onClick={() => navegar('/acessorios/empresas')}
+                  className="w-full"
+                >
+                  <Building2 aria-hidden="true" className="size-5" />
+                  Administrar acessórios por empresa
+                </Botao>
+              ) : (
+                <Botao
+                  variante="secundaria"
+                  onClick={() => void importarDoCentral()}
+                  carregando={sincronizar.isPending}
+                  className="w-full"
+                >
+                  <DownloadCloud aria-hidden="true" className="size-5" />
+                  Importar do catálogo central
+                </Botao>
+              )}
+
+              {resultadoImportar && (
+                <p className="text-texto-suave mt-2 text-sm">
+                  {resultadoImportar}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="relative mb-4">
             <Search

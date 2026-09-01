@@ -6,6 +6,7 @@ import { podeMovimentarEstoque } from '@/autenticacao/contexto'
 import { useResumoEstoque } from '@/dados/sobras'
 import { useModelosPerfil } from '@/dados/modelosPerfil'
 import { useProdutos } from '@/dados/produtos'
+import { useModelosAcessorio } from '@/dados/modelosAcessorio'
 import { useConfiguracoes } from '@/dados/configuracoes'
 import { useCardsTelaInicial } from '@/dados/cardsTelaInicial'
 import { useOrganizacao, useLogoOrganizacao } from '@/dados/organizacao'
@@ -35,6 +36,8 @@ export default function Inicio() {
   const { data: logoUrl } = useLogoOrganizacao(org?.logo_caminho)
   const { data: modelos, isPending: perfisCarregando } = useModelosPerfil()
   const { data: produtos, isPending: produtosCarregando } = useProdutos()
+  const { data: acessorios, isPending: acessoriosCarregando } =
+    useModelosAcessorio()
   const [logoAmpliado, setLogoAmpliado] = useState(false)
 
   const metros =
@@ -51,6 +54,7 @@ export default function Inicio() {
     (modelos ?? []).map((m) => m.linha).filter((l): l is string => Boolean(l)),
   ).size
   const totalProdutos = produtos?.length ?? 0
+  const totalAcessorios = acessorios?.length ?? 0
 
   // Enquanto a configuração não chega (ou para a rara organização sem
   // linha ainda), o visual de hoje continua valendo — os mesmos 7 cards.
@@ -182,7 +186,7 @@ export default function Inicio() {
                       aria-hidden="true"
                       className="text-acao-600 mx-auto mb-1 size-5"
                     />
-                    <p className="text-xl font-bold tabular-nums">
+                    <p className="text-texto text-xl font-bold tabular-nums">
                       {perfisCarregando ? '—' : totalPerfis}
                     </p>
                     {/* "Perfis" e a contagem de linhas em DUAS linhas de
@@ -220,6 +224,17 @@ export default function Inicio() {
                     Icone={def.Icone}
                     rotulo={def.rotulo}
                     valor={produtosCarregando ? '—' : String(totalProdutos)}
+                    para={def.para}
+                    cor={classeCardResumo(cor)}
+                  />
+                )
+              case 'acessorios':
+                return (
+                  <Indicador
+                    key={item}
+                    Icone={def.Icone}
+                    rotulo={def.rotulo}
+                    valor={acessoriosCarregando ? '—' : String(totalAcessorios)}
                     para={def.para}
                     cor={classeCardResumo(cor)}
                   />
@@ -358,7 +373,7 @@ function Indicador({
   const conteudo = (
     <>
       <Icone aria-hidden="true" className="text-acao-600 mx-auto mb-1 size-5" />
-      <p className="text-xl font-bold tabular-nums">{valor}</p>
+      <p className="text-texto text-xl font-bold tabular-nums">{valor}</p>
       <p className="text-texto-suave text-xs">{rotulo}</p>
     </>
   )

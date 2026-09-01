@@ -139,6 +139,17 @@
   --cor-aviso-fundo: var(--color-atencao-50);
   --cor-aviso-borda: var(--color-atencao-300);
   --cor-aviso-texto: var(--color-atencao-700);
+
+  /* Grupos da tela "Mais" — só identificam a seção à distância, sem
+     estado (não é sucesso, erro nem aviso). O texto por cima é o padrão
+     (`--cor-texto`/`--cor-texto-suave`), por isso o fundo também precisa
+     inverter no escuro — mesmo motivo dos tokens acima. */
+  --cor-grupo-azul-fundo: var(--color-acao-50);
+  --cor-grupo-azul-hover: var(--color-acao-100);
+  --cor-grupo-amarelo-fundo: var(--color-atencao-50);
+  --cor-grupo-amarelo-hover: var(--color-atencao-100);
+  --cor-grupo-lilas-fundo: var(--color-lilas-50);
+  --cor-grupo-lilas-hover: var(--color-lilas-100);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -174,6 +185,15 @@
     --cor-aviso-fundo: oklch(0.32 0.05 75);
     --cor-aviso-borda: oklch(0.5 0.09 75);
     --cor-aviso-texto: oklch(0.88 0.08 75);
+
+    /* Sutil de propósito, como no claro: é só a cor da seção, não um
+       estado — perto do tom de `--cor-superficie-2`, com um toque de matiz. */
+    --cor-grupo-azul-fundo: oklch(0.26 0.025 258);
+    --cor-grupo-azul-hover: oklch(0.32 0.03 258);
+    --cor-grupo-amarelo-fundo: oklch(0.26 0.025 85);
+    --cor-grupo-amarelo-hover: oklch(0.32 0.03 85);
+    --cor-grupo-lilas-fundo: oklch(0.26 0.025 305);
+    --cor-grupo-lilas-hover: oklch(0.32 0.03 305);
   }
 }
 
@@ -198,6 +218,12 @@
   --cor-aviso-fundo: oklch(0.32 0.05 75);
   --cor-aviso-borda: oklch(0.5 0.09 75);
   --cor-aviso-texto: oklch(0.88 0.08 75);
+  --cor-grupo-azul-fundo: oklch(0.26 0.025 258);
+  --cor-grupo-azul-hover: oklch(0.32 0.03 258);
+  --cor-grupo-amarelo-fundo: oklch(0.26 0.025 85);
+  --cor-grupo-amarelo-hover: oklch(0.32 0.03 85);
+  --cor-grupo-lilas-fundo: oklch(0.26 0.025 305);
+  --cor-grupo-lilas-hover: oklch(0.32 0.03 305);
 }
 
 @theme inline {
@@ -221,6 +247,12 @@
   --color-aviso: var(--cor-aviso-fundo);
   --color-aviso-borda: var(--cor-aviso-borda);
   --color-aviso-texto: var(--cor-aviso-texto);
+  --color-grupo-azul: var(--cor-grupo-azul-fundo);
+  --color-grupo-azul-hover: var(--cor-grupo-azul-hover);
+  --color-grupo-amarelo: var(--cor-grupo-amarelo-fundo);
+  --color-grupo-amarelo-hover: var(--cor-grupo-amarelo-hover);
+  --color-grupo-lilas: var(--cor-grupo-lilas-fundo);
+  --color-grupo-lilas-hover: var(--cor-grupo-lilas-hover);
 }
 
 @layer base {

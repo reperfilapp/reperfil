@@ -5,13 +5,16 @@ import {
   useAdicionarDesenho,
   useRemoverDesenho,
 } from '@/dados/desenhosTecnicos'
-import type { TipoImagemPerfil, DesenhoTecnico } from '@/dados/desenhosTecnicos'
+import type {
+  TipoImagemPerfil,
+  DesenhoTecnico,
+  EntidadeArquivo,
+} from '@/dados/desenhosTecnicos'
 import { enviarDesenhoTecnico, enviarFotoPerfil } from '@/lib/armazenamento'
 import { CampoFoto } from './ui/CampoFoto'
 import { Botao } from './ui/Botao'
 import { Modal } from './ui/Modal'
 import { cn } from '@/lib/utilitarios'
-import type { ModeloPerfil } from '@/tipos/banco'
 
 /** Textos e comportamento de cada tipo de imagem. */
 const CONFIGURACAO = {
@@ -48,14 +51,14 @@ const CONFIGURACAO = {
  * miniatura de 100 px é ilegível, e a cota é o que a pessoa foi consultar.
  */
 export function GaleriaDesenhos({
-  modelo,
+  entidade,
   tipo = 'imagem',
 }: {
-  modelo: ModeloPerfil
+  entidade: EntidadeArquivo
   tipo?: TipoImagemPerfil
 }) {
   const config = CONFIGURACAO[tipo]
-  const { data: desenhos, isPending } = useDesenhosTecnicos(modelo.id, tipo)
+  const { data: desenhos, isPending } = useDesenhosTecnicos(entidade, tipo)
   const adicionar = useAdicionarDesenho()
   const remover = useRemoverDesenho()
 
@@ -74,7 +77,7 @@ export function GaleriaDesenhos({
 
     try {
       await adicionar.mutateAsync({
-        modeloPerfilId: modelo.id,
+        entidade,
         caminho,
         legenda: legenda.trim() === '' ? null : legenda.trim(),
         ordem: desenhos?.length ?? 0,
@@ -95,7 +98,6 @@ export function GaleriaDesenhos({
       await remover.mutateAsync({
         id: removendo.id,
         caminho: removendo.arquivo_url,
-        modeloPerfilId: modelo.id,
         tipo,
       })
       setRemovendo(null)

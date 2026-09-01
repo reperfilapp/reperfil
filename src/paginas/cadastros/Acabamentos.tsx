@@ -1,19 +1,23 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   Plus,
   Pencil,
   ChevronRight,
   Archive,
   ArchiveRestore,
+  Building2,
+  DownloadCloud,
 } from 'lucide-react'
 import {
   useAcabamentos,
   useCriarAcabamento,
   useEditarAcabamento,
   useDesativarAcabamento,
+  useSincronizarAcabamentosCentral,
   type DadosAcabamento,
 } from '@/dados/acabamentos'
+import { useOrganizacao } from '@/dados/organizacao'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeGerenciarCadastros } from '@/autenticacao/contexto'
 import { Botao } from '@/componentes/ui/Botao'
@@ -36,6 +40,7 @@ const VAZIO: DadosAcabamento = {
 }
 
 export default function Acabamentos() {
+  const navegar = useNavigate()
   const { perfil } = useAutenticacao()
   // Esconder o que o banco recusaria: um botão que sempre devolve
   // erro ensina a pessoa a desconfiar da tela inteira.
@@ -46,6 +51,32 @@ export default function Acabamentos() {
   const criar = useCriarAcabamento()
   const editar = useEditarAcabamento()
   const desativar = useDesativarAcabamento()
+
+  // As duas pontas do catálogo central na mesma lista — mesmo padrão de
+  // `Produtos.tsx`: quem administra o central libera; quem é empresa
+  // importa. Nenhuma organização vê os dois botões.
+  const { data: organizacao } = useOrganizacao()
+  const souCentral = Boolean(organizacao?.eh_catalogo_central)
+  const sincronizar = useSincronizarAcabamentosCentral()
+  const [resultadoImportar, setResultadoImportar] = useState<string | null>(
+    null,
+  )
+
+  async function importarDoCentral() {
+    setResultadoImportar(null)
+
+    try {
+      const r = await sincronizar.mutateAsync()
+      setResultadoImportar(
+        `${r.acabamentos_novos} ${r.acabamentos_novos === 1 ? 'novo' : 'novos'} · ` +
+          `${r.acabamentos_atualizados} ${r.acabamentos_atualizados === 1 ? 'atualizado' : 'atualizados'}`,
+      )
+    } catch (e) {
+      setResultadoImportar(
+        e instanceof Error ? e.message : 'Não foi possível importar.',
+      )
+    }
+  }
 
   const [aberto, setAberto] = useState(false)
   const [editando, setEditando] = useState<Acabamento | null>(null)
@@ -119,6 +150,37 @@ export default function Acabamentos() {
             )}
           </header>
 
+          {podeEditar && (
+            <div className="mb-4">
+              {souCentral ? (
+                <Botao
+                  variante="secundaria"
+                  onClick={() => navegar('/acabamentos/empresas')}
+                  className="w-full"
+                >
+                  <Building2 aria-hidden="true" className="size-5" />
+                  Administrar acabamentos por empresa
+                </Botao>
+              ) : (
+                <Botao
+                  variante="secundaria"
+                  onClick={() => void importarDoCentral()}
+                  carregando={sincronizar.isPending}
+                  className="w-full"
+                >
+                  <DownloadCloud aria-hidden="true" className="size-5" />
+                  Importar do catálogo central
+                </Botao>
+              )}
+
+              {resultadoImportar && (
+                <p className="text-texto-suave mt-2 text-sm">
+                  {resultadoImportar}
+                </p>
+              )}
+            </div>
+          )}
+
           {isPending && <p className="text-texto-suave">Carregando…</p>}
         </>
       }
@@ -153,7 +215,7 @@ export default function Acabamentos() {
               aria-label={`Ver detalhes de ${acabamento.nome}`}
             >
               <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium">
+                <span className="block font-medium">
                   {acabamento.nome}
                   {!acabamento.ativo && (
                     <span className="bg-superficie-2 text-texto-suave ml-2 rounded px-2 py-0.5 text-xs">

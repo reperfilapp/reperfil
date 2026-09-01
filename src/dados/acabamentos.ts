@@ -104,6 +104,175 @@ export function useEditarAcabamento() {
   })
 }
 
+/* ── Catálogo central de acabamentos ──────────────────────────────────────
+ *
+ * Mesmo padrão da liberação de acessório em `src/dados/modelosAcessorio.ts`
+ * — ver `20260901100000_sincronizacao_central_acessorios_acabamentos.sql`
+ * para as funções do banco. Mais simples que acessório: sem imagem, sem
+ * tabela filha.
+ */
+
+export interface OrganizacaoLiberacaoAcabamento {
+  organizacao_id: string
+  nome_fantasia: string
+  liberada: boolean
+}
+
+export function useOrganizacoesParaLiberacaoAcabamento(
+  acabamentoId: string | null,
+) {
+  return useQuery({
+    queryKey: ['organizacoes-liberacao-acabamento', acabamentoId],
+    enabled: acabamentoId !== null,
+    queryFn: async (): Promise<OrganizacaoLiberacaoAcabamento[]> => {
+      const { data, error } = await supabase.rpc(
+        'organizacoes_para_liberacao_acabamento',
+        { p_acabamento_id: acabamentoId },
+      )
+
+      if (error) throw new Error(error.message)
+
+      return data as OrganizacaoLiberacaoAcabamento[]
+    },
+  })
+}
+
+export function useDefinirLiberacaoAcabamento() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      acabamentoId,
+      organizacaoId,
+      liberada,
+    }: {
+      acabamentoId: string
+      organizacaoId: string
+      liberada: boolean
+    }) => {
+      const { error } = await supabase.rpc('definir_liberacao_acabamento', {
+        p_acabamento_id: acabamentoId,
+        p_organizacao_id: organizacaoId,
+        p_liberada: liberada,
+      })
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_dados, variaveis) => {
+      void cliente.invalidateQueries({
+        queryKey: ['organizacoes-liberacao-acabamento', variaveis.acabamentoId],
+      })
+      void cliente.invalidateQueries({ queryKey: ['acabamentos-organizacao'] })
+    },
+  })
+}
+
+export function useDefinirLiberacaoAcabamentoTodas() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      acabamentoId,
+      liberada,
+    }: {
+      acabamentoId: string
+      liberada: boolean
+    }) => {
+      const { error } = await supabase.rpc('definir_liberacao_acabamento_todas', {
+        p_acabamento_id: acabamentoId,
+        p_liberada: liberada,
+      })
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: (_dados, variaveis) => {
+      void cliente.invalidateQueries({
+        queryKey: ['organizacoes-liberacao-acabamento', variaveis.acabamentoId],
+      })
+      void cliente.invalidateQueries({ queryKey: ['acabamentos-organizacao'] })
+    },
+  })
+}
+
+/** Um acabamento do central e se a empresa escolhida pode importá-lo. */
+export interface AcabamentoParaOrganizacao {
+  acabamento_id: string
+  codigo: string
+  nome: string
+  liberada: boolean
+}
+
+export function useAcabamentosParaOrganizacao(organizacaoId: string | null) {
+  return useQuery({
+    queryKey: ['acabamentos-organizacao', organizacaoId],
+    enabled: organizacaoId !== null,
+    queryFn: async (): Promise<AcabamentoParaOrganizacao[]> => {
+      const { data, error } = await supabase.rpc(
+        'acabamentos_para_organizacao',
+        { p_organizacao_id: organizacaoId },
+      )
+
+      if (error) throw new Error(error.message)
+
+      return data as AcabamentoParaOrganizacao[]
+    },
+  })
+}
+
+export function useDefinirLiberacaoTodosAcabamentosOrganizacao() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      organizacaoId,
+      liberada,
+    }: {
+      organizacaoId: string
+      liberada: boolean
+    }) => {
+      const { error } = await supabase.rpc(
+        'definir_liberacao_todos_acabamentos_organizacao',
+        { p_organizacao_id: organizacaoId, p_liberada: liberada },
+      )
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: ['acabamentos-organizacao'] })
+      void cliente.invalidateQueries({
+        queryKey: ['organizacoes-liberacao-acabamento'],
+      })
+    },
+  })
+}
+
+/** Importa do catálogo central os acabamentos liberados para esta empresa. */
+export interface ResultadoSincronizarAcabamentos {
+  acabamentos_novos: number
+  acabamentos_atualizados: number
+}
+
+export function useSincronizarAcabamentosCentral() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (): Promise<ResultadoSincronizarAcabamentos> => {
+      const { data, error } = await supabase.rpc('sincronizar_acabamentos_central')
+
+      if (error) throw new Error(error.message)
+
+      const linhas = (data ?? []) as ResultadoSincronizarAcabamentos[]
+
+      return (
+        linhas[0] ?? { acabamentos_novos: 0, acabamentos_atualizados: 0 }
+      )
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.acabamentos })
+    },
+  })
+}
+
 /**
  * Desativa em vez de apagar.
  *

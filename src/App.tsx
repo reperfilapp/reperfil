@@ -28,6 +28,7 @@ import Linhas from '@/paginas/cadastros/Linhas'
 import AdministrarLinhasEmpresas from '@/paginas/cadastros/AdministrarLinhasEmpresas'
 import AdministrarProdutosEmpresas from '@/paginas/cadastros/AdministrarProdutosEmpresas'
 import AdministrarEmpresas from '@/paginas/cadastros/AdministrarEmpresas'
+import SincronizarCatalogosCentral from '@/paginas/cadastros/SincronizarCatalogosCentral'
 import IdentificarPerfil from '@/paginas/IdentificarPerfil'
 import PerfilDetalhe from '@/paginas/PerfilDetalhe'
 import SobraDetalhe from '@/paginas/SobraDetalhe'
@@ -46,6 +47,9 @@ import OQueProduzir from '@/paginas/OQueProduzir'
 import LotesRepetidos from '@/paginas/LotesRepetidos'
 import DadosEmpresa from '@/paginas/DadosEmpresa'
 import ModelosAcessorio from '@/paginas/cadastros/ModelosAcessorio'
+import AcessorioModeloDetalhe from '@/paginas/AcessorioModeloDetalhe'
+import AdministrarAcessoriosEmpresas from '@/paginas/cadastros/AdministrarAcessoriosEmpresas'
+import AdministrarAcabamentosEmpresas from '@/paginas/cadastros/AdministrarAcabamentosEmpresas'
 import Acessorios from '@/paginas/Acessorios'
 import AcessorioDetalhe from '@/paginas/AcessorioDetalhe'
 import CadastrarAcessorio from '@/paginas/CadastrarAcessorio'
@@ -122,6 +126,10 @@ export default function App() {
                 <Route path="/linhas" element={<Linhas />} />
                 <Route path="/empresas" element={<AdministrarEmpresas />} />
                 <Route
+                  path="/sincronizacao-central"
+                  element={<SincronizarCatalogosCentral />}
+                />
+                <Route
                   path="/linhas/empresas"
                   element={<AdministrarLinhasEmpresas />}
                 />
@@ -151,6 +159,18 @@ export default function App() {
                 />
                 <Route path="/empresa" element={<DadosEmpresa />} />
                 <Route path="/acessorios" element={<ModelosAcessorio />} />
+                <Route
+                  path="/acessorios/:id"
+                  element={<AcessorioModeloDetalhe />}
+                />
+                <Route
+                  path="/acessorios/empresas"
+                  element={<AdministrarAcessoriosEmpresas />}
+                />
+                <Route
+                  path="/acabamentos/empresas"
+                  element={<AdministrarAcabamentosEmpresas />}
+                />
                 <Route path="/estoque-acessorios" element={<Acessorios />} />
                 <Route
                   path="/estoque-acessorios/:id"

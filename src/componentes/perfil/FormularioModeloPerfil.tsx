@@ -309,9 +309,9 @@ export function FormularioModeloPerfil({
             para ter onde pendurar a imagem. */}
       {modelo && (
         <div className="flex flex-col gap-6">
-          <GaleriaDesenhos modelo={modelo} tipo="imagem" />
+          <GaleriaDesenhos entidade={{ tipo: 'perfil', id: modelo.id }} tipo="imagem" />
           <div className="border-borda border-t pt-6">
-            <GaleriaDesenhos modelo={modelo} tipo="foto" />
+            <GaleriaDesenhos entidade={{ tipo: 'perfil', id: modelo.id }} tipo="foto" />
           </div>
         </div>
       )}

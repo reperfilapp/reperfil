@@ -90,6 +90,12 @@ export interface Organizacao {
   exclusao_solicitada_em?: string | null
   exclusao_motivo?: string | null
 
+  /**
+   * A empresa aceitou ser incluída quando a organização central disparar a
+   * sincronização em lote (painel de sincronização da central).
+   */
+  sincronizacao_automatica: boolean
+
   ativo: boolean
   criado_em: string
   atualizado_em: string

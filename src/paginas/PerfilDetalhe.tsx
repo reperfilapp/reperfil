@@ -64,8 +64,9 @@ export default function PerfilDetalhe() {
   const voltarPara = parametros.get('de') ?? '/perfis'
   const rotuloVoltar = parametros.get('rotulo') ?? 'Perfis'
   const { data: modelos, isPending, error } = useModelosPerfil(true)
-  const { data: desenhos } = useDesenhosTecnicos(id ?? null, 'imagem')
-  const { data: fotos } = useDesenhosTecnicos(id ?? null, 'foto')
+  const entidadePerfil = id ? { tipo: 'perfil' as const, id } : null
+  const { data: desenhos } = useDesenhosTecnicos(entidadePerfil, 'imagem')
+  const { data: fotos } = useDesenhosTecnicos(entidadePerfil, 'foto')
   const { data: sobras } = useSobras()
   const [ampliado, setAmpliado] = useState<string | null>(null)
 

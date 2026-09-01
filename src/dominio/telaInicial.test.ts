@@ -8,7 +8,9 @@ describe('cor do card de resumo', () => {
   })
 
   it('resolve uma cor válida', () => {
-    expect(classeCardResumo('azul')).toBe('bg-acao-50 hover:bg-acao-100')
+    expect(classeCardResumo('azul')).toBe(
+      'bg-acao-50 hover:bg-acao-100 [--cor-texto:var(--color-grafite-900)] [--cor-texto-suave:var(--color-grafite-600)]',
+    )
   })
 
   it('cai no padrão para um valor desconhecido, em vez de quebrar', () => {

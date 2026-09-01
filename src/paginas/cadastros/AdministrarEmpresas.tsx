@@ -136,7 +136,7 @@ export default function AdministrarEmpresas() {
             className={cn(
               'flex items-center gap-3 rounded-xl border-2 p-4 shadow-sm',
               empresa.exclusao_solicitada_em
-                ? 'border-atencao-500 bg-atencao-50'
+                ? 'border-aviso-borda bg-aviso'
                 : 'bg-celula border-borda',
             )}
           >
@@ -154,7 +154,7 @@ export default function AdministrarEmpresas() {
               </p>
 
               {empresa.exclusao_solicitada_em && (
-                <p className="text-atencao-700 mt-1 text-xs">
+                <p className="text-aviso-texto mt-1 text-xs">
                   Pediu encerramento{' '}
                   {tempoRelativo(empresa.exclusao_solicitada_em, agora)}
                   {empresa.exclusao_motivo && ` — "${empresa.exclusao_motivo}"`}

@@ -853,7 +853,7 @@ export default function ProdutoDetalhe() {
        * procurar o "Calcular" lá em cima — e a faixa do topo, aliviada,
        * volta a ser só o que a peça é.
        */}
-      <section className="bg-acao-100 flex flex-col gap-3 rounded-xl p-4">
+      <section className="bg-destaque flex flex-col gap-3 rounded-xl p-4">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {/* A quantidade abre a fileira porque é a primeira decisão: todas
               as outras opções, e as duas contas, respondem sobre ELA. */}
@@ -1016,7 +1016,7 @@ export default function ProdutoDetalhe() {
             imprimir. Por isso a moldura é da fileira, não do botão. */}
         <div
           className={cn(
-            'border-borda bg-atencao-50 flex items-center border pr-2',
+            'border-borda bg-aviso flex items-center border pr-2',
             listaAberta ? 'mb-0 rounded-t-xl' : 'mb-2 rounded-xl',
           )}
         >
@@ -1391,7 +1391,7 @@ export default function ProdutoDetalhe() {
                   className={cn(
                     'flex cursor-pointer items-start gap-3 rounded-xl border-2 p-3',
                     modoCompra === opcao.modo
-                      ? 'border-acao-600 bg-acao-50'
+                      ? 'border-acao-600 bg-destaque'
                       : 'border-borda',
                   )}
                 >

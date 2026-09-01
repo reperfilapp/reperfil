@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   ImagePlus,
   Loader2,
+  RefreshCw,
   TriangleAlert,
   X,
 } from 'lucide-react'
@@ -15,6 +16,7 @@ import {
   useEnviarLogo,
   useSolicitarExclusao,
   useCancelarExclusao,
+  useDefinirSincronizacaoAutomatica,
   type DadosOrganizacao,
 } from '@/dados/organizacao'
 import { useZerarEstoqueOrganizacao } from '@/dados/sobras'
@@ -98,6 +100,7 @@ export default function DadosEmpresa() {
 
   const solicitarExclusao = useSolicitarExclusao()
   const cancelarExclusao = useCancelarExclusao()
+  const definirSincronizacaoAutomatica = useDefinirSincronizacaoAutomatica()
   const [encerrando, setEncerrando] = useState(false)
   const [motivoEncerrar, setMotivoEncerrar] = useState('')
   const [erroEncerrar, setErroEncerrar] = useState<string | null>(null)
@@ -566,6 +569,46 @@ export default function DadosEmpresa() {
           Salvar
         </Botao>
       </form>
+
+      {/* ── Sincronização em lote ─────────────────────────────────────────
+          Não é a empresa quem dispara — é a organização central, num
+          painel próprio. Isto só decide se esta empresa entra na lista
+          quando ela apertar o botão. Some para a própria central: ela não
+          sincroniza consigo mesma. */}
+      {org && !org.eh_catalogo_central && (
+        <section className="border-borda bg-superficie mt-8 flex flex-col gap-3 rounded-xl border-2 p-5">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <RefreshCw aria-hidden="true" className="text-acao-600 size-5 shrink-0" />
+            Sincronização em lote
+          </h2>
+          <p className="text-texto-suave text-sm">
+            Quando ligado, esta empresa entra na lista quando a organização
+            central disparar a sincronização de catálogos para todo mundo de
+            uma vez — linhas, produtos, acessórios e acabamentos. Continua
+            dando para importar manualmente a qualquer momento, do jeito de
+            sempre, esteja isto ligado ou não.
+          </p>
+          <label className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              className="size-5 shrink-0"
+              checked={org.sincronizacao_automatica}
+              disabled={definirSincronizacaoAutomatica.isPending}
+              onChange={(e) =>
+                disparar(
+                  definirSincronizacaoAutomatica.mutateAsync({
+                    id: org.id,
+                    ativa: e.target.checked,
+                  }),
+                )
+              }
+            />
+            <span className="font-medium">
+              Receber a sincronização em lote da organização central
+            </span>
+          </label>
+        </section>
+      )}
 
       {/* ── Zona de perigo ────────────────────────────────────────────────
           Fora do formulário de propósito: não é um dado da empresa que se

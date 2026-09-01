@@ -13,6 +13,7 @@ import {
   Moon,
   SunMoon,
   Search,
+  RefreshCw,
   Building2,
   Ruler,
   UsersRound,
@@ -209,6 +210,14 @@ export default function Mais() {
       visivel: eAdministrador(perfil) && Boolean(org?.eh_catalogo_central),
     },
     {
+      // Mesma condição do item acima — o mesmo tipo de tela, só da central.
+      para: '/sincronizacao-central',
+      rotulo: 'Sincronizar catálogos',
+      descricao: 'Atualiza perfis, produtos, acessórios e acabamentos de várias empresas de uma vez',
+      Icone: RefreshCw,
+      visivel: eAdministrador(perfil) && Boolean(org?.eh_catalogo_central),
+    },
+    {
       para: '/sobre',
       rotulo: 'Sobre',
       descricao: 'Quem desenvolve, contato e documentos legais',
@@ -298,9 +307,9 @@ interface ItemMenu {
 type CorGrupo = 'azul' | 'amarelo' | 'lilas'
 
 const CLASSES_POR_COR: Record<CorGrupo, string> = {
-  azul: 'bg-acao-50 hover:bg-acao-100',
-  amarelo: 'bg-atencao-50 hover:bg-atencao-100',
-  lilas: 'bg-lilas-50 hover:bg-lilas-100',
+  azul: 'bg-grupo-azul hover:bg-grupo-azul-hover',
+  amarelo: 'bg-grupo-amarelo hover:bg-grupo-amarelo-hover',
+  lilas: 'bg-grupo-lilas hover:bg-grupo-lilas-hover',
 }
 
 /**
