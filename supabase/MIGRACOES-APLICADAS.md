@@ -12,8 +12,9 @@ quando o usuário confirmar explicitamente que rodou no Supabase — nunca
 antes, mesmo que a sintaxe já tenha sido validada com `npm run banco:validar`
 (validar sintaxe não é a mesma coisa que já estar aplicada).
 
-## Status em 01/09/2026: nenhuma pendente
+## Status em 02/09/2026: nenhuma pendente
 
+- [x] 20260901700000_sincronizar_revisado_perfil.sql
 - [x] 20260901600000_limite_semelhanca_desenho_configuravel.sql
 - [x] 20260901500000_desenhos_tecnicos_parecidos.sql
 - [x] 20260901400000_acabamento_adota_codigo_igual.sql
