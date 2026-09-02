@@ -1,0 +1,7 @@
+Catálogo de acessórios com foto e desenho técnico, e correções de legibilidade no modo escuro.
+
+• Acessórios agora têm foto e desenho técnico, igual aos perfis
+• Catálogo com centenas de acessórios do fabricante prontos para importar
+• Acessórios e acabamentos passam a sincronizar entre empresas
+• Corrigidos textos ilegíveis no modo escuro em várias telas
+• Novos cards na tela inicial para os acessórios cadastrados

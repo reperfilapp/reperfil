@@ -28,6 +28,8 @@ export default function Configuracoes() {
         comprimento_minimo_sobra_mm: config.comprimento_minimo_sobra_mm,
         ultimo_corte_gera_perda: config.ultimo_corte_gera_perda,
         prazo_reserva_horas: config.prazo_reserva_horas,
+        limite_semelhanca_desenho_percentual:
+          config.limite_semelhanca_desenho_percentual,
       })
     }
   }, [config, form])
@@ -154,6 +156,26 @@ export default function Configuracoes() {
             alterar('prazo_reserva_horas', Number(e.target.value))
           }
           ajuda="Depois deste prazo a peça volta sozinha para o estoque."
+          required
+        />
+
+        {/* Não é parâmetro de corte — é da busca visual em "Identificar
+            perfil" — mas mora aqui porque é o mesmo tipo de ajuste: um
+            número que cada empresa calibra pela própria realidade. */}
+        <CampoTexto
+          rotulo="Semelhança mínima de desenho técnico na busca por foto (%)"
+          type="number"
+          inputMode="numeric"
+          min={0}
+          max={100}
+          value={form.limite_semelhanca_desenho_percentual}
+          onChange={(e) =>
+            alterar(
+              'limite_semelhanca_desenho_percentual',
+              Number(e.target.value),
+            )
+          }
+          ajuda='Quando a foto já acerta um perfil com confiança alta, os demais candidatos da tela "Identificar perfil" só continuam na lista se o desenho técnico deles for pelo menos assim parecido com o desse perfil. Mais alto = lista mais curta e mais certeira; mais baixo = mais opções, com mais chance de sobrar candidato errado.'
           required
         />
 

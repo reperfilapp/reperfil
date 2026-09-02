@@ -370,6 +370,7 @@ export interface ConfiguracoesAplicacao {
   prazo_reserva_horas: number
   prioridade_utilizacao: PrioridadeSobra
   considerar_perfis_equivalentes: boolean
+  limite_semelhanca_desenho_percentual: number
   confirmado_pelo_administrador: boolean
   confirmado_em: string | null
   logo_desenvolvedor_caminho?: string | null

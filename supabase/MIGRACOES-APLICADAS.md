@@ -14,6 +14,8 @@ antes, mesmo que a sintaxe já tenha sido validada com `npm run banco:validar`
 
 ## Status em 01/09/2026: nenhuma pendente
 
+- [x] 20260901600000_limite_semelhanca_desenho_configuravel.sql
+- [x] 20260901500000_desenhos_tecnicos_parecidos.sql
 - [x] 20260901400000_acabamento_adota_codigo_igual.sql
 - [x] 20260901300000_sincronizacao_em_lote_central.sql
 - [x] 20260901200000_acessorios_na_tela_inicial.sql

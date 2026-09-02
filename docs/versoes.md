@@ -80,6 +80,24 @@ cada uma, use a data e o hash do commit, não o número.
 
 ---
 
+## 1.7.2 — 01/09/2026
+
+**Catálogo de acessórios importado do fabricante, sincronização em lote
+pela organização central, e correções de modo escuro.**
+
+- Acessórios ganharam foto e desenho técnico, do mesmo jeito que perfis já
+  tinham — e o catálogo de acessórios e de acabamentos passou a
+  sincronizar entre organizações, igual linhas e produtos já faziam.
+- Importados 269 acessórios (com desenho técnico e código do fabricante
+  por cor) dos catálogos Gold e Suprema da Udinese.
+- Tela inicial ganhou cards novos: "Acessórios cadastrados" (resumo) e
+  "Catálogo de acessórios" (atalho).
+- Vários textos ilegíveis no modo escuro corrigidos — tela "Mais", cards
+  de resumo da tela inicial, painel de cálculo do produto.
+- A organização central agora dispara a sincronização de perfis,
+  produtos, acessórios e acabamentos para várias empresas de uma vez, num
+  painel só — antes, cada empresa precisava puxar cada catálogo sozinha.
+
 ## 1.6.99 — 29/08/2026
 
 **A numeração da versão nunca passa de 99 no meio/final — regra nova.**

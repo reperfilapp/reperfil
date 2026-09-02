@@ -48,3 +48,42 @@ export function useIdentificarPorFoto() {
     },
   })
 }
+
+export interface DesenhoParecido {
+  modeloPerfilId: string
+  /** 0 a 100. */
+  parecenca: number
+}
+
+/**
+ * Compara o desenho técnico de UM perfil (o de maior confiança na busca
+ * por foto) com o desenho técnico de outros candidatos — ver a função
+ * `desenhos_tecnicos_parecidos` (migração `20260901500000`) para o porquê
+ * de ser uma comparação separada da foto-com-catálogo. Não precisa de
+ * Edge Function: os dois vetores já existem no banco, é só comparar.
+ */
+export function useCompararDesenhosTecnicos() {
+  return useMutation({
+    mutationFn: async ({
+      modeloPerfilId,
+      candidatosIds,
+    }: {
+      modeloPerfilId: string
+      candidatosIds: string[]
+    }): Promise<DesenhoParecido[]> => {
+      const { data, error } = await supabase.rpc('desenhos_tecnicos_parecidos', {
+        p_modelo_perfil_id: modeloPerfilId,
+        p_ids: candidatosIds,
+      })
+
+      if (error) throw new Error(error.message)
+
+      return (
+        (data ?? []) as { modelo_perfil_id: string; parecenca: number }[]
+      ).map((r) => ({
+        modeloPerfilId: r.modelo_perfil_id,
+        parecenca: Math.round(r.parecenca * 100),
+      }))
+    },
+  })
+}

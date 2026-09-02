@@ -52,6 +52,7 @@ export interface DadosConfiguracoes {
   comprimento_minimo_sobra_mm: number
   ultimo_corte_gera_perda: boolean
   prazo_reserva_horas: number
+  limite_semelhanca_desenho_percentual: number
 }
 
 export function useSalvarConfiguracoes() {

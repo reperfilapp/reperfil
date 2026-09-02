@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Camera, ImagePlus, X, ChevronRight, Info } from 'lucide-react'
+import { Camera, ImagePlus, X, ChevronRight, Info, Search } from 'lucide-react'
 import {
   useModelosPerfil,
   useOrdemLinhas,
@@ -8,13 +8,19 @@ import {
   SEM_LINHA,
 } from '@/dados/modelosPerfil'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
-import { useIdentificarPorFoto } from '@/dados/identificacaoPorFoto'
+import {
+  useIdentificarPorFoto,
+  useCompararDesenhosTecnicos,
+} from '@/dados/identificacaoPorFoto'
+import { useConfiguracoes } from '@/dados/configuracoes'
 import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
+import { Botao } from '@/componentes/ui/Botao'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
 import { CampoMedida } from '@/componentes/ui/CampoMedida'
 import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
+import { ComparacaoFotoDesenho } from '@/componentes/ui/ComparacaoFotoDesenho'
 import {
   pesoPorMetroDePeca,
   candidatosPorPeso,
@@ -36,21 +42,21 @@ import type { ModeloPerfil } from '@/tipos/banco'
  * existe — e procurar de olho entre 82 perfis parecidos é onde o erro
  * acontece.
  *
- * A tela junta os caminhos que a pessoa tem à mão, nesta ordem:
+ * A tela junta os caminhos que a pessoa tem à mão, um card por caminho:
  *
- * • A TRENA, que é o instrumento que a oficina realmente tem. Mede-se a
- *   seção da ponta e o app estreita os 82 perfis a poucos. Só funciona
- *   porque as medidas da seção foram DERIVADAS do peso e do desenho de cada
- *   perfil (ver `scripts/calcular-secao.mjs`) — ninguém digitou 82 fichas.
+ * • A FOTO da ponta, comparada por IA com o catálogo.
+ * • A TRENA — mede-se a seção da ponta e o app estreita os 82 perfis a
+ *   poucos. Só funciona porque as medidas da seção foram DERIVADAS do peso
+ *   e do desenho de cada perfil (ver `scripts/calcular-secao.mjs`) —
+ *   ninguém digitou 82 fichas. O PESO mora dentro deste mesmo card,
+ *   recolhido, como outro jeito de medir a mesma coisa para quem tem
+ *   balança.
+ * • A LINHA, sozinha já filtra, mesmo sem nenhuma medida.
  *
- * • A FOTO da ponta. Hoje ela NÃO é reconhecida automaticamente: fica lado
- *   a lado com os desenhos dos candidatos, resolvendo a comparação que antes
- *   obrigava a ir e voltar de tela com a peça na mão. É também o lugar onde
- *   o reconhecimento automático entra quando existir, sem mudar o fluxo.
- *
- * • O PESO, recolhido, para o dia em que houver balança. Peso por metro de
- *   alumínio É a área da seção vezes a densidade do metal, então a balança
- *   mede indiretamente quanto metal tem na seção.
+ * A busca só roda quando a pessoa aperta "Buscar" — preencher um campo (ou
+ * escolher a foto) não dispara nada sozinho. Antes disparava a cada
+ * digitação, e a lista pulando embaixo do dedo enquanto ainda se está
+ * pensando no que digitar não parecia busca, parecia a tela com pressa.
  *
  * Em nenhum caso o app decide sozinho: ele estreita a lista e mostra o
  * desenho. Cadastrar sobra no perfil errado é pior do que não cadastrar — a
@@ -60,6 +66,12 @@ export default function IdentificarPerfil() {
   const { data: modelos } = useModelosPerfil()
   const { data: capas } = useCapasDesenhos('imagem')
   const { data: ordemLinhas } = useOrdemLinhas()
+  const { data: config } = useConfiguracoes()
+  // 60 é só o retrato do padrão do banco enquanto a configuração ainda não
+  // chegou — a fonte de verdade é sempre `config`, ajustável em
+  // "Configurações do cálculo".
+  const limiteSemelhancaDesenho =
+    config?.limite_semelhanca_desenho_percentual ?? 60
 
   /*
    * Quem chegou aqui pelo atalho da câmera, no meio de um cadastro, volta
@@ -76,7 +88,24 @@ export default function IdentificarPerfil() {
 
   const [foto, setFoto] = useState<string | null>(null)
   const [ampliada, setAmpliada] = useState<string | null>(null)
+  // Toque na foto ou no desenho de um candidato: os dois lado a lado, em
+  // destaque — só o desenho muda por candidato, a foto é sempre a mesma.
+  const [comparando, setComparando] = useState<{
+    desenho: string | null | undefined
+    titulo: string
+  } | null>(null)
   const identificar = useIdentificarPorFoto()
+  const compararDesenhos = useCompararDesenhosTecnicos()
+  /*
+   * Semelhança por DESENHO TÉCNICO com o perfil de maior confiança na
+   * busca por foto — só existe quando essa confiança passa de 95%. `null`
+   * quer dizer "sem esse refinamento": mostra a lista inteira, sem cortar
+   * nada por desenho.
+   */
+  const [desenhosParecidos, setDesenhosParecidos] = useState<Map<
+    string,
+    number
+  > | null>(null)
   /*
    * Um campo só, com as medidas separadas por espaço — não quatro campos.
    * Quem está com a ponta na mão mede o que dá — a largura por fora, a
@@ -92,6 +121,26 @@ export default function IdentificarPerfil() {
   const [unidade, setUnidade] = useState<UnidadeMedida>('mm')
   const [linha, setLinha] = useState('')
   const [mostrarPeso, setMostrarPeso] = useState(false)
+
+  // O arquivo da foto fica separado do preview: precisa dele intacto para
+  // mandar para a IA só quando "Buscar" for apertado — escolher a foto não
+  // dispara mais a comparação sozinha.
+  const [arquivoFoto, setArquivoFoto] = useState<File | null>(null)
+
+  /*
+   * O que a busca de verdade usou — só existe depois do primeiro "Buscar".
+   * Preencher um campo muda o que está NA TELA, não o que foi BUSCADO: os
+   * resultados ficam parados com o que valia no último clique, em vez de
+   * pular sozinhos a cada tecla. Segura uma cópia dos campos no momento do
+   * clique, não os campos ao vivo.
+   */
+  const [criterios, setCriterios] = useState<{
+    medidasTexto: string
+    pesoTexto: string
+    comprimentoTexto: string
+    unidade: UnidadeMedida
+    linha: string
+  } | null>(null)
 
   const entradaCamera = useRef<HTMLInputElement>(null)
   const entradaGaleria = useRef<HTMLInputElement>(null)
@@ -112,37 +161,81 @@ export default function IdentificarPerfil() {
       if (anterior) URL.revokeObjectURL(anterior)
       return URL.createObjectURL(arquivo)
     })
+    setArquivoFoto(arquivo)
 
-    // Dispara a busca visual assim que a foto é escolhida — sem precisar
-    // de um botão "buscar" separado. `reset()` primeiro: sem isso, o
-    // resultado da foto anterior ficaria na tela até este pedido terminar.
+    // Só troca a foto na tela — a comparação com o catálogo espera o
+    // "Buscar". `reset()` limpa qualquer resultado de uma foto anterior,
+    // que senão ficaria exibido junto da nova sem fazer sentido.
     identificar.reset()
-    identificar.mutate(arquivo)
   }
 
-  // Vírgula é como se escreve 23,8 aqui; "x" e "×" também separam, porque é
-  // como a medida vem escrita em desenho ("35x25"). Texto vazio ou um
-  // pedaço que não vira número é descartado, junto com zero e negativo.
-  const medidas = medidasTexto
-    .trim()
-    .replace(/[x×]/g, ' ')
-    .split(/\s+/)
-    .map((t) => Number(t.replace(',', '.')))
-    .filter((n) => Number.isFinite(n) && n > 0)
+  function trocarFoto() {
+    if (foto) URL.revokeObjectURL(foto)
+    setFoto(null)
+    setArquivoFoto(null)
+    identificar.reset()
+  }
+
+  function buscar() {
+    setCriterios({ medidasTexto, pesoTexto, comprimentoTexto, unidade, linha })
+    // Limpa o refinamento por desenho de uma busca anterior — senão, por um
+    // instante, os candidatos novos ficariam filtrados pelo perfil de
+    // referência de outra busca, antes de a de agora terminar.
+    setDesenhosParecidos(null)
+
+    if (arquivoFoto) {
+      identificar.reset()
+      identificar.mutate(arquivoFoto)
+    }
+  }
+
+  function parseMedidas(texto: string): number[] {
+    // Vírgula é como se escreve 23,8 aqui; "x" e "×" também separam, porque
+    // é como a medida vem escrita em desenho ("35x25"). Texto vazio ou um
+    // pedaço que não vira número é descartado, junto com zero e negativo.
+    return texto
+      .trim()
+      .replace(/[x×]/g, ' ')
+      .split(/\s+/)
+      .map((t) => Number(t.replace(',', '.')))
+      .filter((n) => Number.isFinite(n) && n > 0)
+  }
+
+  // Ao vivo, só para habilitar o botão — reflete o que está nos campos
+  // agora, mesmo antes de qualquer busca.
+  const pesoGDigitado = Number(pesoTexto.replace(',', '.'))
+  const comprimentoMmDigitado = interpretarMedidaDigitada(
+    comprimentoTexto,
+    unidade,
+  )
+  const podeBuscar =
+    parseMedidas(medidasTexto).length > 0 ||
+    (Number.isFinite(pesoGDigitado) &&
+      pesoGDigitado > 0 &&
+      comprimentoMmDigitado !== null) ||
+    linha !== '' ||
+    foto !== null
+
+  // O que a busca usou de verdade — congelado em `criterios` no momento do
+  // clique, não os campos ao vivo acima.
+  const medidas = criterios ? parseMedidas(criterios.medidasTexto) : []
   const mediuSecao = medidas.length > 0
 
-  const pesoG = Number(pesoTexto.replace(',', '.'))
-  const comprimentoMm = interpretarMedidaDigitada(comprimentoTexto, unidade)
+  const pesoG = criterios ? Number(criterios.pesoTexto.replace(',', '.')) : NaN
+  const comprimentoMm = criterios
+    ? interpretarMedidaDigitada(criterios.comprimentoTexto, criterios.unidade)
+    : null
   const pesouPeca =
     Number.isFinite(pesoG) && pesoG > 0 && comprimentoMm !== null
   const medido = pesouPeca ? pesoPorMetroDePeca(pesoG, comprimentoMm!) : null
+  const linhaBuscada = criterios?.linha ?? ''
 
   const linhas = agruparPorLinha(modelos ?? [], ordemLinhas)
     .map((g) => g.linha)
     .filter((l) => l !== SEM_LINHA)
 
   const universo = (modelos ?? []).filter(
-    (m) => linha === '' || (m.linha?.trim() || SEM_LINHA) === linha,
+    (m) => linhaBuscada === '' || (m.linha?.trim() || SEM_LINHA) === linhaBuscada,
   )
 
   /*
@@ -167,7 +260,7 @@ export default function IdentificarPerfil() {
               ? 'peso exato'
               : `${c.diferencaPercentual.toFixed(1).replace('.', ',')}% de diferença`,
         }))
-      : linha !== ''
+      : linhaBuscada !== ''
         ? universo.map((perfil) => ({ perfil, nota: null }))
         : []
 
@@ -181,8 +274,89 @@ export default function IdentificarPerfil() {
 
   // `== null` cobre nulo e ausente: antes da migração a coluna nem vem.
   const semMedida = universo.filter((m) => m.largura_secao_mm == null).length
-  const filtrouAlgo =
-    mediuSecao || medido !== null || linha !== '' || foto !== null
+  // Já apertou "Buscar" pelo menos uma vez — é isso que decide entre mostrar
+  // resultado e mostrar a mensagem inicial, não o que está nos campos agora.
+  const buscou = criterios !== null
+
+  /*
+   * Refinamento por desenho técnico: quando a foto acerta um perfil com
+   * confiança ≥95%, os OUTROS candidatos da tela são comparados pelo
+   * próprio desenho técnico com esse perfil de maior confiança — só quem
+   * passa de 90% de semelhança continua na lista. Sem isso, um perfil
+   * levemente parecido na foto mas visualmente bem diferente no desenho
+   * ficaria na lista só por ter batido na medida ou na linha.
+   */
+  useEffect(() => {
+    if (!buscou || identificar.isPending) return
+
+    let idReferencia: string | null = null
+    let maiorParecenca = -1
+    for (const c of candidatos) {
+      if (c.parecencaFoto !== null && c.parecencaFoto > maiorParecenca) {
+        maiorParecenca = c.parecencaFoto
+        idReferencia = c.perfil.id
+      }
+    }
+
+    if (idReferencia === null || maiorParecenca < 95) {
+      setDesenhosParecidos(null)
+      return
+    }
+
+    const outrosIds = candidatos
+      .filter((c) => c.perfil.id !== idReferencia)
+      .map((c) => c.perfil.id)
+
+    if (outrosIds.length === 0) {
+      setDesenhosParecidos(null)
+      return
+    }
+
+    let cancelado = false
+
+    compararDesenhos
+      .mutateAsync({ modeloPerfilId: idReferencia, candidatosIds: outrosIds })
+      .then((resultado) => {
+        if (cancelado) return
+        const mapa = new Map(resultado.map((r) => [r.modeloPerfilId, r.parecenca]))
+        mapa.set(idReferencia!, 100)
+        setDesenhosParecidos(mapa)
+      })
+      .catch(() => {
+        // Não deu para comparar os desenhos — mostra a lista inteira, sem
+        // cortar nada, em vez de travar a busca por causa do refinamento.
+        if (!cancelado) setDesenhosParecidos(null)
+      })
+
+    return () => {
+      cancelado = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [criterios, identificar.data, identificar.isPending])
+
+  const candidatosExibidos = desenhosParecidos
+    ? candidatos
+        .filter(
+          (c) => (desenhosParecidos.get(c.perfil.id) ?? 0) >= limiteSemelhancaDesenho,
+        )
+        // Com o refinamento ativo, quem decide a ordem passa a ser a
+        // semelhança de DESENHO com o perfil de referência — não mais a
+        // semelhança de foto que veio de `combinarCandidatos`. O perfil de
+        // referência (100%) fica sempre em primeiro.
+        .sort(
+          (a, b) =>
+            (desenhosParecidos.get(b.perfil.id) ?? 0) -
+            (desenhosParecidos.get(a.perfil.id) ?? 0),
+        )
+    : candidatos
+
+  // Quem foi o perfil de referência do refinamento (marcado com 100% na
+  // hora de montar o mapa) — só para exibir o código dele ao lado da
+  // semelhança de desenho de cada candidato.
+  const referenciaDesenho = desenhosParecidos
+    ? (candidatos.find((c) => desenhosParecidos.get(c.perfil.id) === 100)
+        ?.perfil ?? null)
+    : null
 
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-6">
@@ -195,9 +369,9 @@ export default function IdentificarPerfil() {
         </p>
       </header>
 
-      <div className="mb-6 flex flex-col gap-5">
+      <div className="mb-6 flex flex-col gap-4">
         {/* 1 — Foto da ponta */}
-        <section>
+        <section className="bg-grupo-azul rounded-2xl p-4">
           <h2 className="mb-2 font-semibold">
             Foto da ponta{' '}
             <span className="text-texto-suave font-normal">(opcional)</span>
@@ -220,7 +394,8 @@ export default function IdentificarPerfil() {
 
               <div className="flex-1">
                 <p className="text-texto-suave mb-2 text-sm">
-                  Ela fica na tela enquanto você compara com os desenhos abaixo.
+                  Ao apertar "Buscar", uma IA compara esta foto com as fotos e
+                  desenhos técnicos do catálogo.
                 </p>
                 {identificar.isPending && (
                   <p className="text-texto-suave mb-2 text-sm">
@@ -237,11 +412,7 @@ export default function IdentificarPerfil() {
                 )}
                 <button
                   type="button"
-                  onClick={() => {
-                    URL.revokeObjectURL(foto)
-                    setFoto(null)
-                    identificar.reset()
-                  }}
+                  onClick={trocarFoto}
                   className="text-acao-600 inline-flex items-center gap-1 text-sm font-medium hover:underline"
                 >
                   <X aria-hidden="true" className="size-4" />
@@ -289,14 +460,17 @@ export default function IdentificarPerfil() {
           />
 
           <p className="text-texto-suave mt-2 text-xs">
-            A foto viaja até o servidor para comparar com o catálogo, mas não
-            fica gravada em lugar nenhum — some assim que a comparação termina.
+            Uma inteligência artificial calcula as características da foto e
+            compara com as fotos e desenhos técnicos do catálogo, também já
+            processados por IA. A imagem não fica gravada em lugar nenhum —
+            some assim que a comparação termina.
           </p>
         </section>
 
-        {/* 2 — Medida da seção: o caminho principal, porque é o que a
-            oficina consegue fazer — trena tem em todo banco de serra. */}
-        <section>
+        {/* 2 — Medida da seção (trena) e peso, no mesmo card: são dois
+            jeitos de medir a mesma coisa. A trena é o caminho principal,
+            porque é o instrumento que a oficina realmente tem. */}
+        <section className="bg-grupo-amarelo rounded-2xl p-4">
           <h2 className="mb-2 font-semibold">
             Medida da ponta{' '}
             <span className="text-texto-suave font-normal">
@@ -316,65 +490,75 @@ export default function IdentificarPerfil() {
           />
 
           <p className="text-texto-suave mt-2 text-sm">
-            Digite as medidas separadas por espaço — por exemplo,{' '}
-            <strong>35 25 2 1</strong> para uma peça com essas quatro medidas
-            de seção (não o comprimento da peça). A ordem não importa, e não
-            precisa informar todas — mesmo uma medida já ajuda a estreitar a
-            lista.
+            Digite as medidas separadas por espaço em qualquer ordem
           </p>
-        </section>
 
-        {/* 3 — Peso: fica recolhido, porque depende de balança, que a
-            oficina não tem. Continua aqui para quem tiver. */}
-        <section>
-          <button
-            type="button"
-            onClick={() => setMostrarPeso((v) => !v)}
-            aria-expanded={mostrarPeso}
-            className="text-acao-600 text-sm font-medium hover:underline"
-          >
-            {mostrarPeso
-              ? 'Esconder identificação por peso'
-              : 'Tenho balança: identificar pelo peso'}
-          </button>
+          {/* Peso: recolhido, porque depende de balança, que a oficina não
+              tem — mas é outro jeito de medir a mesma seção, então mora
+              aqui dentro, não num card à parte. */}
+          <div className="border-borda mt-4 border-t pt-4">
+            <button
+              type="button"
+              onClick={() => setMostrarPeso((v) => !v)}
+              aria-expanded={mostrarPeso}
+              className="text-acao-600 text-sm font-medium hover:underline"
+            >
+              {mostrarPeso
+                ? 'Esconder identificação por peso'
+                : 'Tenho balança: identificar pelo peso'}
+            </button>
 
-          {mostrarPeso && (
-            <div className="mt-3 flex flex-col gap-4">
-              <CampoTexto
-                rotulo="Peso da peça (gramas)"
-                type="text"
-                inputMode="decimal"
-                placeholder="0"
-                value={pesoTexto}
-                onChange={(e) => setPesoTexto(e.target.value)}
-                ajuda="Pese a peça inteira, do jeito que ela está."
-              />
+            {mostrarPeso && (
+              <div className="mt-3 flex flex-col gap-4">
+                <CampoTexto
+                  rotulo="Peso da peça (gramas)"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={pesoTexto}
+                  onChange={(e) => setPesoTexto(e.target.value)}
+                  ajuda="Pese a peça inteira, do jeito que ela está."
+                />
 
-              <CampoMedida
-                rotulo="Comprimento da peça"
-                texto={comprimentoTexto}
-                unidade={unidade}
-                aoMudarTexto={setComprimentoTexto}
-                aoMudarUnidade={setUnidade}
-              />
-            </div>
-          )}
+                <CampoMedida
+                  rotulo="Comprimento da peça"
+                  texto={comprimentoTexto}
+                  unidade={unidade}
+                  aoMudarTexto={setComprimentoTexto}
+                  aoMudarUnidade={setUnidade}
+                />
+              </div>
+            )}
+          </div>
         </section>
 
         {/* 3 — Linha */}
-        <CampoSelecao
-          rotulo="Linha (opcional, mas ajuda muito)"
-          value={linha}
-          onChange={(e) => setLinha(e.target.value)}
-        >
-          <option value="">Todas as linhas</option>
-          {linhas.map((l) => (
-            <option key={l} value={l}>
-              {l}
-            </option>
-          ))}
-        </CampoSelecao>
+        <section className="bg-grupo-lilas rounded-2xl p-4">
+          <CampoSelecao
+            rotulo="Linha (opcional, mas ajuda muito)"
+            value={linha}
+            onChange={(e) => setLinha(e.target.value)}
+          >
+            <option value="">Todas as linhas</option>
+            {linhas.map((l) => (
+              <option key={l} value={l}>
+                {l}
+              </option>
+            ))}
+          </CampoSelecao>
+        </section>
       </div>
+
+      <Botao
+        onClick={buscar}
+        disabled={!podeBuscar}
+        carregando={identificar.isPending}
+        tamanho="largura_total"
+        className="mb-6"
+      >
+        <Search aria-hidden="true" className="size-5" />
+        Buscar perfis compatíveis
+      </Botao>
 
       {medido !== null && (
         <p className="bg-aluminio-100 text-grafite-800 mb-4 rounded-xl px-4 py-3 text-sm">
@@ -385,7 +569,13 @@ export default function IdentificarPerfil() {
         </p>
       )}
 
-      {filtrouAlgo && candidatos.length === 0 && (
+      {identificar.isPending && candidatosExibidos.length === 0 && (
+        <p className="text-texto-suave mb-4 text-sm">
+          Comparando a foto com o catálogo…
+        </p>
+      )}
+
+      {buscou && !identificar.isPending && candidatosExibidos.length === 0 && (
         <div className="bg-superficie-2 text-texto-suave rounded-xl p-5 text-sm">
           <p className="mb-2">
             <strong>Nenhum perfil compatível.</strong>
@@ -399,42 +589,73 @@ export default function IdentificarPerfil() {
         </div>
       )}
 
-      {candidatos.length > 0 && (
+      {candidatosExibidos.length > 0 && (
         <section aria-live="polite">
           <h2 className="mb-1 font-semibold">
-            {candidatos.length}{' '}
-            {candidatos.length === 1
+            {candidatosExibidos.length}{' '}
+            {candidatosExibidos.length === 1
               ? 'perfil compatível'
               : 'perfis compatíveis'}
           </h2>
           <p className="text-texto-suave mb-3 flex items-start gap-1.5 text-sm">
             <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-            Compare o desenho com a ponta antes de escolher. A medida estreita a
-            lista; quem decide é o desenho.
+            {desenhosParecidos ? (
+              <span>
+                A foto achou um perfil com confiança alta — a lista já foi
+                restrita a quem tem desenho técnico pelo menos{' '}
+                {limiteSemelhancaDesenho}% parecido com o dele (ajustável em
+                Configurações do cálculo). Ainda assim, compare o desenho com
+                a ponta antes de escolher.
+              </span>
+            ) : (
+              'Compare o desenho com a ponta antes de escolher. A medida estreita a lista; quem decide é o desenho.'
+            )}
           </p>
 
           <ul className="flex flex-col gap-2">
-            {candidatos.map(({ perfil, nota, parecencaFoto }) => (
-              <li key={perfil.id}>
-                <Link
-                  to={destinoDo(perfil.id)}
-                  className="bg-celula hover:bg-celula border-borda flex items-center gap-3 rounded-xl border-2 p-3 shadow-sm"
-                >
-                  {/* A foto da ponta ao lado do desenho: é a comparação que
-                      antes obrigava a sair da tela com a peça na mão. */}
-                  {foto && (
+            {candidatosExibidos.map(({ perfil, nota, parecencaFoto }) => (
+              <li
+                key={perfil.id}
+                className="bg-celula border-borda flex items-center gap-3 rounded-xl border-2 p-3 shadow-sm"
+              >
+                {/* Foto e desenho ficam FORA do link que abre a ficha do
+                    perfil — tocar neles compara os dois em destaque, não
+                    navega. Um botão só (não dois) porque é a MESMA
+                    comparação, e um alvo de toque maior erra menos. */}
+                {foto ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setComparando({
+                        desenho: capas?.get(perfil.id),
+                        titulo: `${perfil.codigo} ${perfil.descricao}`,
+                      })
+                    }
+                    aria-label={`Comparar foto da ponta com o desenho técnico de ${perfil.codigo}`}
+                    className="flex shrink-0 gap-1"
+                  >
                     <img
                       src={foto}
                       alt=""
                       className="border-borda size-14 shrink-0 rounded-lg border object-cover"
                     />
-                  )}
 
+                    <MiniaturaPerfil
+                      link={capas?.get(perfil.id)}
+                      codigo={perfil.codigo}
+                    />
+                  </button>
+                ) : (
                   <MiniaturaPerfil
                     link={capas?.get(perfil.id)}
                     codigo={perfil.codigo}
                   />
+                )}
 
+                <Link
+                  to={destinoDo(perfil.id)}
+                  className="flex min-w-0 flex-1 items-center gap-3"
+                >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium">
                       <span className="text-acao-600 font-mono">
@@ -449,17 +670,40 @@ export default function IdentificarPerfil() {
                           com o que a trena deu. */}
                       {formatarMedidasSecao(perfil) ?? 'sem medida no catálogo'}
                     </span>
-                    {(nota || parecencaFoto !== null) && (
-                      <span className="text-texto-suave block text-xs">
-                        {parecencaFoto !== null && (
-                          <span className="text-acao-600 font-medium">
-                            {parecencaFoto}% parecido na foto
-                          </span>
-                        )}
-                        {nota && parecencaFoto !== null && ' · '}
-                        {nota}
-                      </span>
-                    )}
+                    {(() => {
+                      // Semelhança de DESENHO com o perfil de referência —
+                      // só faz sentido mostrar para os outros perfis, não
+                      // para a própria referência (seria 100% com ele mesmo).
+                      const parecencaDesenho =
+                        desenhosParecidos && perfil.id !== referenciaDesenho?.id
+                          ? (desenhosParecidos.get(perfil.id) ?? null)
+                          : null
+
+                      if (!nota && parecencaFoto === null && parecencaDesenho === null) {
+                        return null
+                      }
+
+                      return (
+                        <span className="text-texto-suave block text-xs">
+                          {parecencaFoto !== null && (
+                            <span className="text-acao-600 font-medium">
+                              {parecencaFoto}% parecido na foto
+                            </span>
+                          )}
+                          {parecencaDesenho !== null && (
+                            <>
+                              {parecencaFoto !== null && ' · '}
+                              <span className="text-acao-600 font-medium">
+                                {parecencaDesenho}% parecido no desenho com{' '}
+                                {referenciaDesenho?.codigo}
+                              </span>
+                            </>
+                          )}
+                          {nota && (parecencaFoto !== null || parecencaDesenho !== null) && ' · '}
+                          {nota}
+                        </span>
+                      )
+                    })()}
                   </span>
 
                   <ChevronRight
@@ -473,10 +717,10 @@ export default function IdentificarPerfil() {
         </section>
       )}
 
-      {!filtrouAlgo && (
+      {!buscou && (
         <p className="bg-superficie-2 text-texto-suave rounded-xl p-5 text-center text-sm">
-          Meça a ponta com a trena e informe os dois lados, ou escolha uma
-          linha, para ver os perfis compatíveis.
+          Tire uma foto, meça a ponta com a trena ou escolha uma linha — e
+          aperte "Buscar perfis compatíveis".
         </p>
       )}
 
@@ -485,6 +729,15 @@ export default function IdentificarPerfil() {
           src={ampliada}
           alt="Ponta do perfil, ampliada"
           aoFechar={() => setAmpliada(null)}
+        />
+      )}
+
+      {comparando && foto && (
+        <ComparacaoFotoDesenho
+          foto={foto}
+          desenho={comparando.desenho}
+          titulo={comparando.titulo}
+          aoFechar={() => setComparando(null)}
         />
       )}
     </div>
