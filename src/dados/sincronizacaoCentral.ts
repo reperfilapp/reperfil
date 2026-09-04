@@ -59,6 +59,7 @@ export function useSincronizarProdutosPara() {
           produtos_vinculados: 0,
           produtos_em_conflito: 0,
           itens_sem_perfil: 0,
+          itens_sem_acessorio: 0,
         }
       )
     },

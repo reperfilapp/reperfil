@@ -7,7 +7,13 @@ import {
   sentidoValido,
 } from '@/dominio/corteMontagem'
 import { DesenhoPerfil } from './DesenhoCorte'
-import type { ItemListaTecnica, ModeloPerfil, Produto } from '@/tipos/banco'
+import type {
+  ItemListaTecnica,
+  ItemListaTecnicaAcessorio,
+  ModeloAcessorio,
+  ModeloPerfil,
+  Produto,
+} from '@/tipos/banco'
 
 /**
  * A célula de corte de UMA linha da tabela — sem exceção, mostra a peça
@@ -112,6 +118,8 @@ export function FolhaProduto({
   itens,
   modelos,
   desenhosPerfil,
+  itensAcessorio,
+  acessorios,
   fotoProduto,
   desenhoProduto,
   empresa,
@@ -122,6 +130,8 @@ export function FolhaProduto({
   modelos: readonly ModeloPerfil[]
   /** Link temporário do desenho de cada perfil, por id do modelo. */
   desenhosPerfil: Map<string, string> | undefined
+  itensAcessorio: readonly ItemListaTecnicaAcessorio[]
+  acessorios: readonly ModeloAcessorio[]
   fotoProduto: string | null
   desenhoProduto: string | null
   empresa: string
@@ -129,6 +139,7 @@ export function FolhaProduto({
   pecasPorPerfil: Map<string, number>
 }) {
   const perfilDe = (id: string) => modelos.find((m) => m.id === id)
+  const acessorioDe = (id: string) => acessorios.find((a) => a.id === id)
 
   /*
    * As imagens numa lista só, em vez de tratadas uma a uma no JSX.
@@ -364,6 +375,53 @@ export function FolhaProduto({
                     })}
                   </tbody>
                 </table>
+              )}
+
+              {/* Acessório não é cortado: sem desenho grande, sem coluna de
+                  estoque — é lista de ferragem, não instrução de bancada. */}
+              {itensAcessorio.length > 0 && (
+                <>
+                  <h2 className="mt-6 mb-2 text-lg font-bold">Acessórios</h2>
+                  <table className="w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b-2 border-black text-left">
+                        <th className="w-8 py-1">#</th>
+                        <th className="py-1">Código</th>
+                        <th className="py-1">Descrição</th>
+                        <th className="py-1">Categoria</th>
+                        <th className="w-20 py-1 text-right">Qtd.</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {itensAcessorio.map((item, indice) => {
+                        const acessorio = acessorioDe(item.modelo_acessorio_id)
+
+                        return (
+                          <tr
+                            key={item.id}
+                            className="break-inside-avoid border-b border-gray-400"
+                          >
+                            <td className="py-2 align-middle font-bold tabular-nums">
+                              {indice + 1}
+                            </td>
+                            <td className="py-2 align-middle font-mono font-bold">
+                              {acessorio?.codigo ?? '—'}
+                            </td>
+                            <td className="py-2 align-middle">
+                              {acessorio?.descricao ?? 'acessório removido'}
+                            </td>
+                            <td className="py-2 align-middle">
+                              {acessorio?.categoria ?? ''}
+                            </td>
+                            <td className="py-2 text-right align-middle font-bold tabular-nums">
+                              {item.quantidade}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </>
               )}
 
               <footer className="mt-6 border-t border-gray-400 pt-2 text-xs">

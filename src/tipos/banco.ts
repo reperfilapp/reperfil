@@ -478,3 +478,19 @@ export interface ItemListaTecnica {
   observacao: string | null
   criado_em: string
 }
+
+/**
+ * Uma linha da lista técnica de ACESSÓRIO: bem mais simples que a de
+ * perfil, porque acessório não é cortado — não há comprimento, sentido nem
+ * grupos de corte, só o acessório e quantas peças por unidade do produto.
+ */
+export interface ItemListaTecnicaAcessorio {
+  id: string
+  organizacao_id: string
+  produto_id: string
+  modelo_acessorio_id: string
+  /** Peças deste acessório por UMA unidade do produto. */
+  quantidade: number
+  observacao: string | null
+  criado_em: string
+}

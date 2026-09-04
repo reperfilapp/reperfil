@@ -28,9 +28,9 @@ export function LiberacaoProduto({ produtoId }: { produtoId: string }) {
   const liberarTodas = useDefinirLiberacaoProdutoTodas()
 
   return (
-    <section className="bg-erro-50 rounded-xl p-4">
-      <h2 className="font-semibold">Liberado para</h2>
-      <p className="text-texto-suave mt-0.5 mb-3 text-sm">
+    <section className="bg-erro-50 border-erro-300 rounded-xl border-2 p-4">
+      <h2 className="text-erro-700 font-semibold">Liberado para</h2>
+      <p className="text-erro-700 mt-0.5 mb-3 text-sm">
         Quais empresas podem importar este produto do catálogo central.
       </p>
 
@@ -60,7 +60,7 @@ export function LiberacaoProduto({ produtoId }: { produtoId: string }) {
       </div>
 
       {isPending ? (
-        <p className="text-texto-suave text-sm">Carregando…</p>
+        <p className="text-erro-700 text-sm">Carregando…</p>
       ) : (
         /* Rola por dentro: a lista cresce com o número de empresas, e sem
            limite ela empurraria o resto da ficha para fora da tela. */

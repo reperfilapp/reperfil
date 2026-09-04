@@ -95,7 +95,7 @@ export function FichaDados({
     <section>
       {titulo && <h2 className="mb-2 font-semibold">{titulo}</h2>}
 
-      <dl className="bg-superficie grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-xl p-4 text-sm">
+      <dl className="bg-superficie border-borda grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-xl border-2 p-4 text-sm">
         {linhas.map((linha) =>
           'grupo' in linha ? (
             <p

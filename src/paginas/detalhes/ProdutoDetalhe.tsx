@@ -13,6 +13,7 @@ import {
   Calculator,
   ClipboardList,
   EyeOff,
+  Puzzle,
 } from 'lucide-react'
 import {
   useProduto,
@@ -21,9 +22,13 @@ import {
   useEditarItemLista,
   useReordenarLista,
   useEditarProduto,
+  useListaTecnicaAcessorio,
+  useEditarItemListaAcessorio,
+  useRemoverItemListaAcessorio,
   type DadosProduto,
 } from '@/dados/produtos'
 import { useModelosPerfil } from '@/dados/modelosPerfil'
+import { useModelosAcessorio } from '@/dados/modelosAcessorio'
 import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
 import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
@@ -101,7 +106,7 @@ import { Veredito } from '@/componentes/Veredito'
 import { FormularioProduto } from '@/componentes/produto/FormularioProduto'
 import { FolhaProduto } from '@/componentes/produto/FolhaProduto'
 import { FolhaListaMateriais } from '@/componentes/produto/FolhaListaMateriais'
-import type { ItemListaTecnica } from '@/tipos/banco'
+import type { ItemListaTecnica, ItemListaTecnicaAcessorio } from '@/tipos/banco'
 import { APLICACAO } from '@/config/aplicacao'
 import { disparar } from '@/lib/avisoErro'
 
@@ -122,6 +127,12 @@ export default function ProdutoDetalhe() {
   const { data: config } = useConfiguracoes()
   const { data: organizacao } = useOrganizacao()
   const souCentral = Boolean(organizacao?.eh_catalogo_central)
+
+  const { data: itensAcessorio } = useListaTecnicaAcessorio(id)
+  const { data: modelosAcessorio } = useModelosAcessorio()
+  const { data: capasAcessorio } = useCapasDesenhos('imagem', 'acessorio')
+  const editarItemAcessorio = useEditarItemListaAcessorio()
+  const removerAcessorio = useRemoverItemListaAcessorio()
 
   const remover = useRemoverItemLista()
   const editarItem = useEditarItemLista()
@@ -151,6 +162,25 @@ export default function ProdutoDetalhe() {
    */
   const [removendo, setRemovendo] = useState<ItemListaTecnica | null>(null)
   const [erroRemover, setErroRemover] = useState<string | null>(null)
+
+  /*
+   * O mesmo par "editando"/"removendo" da lista de perfil, agora para
+   * acessório — mas sem corte, sentido ou grupos: o formulário de edição é
+   * só quantidade e observação.
+   */
+  const [itemAcessorioEditando, setItemAcessorioEditando] =
+    useState<ItemListaTecnicaAcessorio | null>(null)
+  const [formAcessorio, setFormAcessorio] = useState({
+    quantidade: '1',
+    observacao: '',
+  })
+  const [erroAcessorio, setErroAcessorio] = useState<string | null>(null)
+  const [removendoAcessorio, setRemovendoAcessorio] =
+    useState<ItemListaTecnicaAcessorio | null>(null)
+  const [erroRemoverAcessorio, setErroRemoverAcessorio] = useState<
+    string | null
+  >(null)
+
   const [form, setForm] = useState({
     modelo_perfil_id: '',
     comprimento_mm: '',
@@ -420,6 +450,63 @@ export default function ProdutoDetalhe() {
     const modelo = modelos?.find((m) => m.id === modeloId)
 
     return modelo ? `${modelo.codigo} ${modelo.descricao}` : 'perfil removido'
+  }
+
+  const nomeDoAcessorio = (modeloId: string) => {
+    const modelo = modelosAcessorio?.find((m) => m.id === modeloId)
+
+    return modelo
+      ? `${modelo.codigo} ${modelo.descricao}`
+      : 'acessório removido'
+  }
+
+  function abrirEdicaoAcessorio(item: ItemListaTecnicaAcessorio) {
+    setItemAcessorioEditando(item)
+    setFormAcessorio({
+      quantidade: String(item.quantidade),
+      observacao: item.observacao ?? '',
+    })
+    setErroAcessorio(null)
+  }
+
+  function fecharEdicaoAcessorio() {
+    setItemAcessorioEditando(null)
+    setFormAcessorio({ quantidade: '1', observacao: '' })
+    setErroAcessorio(null)
+  }
+
+  async function aoEnviarAcessorio(evento: FormEvent) {
+    evento.preventDefault()
+    setErroAcessorio(null)
+
+    const quantidade = Number(formAcessorio.quantidade)
+
+    if (!Number.isInteger(quantidade) || quantidade <= 0) {
+      setErroAcessorio('A quantidade por unidade precisa ser um número inteiro.')
+      return
+    }
+
+    if (itemAcessorioEditando === null) return
+
+    try {
+      await editarItemAcessorio.mutateAsync({
+        id: itemAcessorioEditando.id,
+        dados: {
+          modelo_acessorio_id: itemAcessorioEditando.modelo_acessorio_id,
+          quantidade,
+          observacao:
+            formAcessorio.observacao.trim() === ''
+              ? null
+              : formAcessorio.observacao.trim(),
+        },
+      })
+
+      fecharEdicaoAcessorio()
+    } catch (e) {
+      setErroAcessorio(
+        e instanceof Error ? e.message : 'Não foi possível salvar.',
+      )
+    }
   }
 
   /** "MN-007 — Guia da persiana": o que se lê e o que se digita. */
@@ -853,7 +940,7 @@ export default function ProdutoDetalhe() {
        * procurar o "Calcular" lá em cima — e a faixa do topo, aliviada,
        * volta a ser só o que a peça é.
        */}
-      <section className="bg-destaque flex flex-col gap-3 rounded-xl p-4">
+      <section className="bg-destaque border-destaque-borda flex flex-col gap-3 rounded-xl border-2 p-4">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {/* A quantidade abre a fileira porque é a primeira decisão: todas
               as outras opções, e as duas contas, respondem sobre ELA. */}
@@ -1029,10 +1116,15 @@ export default function ProdutoDetalhe() {
             <ListChecks aria-hidden="true" className="size-4 shrink-0" />
             <span className="min-w-0 flex-1">
               Lista técnica
-              {(itens ?? []).length > 0 && (
+              {((itens ?? []).length > 0 || (itensAcessorio ?? []).length > 0) && (
                 <span className="text-texto-suave ml-1.5 font-normal">
-                  ({itens?.length}{' '}
-                  {itens?.length === 1 ? 'componente' : 'componentes'})
+                  ({(itens ?? []).length}{' '}
+                  {(itens ?? []).length === 1 ? 'perfil' : 'perfis'} ·{' '}
+                  {(itensAcessorio ?? []).length}{' '}
+                  {(itensAcessorio ?? []).length === 1
+                    ? 'acessório'
+                    : 'acessórios'}
+                  )
                 </span>
               )}
             </span>
@@ -1064,10 +1156,14 @@ export default function ProdutoDetalhe() {
           /* Continua a moldura do rótulo: sem as bordas laterais, a lista
              aberta parecia solta embaixo de um cabeçalho que não era dela. */
           <div className="border-borda rounded-b-xl border-x border-b p-3">
-            <p className="text-texto-suave mb-2 text-sm">
+            <p className="text-texto-suave mb-3 text-sm">
               O que entra em UMA unidade. Os comprimentos são de corte, já com
               os descontos que a oficina aplica.
             </p>
+
+            <h3 className="text-texto-suave mb-2 text-xs font-semibold tracking-wide uppercase">
+              Perfis
+            </h3>
 
             {/* A ordem é gravada de verdade, não só visual — fosse só na
             tela, a folha impressa sairia diferente do que se vê aqui. */}
@@ -1272,6 +1368,120 @@ export default function ProdutoDetalhe() {
                 Acrescentar material
               </Botao>
             )}
+
+            <h3 className="text-texto-suave mt-5 mb-2 text-xs font-semibold tracking-wide uppercase">
+              Acessórios
+            </h3>
+
+            {(itensAcessorio ?? []).length === 0 ? (
+              <p className="bg-superficie-2 text-texto-suave rounded-xl p-4 text-sm">
+                Nenhum acessório na receita ainda.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {(itensAcessorio ?? []).map((item) => {
+                  const desenho = capasAcessorio?.get(item.modelo_acessorio_id)
+                  const modeloItem = modelosAcessorio?.find(
+                    (m) => m.id === item.modelo_acessorio_id,
+                  )
+
+                  return (
+                    <li
+                      key={item.id}
+                      className="border-borda bg-superficie flex flex-col overflow-hidden rounded-xl border"
+                    >
+                      <div className="flex items-center gap-2 px-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => desenho && setAmpliado(desenho)}
+                          disabled={!desenho}
+                          aria-label={`Ampliar foto de ${nomeDoAcessorio(item.modelo_acessorio_id)}`}
+                          className="shrink-0 disabled:cursor-default"
+                        >
+                          <MiniaturaPerfil
+                            link={desenho ?? null}
+                            codigo={modeloItem?.codigo ?? ''}
+                            recorte="canto-superior-esquerdo"
+                          />
+                        </button>
+
+                        {podeEditar ? (
+                          <button
+                            type="button"
+                            onClick={() => abrirEdicaoAcessorio(item)}
+                            className="flex min-w-0 flex-1 items-center gap-1 self-stretch text-left"
+                            aria-label={`Editar ${nomeDoAcessorio(item.modelo_acessorio_id)} na lista técnica`}
+                          >
+                            <span className="line-clamp-2 flex-1 text-[15px] leading-snug font-medium">
+                              <span className="bg-acao-100 text-acao-700 me-1 inline-block rounded px-1.5 py-0.5 font-mono text-xs font-bold">
+                                {modeloItem?.codigo ?? ''}
+                              </span>
+                              {modeloItem?.descricao ?? 'acessório removido'}
+                            </span>
+                            <Pencil
+                              aria-hidden="true"
+                              className="text-texto-suave size-4 shrink-0"
+                            />
+                          </button>
+                        ) : (
+                          <Link
+                            to={`/acessorios/${item.modelo_acessorio_id}`}
+                            className="flex min-w-0 flex-1 items-center gap-1 self-stretch"
+                            aria-label={`Ver ficha de ${nomeDoAcessorio(item.modelo_acessorio_id)}`}
+                          >
+                            <span className="line-clamp-2 flex-1 text-[15px] leading-snug font-medium">
+                              <span className="bg-acao-100 text-acao-700 me-1 inline-block rounded px-1.5 py-0.5 font-mono text-xs font-bold">
+                                {modeloItem?.codigo ?? ''}
+                              </span>
+                              {modeloItem?.descricao ?? 'acessório removido'}
+                            </span>
+                            <ChevronRight
+                              aria-hidden="true"
+                              className="text-texto-suave size-4 shrink-0"
+                            />
+                          </Link>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 px-2 pt-1 pb-2">
+                        <span className="text-texto-suave min-w-0 pl-1 text-sm leading-tight tabular-nums">
+                          {item.quantidade}×
+                          {item.observacao && (
+                            <span className="ml-1.5 italic">
+                              {item.observacao}
+                            </span>
+                          )}
+                        </span>
+
+                        {podeEditar && (
+                          <div className="flex shrink-0 items-center gap-2">
+                            <Botao
+                              tamanho="icone_pequeno"
+                              variante="contorno"
+                              onClick={() => setRemovendoAcessorio(item)}
+                              aria-label={`Remover ${nomeDoAcessorio(item.modelo_acessorio_id)} da lista técnica`}
+                              title="Remover"
+                            >
+                              <Trash2 aria-hidden="true" className="size-4" />
+                            </Botao>
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+
+            {podeEditar && (
+              <Botao
+                onClick={() => navegar(`/produtos/${id}/acrescentar-acessorio`)}
+                className="mt-3 w-full"
+              >
+                <Puzzle aria-hidden="true" className="size-5" />
+                Acrescentar acessório
+              </Botao>
+            )}
           </div>
         )}
       </section>
@@ -1292,6 +1502,8 @@ export default function ProdutoDetalhe() {
           itens={itens ?? []}
           modelos={modelos ?? []}
           desenhosPerfil={capas}
+          itensAcessorio={itensAcessorio ?? []}
+          acessorios={modelosAcessorio ?? []}
           fotoProduto={linkFoto}
           desenhoProduto={linkDesenho}
           empresa={APLICACAO.nome}
@@ -1604,6 +1816,132 @@ export default function ProdutoDetalhe() {
         </div>
       </Modal>
 
+      <Modal
+        aberto={removendoAcessorio !== null}
+        aoFechar={() => setRemovendoAcessorio(null)}
+        titulo="Remover acessório da lista técnica"
+      >
+        <div className="flex flex-col gap-4">
+          <p className="text-sm">
+            Remover{' '}
+            <strong>
+              {removendoAcessorio &&
+                nomeDoAcessorio(removendoAcessorio.modelo_acessorio_id)}
+            </strong>{' '}
+            da lista técnica — não há como desfazer. É preciso acrescentar o
+            acessório de novo se for engano.
+          </p>
+
+          {erroRemoverAcessorio && (
+            <p
+              role="alert"
+              className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3 text-sm"
+            >
+              {erroRemoverAcessorio}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <Botao
+              variante="contorno"
+              onClick={() => setRemovendoAcessorio(null)}
+              className="flex-1"
+            >
+              Cancelar
+            </Botao>
+            <Botao
+              variante="destrutiva"
+              carregando={removerAcessorio.isPending}
+              onClick={async () => {
+                if (!removendoAcessorio) return
+
+                setErroRemoverAcessorio(null)
+
+                try {
+                  await removerAcessorio.mutateAsync(removendoAcessorio.id)
+                  setRemovendoAcessorio(null)
+                } catch (e) {
+                  setErroRemoverAcessorio(
+                    e instanceof Error
+                      ? e.message
+                      : 'Não foi possível remover.',
+                  )
+                }
+              }}
+              className="flex-1"
+            >
+              <Trash2 aria-hidden="true" className="size-4" />
+              Remover
+            </Botao>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        aberto={itemAcessorioEditando !== null}
+        aoFechar={fecharEdicaoAcessorio}
+        titulo="Editar acessório"
+      >
+        <form
+          onSubmit={aoEnviarAcessorio}
+          className="flex flex-col gap-4"
+          noValidate
+        >
+          <p className="text-sm font-medium">
+            {itemAcessorioEditando &&
+              nomeDoAcessorio(itemAcessorioEditando.modelo_acessorio_id)}
+          </p>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-sm font-medium tracking-tight whitespace-nowrap">
+              Quantidade por unidade
+            </span>
+            <CampoQuantidade
+              valor={Number(formAcessorio.quantidade) || 1}
+              aoMudar={(nova) =>
+                setFormAcessorio({ ...formAcessorio, quantidade: String(nova) })
+              }
+              rotulo="Quantidade por unidade"
+            />
+          </div>
+
+          <CampoTexto
+            rotulo="Observação (opcional)"
+            value={formAcessorio.observacao}
+            onChange={(e) =>
+              setFormAcessorio({ ...formAcessorio, observacao: e.target.value })
+            }
+          />
+
+          {erroAcessorio && (
+            <p
+              role="alert"
+              className="bg-erro-50 text-erro-700 rounded-xl px-4 py-3"
+            >
+              {erroAcessorio}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <Botao
+              type="button"
+              variante="contorno"
+              onClick={fecharEdicaoAcessorio}
+              className="flex-1"
+            >
+              Cancelar
+            </Botao>
+            <Botao
+              type="submit"
+              carregando={editarItemAcessorio.isPending}
+              className="flex-1"
+            >
+              Salvar
+            </Botao>
+          </div>
+        </form>
+      </Modal>
+
       <Modal aberto={aberto} aoFechar={fecharCorte} titulo="Alterar corte">
         <form onSubmit={aoEnviar} className="flex flex-col gap-4" noValidate>
           {/* Todo item já chega com um perfil — o normal aqui é CONFERIR,
@@ -1845,7 +2183,7 @@ function Imagens({
             type="button"
             onClick={() => foto && aoAmpliar(foto)}
             aria-label={`Ampliar a foto de ${nome}`}
-            className="bg-superficie-2 block h-56 w-full overflow-hidden rounded-xl"
+            className="bg-superficie-2 border-borda block h-56 w-full overflow-hidden rounded-xl border"
           >
             <img
               src={foto}
@@ -1865,7 +2203,7 @@ function Imagens({
             type="button"
             onClick={() => desenho && aoAmpliar(desenho)}
             aria-label={`Ampliar o desenho técnico de ${nome}`}
-            className="bg-superficie-2 block h-56 w-full overflow-hidden rounded-xl"
+            className="bg-superficie-2 border-borda block h-56 w-full overflow-hidden rounded-xl border"
           >
             <img
               src={desenho}

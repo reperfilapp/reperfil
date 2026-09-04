@@ -100,3 +100,4 @@ antes, mesmo que a sintaxe já tenha sido validada com `npm run banco:validar`
 - [x] 20260829100000_cortes_por_peca_na_mesma_linha.sql
 - [x] 20260829200000_grupos_de_corte.sql
 - [x] 20260829300000_textos_institucionais.sql
+- [x] 20260904100000_acessorios_na_lista_tecnica.sql

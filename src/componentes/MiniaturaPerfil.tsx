@@ -12,6 +12,15 @@ interface PropsMiniatura {
    */
   alt?: string
   className?: string
+  /**
+   * O recorte de acessório importado do catálogo do fabricante é a página
+   * inteira (título, foto do produto E a tabela de códigos por cor, ver
+   * `scripts/extrair-catalogo-acessorios.py`) — cabendo inteiro na
+   * miniatura, o traço fica pequeno demais para reconhecer a peça. Com
+   * isto ligado, mostra só o canto superior esquerdo (onde a foto real
+   * do produto fica) em vez da página inteira encolhida.
+   */
+  recorte?: 'pagina-inteira' | 'canto-superior-esquerdo'
 }
 
 /**
@@ -29,6 +38,7 @@ export function MiniaturaPerfil({
   codigo,
   alt,
   className,
+  recorte = 'pagina-inteira',
 }: PropsMiniatura) {
   return (
     <div
@@ -42,7 +52,17 @@ export function MiniaturaPerfil({
           src={link}
           alt={alt ?? `Desenho técnico do perfil ${codigo}`}
           loading="lazy"
-          className="size-full object-contain p-0.5"
+          className={
+            recorte === 'canto-superior-esquerdo'
+              ? // A imagem é bem mais larga que alta (a tabela de códigos
+                // fica ao lado da foto, não embaixo) — só "cobrir" recorta a
+                // largura e mantém a altura inteira, deixando o desenho
+                // técnico de baixo à mostra. O `scale-[1.7]` amplia de
+                // verdade, ainda ancorado no canto superior esquerdo; o
+                // `overflow-hidden` do quadro (acima) corta o excesso.
+                'size-full origin-top-left scale-[1.7] object-cover object-left-top'
+              : 'size-full object-contain p-0.5'
+          }
         />
       ) : (
         <Ruler

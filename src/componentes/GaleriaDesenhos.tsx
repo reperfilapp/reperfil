@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Trash2, ZoomIn, X, TriangleAlert } from 'lucide-react'
+import { Trash2, ZoomIn, TriangleAlert } from 'lucide-react'
 import {
   useDesenhosTecnicos,
   useAdicionarDesenho,
@@ -14,6 +14,7 @@ import { enviarDesenhoTecnico, enviarFotoPerfil } from '@/lib/armazenamento'
 import { CampoFoto } from './ui/CampoFoto'
 import { Botao } from './ui/Botao'
 import { Modal } from './ui/Modal'
+import { VisualizadorImagem } from './ui/VisualizadorImagem'
 import { cn } from '@/lib/utilitarios'
 
 /** Textos e comportamento de cada tipo de imagem. */
@@ -63,7 +64,7 @@ export function GaleriaDesenhos({
   const remover = useRemoverDesenho()
 
   const [legenda, setLegenda] = useState('')
-  const [ampliado, setAmpliado] = useState<string | null>(null)
+  const [ampliado, setAmpliado] = useState<DesenhoTecnico | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   // Remoção aqui é IMEDIATA — não existe um "salvar" depois que junta as
   // mudanças da tela. Sem confirmação, um toque errado no lixo apagava o
@@ -128,7 +129,7 @@ export function GaleriaDesenhos({
                 {desenho.link ? (
                   <button
                     type="button"
-                    onClick={() => setAmpliado(desenho.link)}
+                    onClick={() => setAmpliado(desenho)}
                     className="relative block w-full"
                     aria-label={`Ampliar ${desenho.legenda ?? 'desenho'}`}
                   >
@@ -214,28 +215,16 @@ export function GaleriaDesenhos({
           </p>
         )}
 
-        {/* Visualizador ampliado */}
-        {ampliado && (
-          <div
-            role="dialog"
-            aria-label="Desenho ampliado"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
-            onClick={() => setAmpliado(null)}
-          >
-            <img
-              src={ampliado}
-              alt="Desenho técnico ampliado"
-              className="max-h-full max-w-full object-contain"
-            />
-            <Botao
-              variante="secundaria"
-              onClick={() => setAmpliado(null)}
-              aria-label="Fechar"
-              className="absolute top-4 right-4"
-            >
-              <X aria-hidden="true" className="size-5" />
-            </Botao>
-          </div>
+        {/* Mesmo visualizador da lista — zoom de verdade, copiar e
+            exportar: cota em milímetro dentro de uma miniatura é ilegível,
+            e é justamente a cota que a pessoa veio consultar. */}
+        {ampliado?.link && (
+          <VisualizadorImagem
+            src={ampliado.link}
+            alt={ampliado.legenda ?? 'Desenho técnico ampliado'}
+            {...(ampliado.legenda ? { titulo: ampliado.legenda } : {})}
+            aoFechar={() => setAmpliado(null)}
+          />
         )}
       </div>
 

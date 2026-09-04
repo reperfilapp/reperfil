@@ -43,6 +43,7 @@ import ColaboradorDetalhe from '@/paginas/detalhes/ColaboradorDetalhe'
 import Produtos from '@/paginas/cadastros/Produtos'
 import ProdutoDetalhe from '@/paginas/detalhes/ProdutoDetalhe'
 import AcrescentarMaterial from '@/paginas/AcrescentarMaterial'
+import AcrescentarAcessorio from '@/paginas/AcrescentarAcessorio'
 import OQueProduzir from '@/paginas/OQueProduzir'
 import LotesRepetidos from '@/paginas/LotesRepetidos'
 import DadosEmpresa from '@/paginas/DadosEmpresa'
@@ -115,6 +116,10 @@ export default function App() {
                 <Route
                   path="/produtos/:id/acrescentar-material"
                   element={<AcrescentarMaterial />}
+                />
+                <Route
+                  path="/produtos/:id/acrescentar-acessorio"
+                  element={<AcrescentarAcessorio />}
                 />
                 <Route path="/o-que-produzir" element={<OQueProduzir />} />
                 <Route path="/colaboradores" element={<Colaboradores />} />

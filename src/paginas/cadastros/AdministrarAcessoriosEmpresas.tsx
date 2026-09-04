@@ -187,6 +187,7 @@ export default function AdministrarAcessoriosEmpresas() {
                 codigo={a.codigo}
                 alt={`Desenho técnico de ${a.descricao}`}
                 className="shrink-0"
+                recorte="canto-superior-esquerdo"
               />
               <span className="min-w-0 flex-1 font-medium">{a.descricao}</span>
               <button

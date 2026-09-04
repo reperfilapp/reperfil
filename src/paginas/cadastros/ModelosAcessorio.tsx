@@ -7,10 +7,12 @@ import {
   Archive,
   ArchiveRestore,
   Trash2,
-  Puzzle,
   Building2,
   DownloadCloud,
+  Puzzle,
+  ChevronRight,
 } from 'lucide-react'
+import { useNiveisNaUrl } from '@/componentes/useNiveisNaUrl'
 import {
   useModelosAcessorio,
   useCriarModeloAcessorio,
@@ -19,14 +21,18 @@ import {
   useExcluirModeloAcessorio,
   useSincronizarAcessoriosCentral,
   agruparPorCategoria,
+  SEM_CATEGORIA,
   VAZIO_ACESSORIO,
   type DadosModeloAcessorio,
 } from '@/dados/modelosAcessorio'
 import { useLotesAcessorio } from '@/dados/acessorios'
+import { useCapasDesenhos } from '@/dados/desenhosTecnicos'
 import { useOrganizacao } from '@/dados/organizacao'
 import { useAutenticacao } from '@/autenticacao/useAutenticacao'
 import { podeGerenciarCadastros } from '@/autenticacao/contexto'
+import { MiniaturaPerfil } from '@/componentes/MiniaturaPerfil'
 import { Botao } from '@/componentes/ui/Botao'
+import { VisualizadorImagem } from '@/componentes/ui/VisualizadorImagem'
 import { BotaoVoltar } from '@/componentes/ui/BotaoVoltar'
 import { CampoTexto } from '@/componentes/ui/CampoTexto'
 import { CampoSelecao } from '@/componentes/ui/CampoSelecao'
@@ -37,6 +43,9 @@ import { disparar } from '@/lib/avisoErro'
 
 const UNIDADES = ['peça', 'metro', 'kg', 'conjunto', 'par', 'caixa']
 
+/** Valor de `categoriaAberta` que significa "ignorar o agrupamento". */
+const TODAS = '__todas__'
+
 export default function ModelosAcessorio() {
   const navegar = useNavigate()
   const { perfil } = useAutenticacao()
@@ -45,6 +54,7 @@ export default function ModelosAcessorio() {
   const [mostrarInativos, setMostrarInativos] = useState(false)
   const { data: modelos, isPending } = useModelosAcessorio(mostrarInativos)
   const { data: lotes } = useLotesAcessorio()
+  const { data: capas } = useCapasDesenhos('imagem', 'acessorio')
   const criar = useCriarModeloAcessorio()
   const editar = useEditarModeloAcessorio()
   const desativar = useDesativarModeloAcessorio()
@@ -94,8 +104,10 @@ export default function ModelosAcessorio() {
   const [erro, setErro] = useState<string | null>(null)
   const [apagando, setApagando] = useState<ModeloAcessorio | null>(null)
   const [erroApagar, setErroApagar] = useState<string | null>(null)
+  const [ampliado, setAmpliado] = useState<ModeloAcessorio | null>(null)
 
   const termo = busca.trim().toLowerCase()
+  const buscando = termo !== ''
   const encontrados = (modelos ?? []).filter(
     (m) =>
       termo === '' ||
@@ -104,10 +116,32 @@ export default function ModelosAcessorio() {
       (m.categoria?.toLowerCase().includes(termo) ?? false),
   )
 
+  /*
+   * Categoria escolhida para ver, `null` na lista de categorias e 'todas'
+   * quando a pessoa pediu tudo de uma vez — mesmo padrão de
+   * `ModelosPerfil.tsx` (linha → perfil). Com 700+ acessórios, abrir direto
+   * numa lista corrida obrigaria a rolar por categorias que não interessam.
+   * A busca ignora este nível de propósito: quem digita um código quer
+   * achá-lo esteja em que categoria estiver.
+   */
+  const { nivel, abrir, voltarNivel } = useNiveisNaUrl(['categoria'])
+  const categoriaAberta = nivel('categoria')
+  const mostrandoCategorias = !buscando && categoriaAberta === null
+
+  const visiveis = buscando
+    ? encontrados
+    : categoriaAberta === TODAS
+      ? encontrados
+      : categoriaAberta === null
+        ? []
+        : encontrados.filter(
+            (m) => (m.categoria?.trim() || SEM_CATEGORIA) === categoriaAberta,
+          )
+
   const emUso = new Set((lotes ?? []).map((l) => l.modelo_acessorio_id))
   const podeApagar = (modelo: ModeloAcessorio) => !emUso.has(modelo.id)
 
-  const grupos = agruparPorCategoria(encontrados)
+  const grupos = agruparPorCategoria(modelos ?? [])
 
   function abrirNovo() {
     setEditando(null)
@@ -223,10 +257,36 @@ export default function ModelosAcessorio() {
           </div>
 
           {isPending && <p className="text-texto-suave">Carregando…</p>}
+
+          {/* Onde se está e como voltar — no cabeçalho, não some ao rolar. */}
+          {!isPending && !buscando && categoriaAberta !== null && (
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <p className="min-w-0 truncate font-semibold">
+                {categoriaAberta === TODAS ? 'Todos os acessórios' : categoriaAberta}
+                <span className="text-texto-suave ml-2 font-normal">
+                  ({visiveis.length})
+                </span>
+              </p>
+              <BotaoVoltar
+                onClick={voltarNivel}
+                rotulo="Categorias"
+                className="shrink-0"
+              />
+            </div>
+          )}
         </>
       }
       rodape={
-        <div className="flex justify-center">
+        <div className="flex items-center justify-center gap-4">
+          {!isPending && mostrandoCategorias && grupos.length > 0 && (
+            <button
+              type="button"
+              onClick={() => abrir({ categoria: TODAS })}
+              className="text-acao-600 text-sm font-medium hover:underline"
+            >
+              Ver todos os acessórios
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setMostrarInativos((v) => !v)}
@@ -237,32 +297,75 @@ export default function ModelosAcessorio() {
         </div>
       }
     >
-      {!isPending && encontrados.length === 0 && (
+      {/* Lista de categorias: a porta de entrada do catálogo. */}
+      {!isPending && mostrandoCategorias && grupos.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {grupos.map(({ categoria, modelos: daCategoria }) => (
+            <li key={categoria}>
+              <button
+                type="button"
+                onClick={() => abrir({ categoria })}
+                className="bg-celula hover:bg-celula border-borda flex min-h-16 w-full items-center gap-3 rounded-xl border-2 p-4 text-left shadow-sm"
+              >
+                <Puzzle aria-hidden="true" className="text-acao-600 size-5 shrink-0" />
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {categoria}
+                </span>
+                <span className="text-texto-suave shrink-0 text-sm">
+                  {daCategoria.length}
+                </span>
+                <ChevronRight
+                  aria-hidden="true"
+                  className="text-texto-suave size-4 shrink-0"
+                />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {!isPending && !mostrandoCategorias && visiveis.length === 0 && (
         <p className="bg-superficie-2 text-texto-suave rounded-xl p-6 text-center">
           {busca
             ? 'Nenhum acessório encontrado com esse termo.'
-            : 'Nenhum acessório cadastrado ainda.'}
+            : 'Nenhum acessório encontrado nesta categoria.'}
         </p>
       )}
 
-      <div className="flex flex-col gap-6">
-        {grupos.map(({ categoria, modelos: daCategoria }) => (
-          <section key={categoria}>
-            <h2 className="text-texto-suave mb-2 text-xs font-semibold tracking-wide uppercase">
-              {categoria} ({daCategoria.length})
-            </h2>
-            <ul className="flex flex-col gap-2">
-              {daCategoria.map((modelo) => (
+      {!isPending && mostrandoCategorias && grupos.length === 0 && (
+        <p className="bg-superficie-2 text-texto-suave rounded-xl p-6 text-center">
+          Nenhum acessório cadastrado ainda.
+        </p>
+      )}
+
+      {!mostrandoCategorias && (
+        <ul className="flex flex-col gap-2">
+          {visiveis.map((modelo) => (
                 <li
                   key={modelo.id}
                   className="bg-celula border-borda flex items-center gap-3 rounded-xl border-2 p-3 shadow-sm"
                 >
-                  <div className="border-borda bg-superficie-2 flex size-12 shrink-0 items-center justify-center rounded-lg border">
-                    <Puzzle
-                      aria-hidden="true"
-                      className="text-texto-suave size-6"
+                  {capas?.get(modelo.id) ? (
+                    <button
+                      type="button"
+                      onClick={() => setAmpliado(modelo)}
+                      aria-label={`Ampliar desenho técnico de ${modelo.descricao}`}
+                    >
+                      <MiniaturaPerfil
+                        link={capas.get(modelo.id)}
+                        codigo={modelo.codigo}
+                        alt={`Desenho técnico de ${modelo.descricao}`}
+                        className="size-12"
+                        recorte="canto-superior-esquerdo"
+                      />
+                    </button>
+                  ) : (
+                    <MiniaturaPerfil
+                      link={null}
+                      codigo={modelo.codigo}
+                      className="size-12"
                     />
-                  </div>
+                  )}
 
                   <div className="flex min-w-0 flex-1 flex-col justify-center">
                     <Link
@@ -286,7 +389,7 @@ export default function ModelosAcessorio() {
                     <div className="mt-1 flex items-center justify-between gap-2">
                       <Link
                         to={`/acessorios/${modelo.id}`}
-                        className="text-acao-600 shrink-0 font-mono text-[15px] font-medium whitespace-nowrap"
+                        className="text-acao-600 min-w-0 flex-1 truncate font-mono text-[15px] font-medium"
                       >
                         {modelo.codigo}
                       </Link>
@@ -346,11 +449,9 @@ export default function ModelosAcessorio() {
                     </div>
                   </div>
                 </li>
-              ))}
-            </ul>
-          </section>
-        ))}
-      </div>
+          ))}
+        </ul>
+      )}
 
       <Modal
         aberto={aberto}
@@ -489,6 +590,15 @@ export default function ModelosAcessorio() {
           </div>
         </div>
       </Modal>
+
+      {ampliado && capas?.get(ampliado.id) && (
+        <VisualizadorImagem
+          src={capas.get(ampliado.id)!}
+          alt={`Desenho técnico de ${ampliado.descricao}`}
+          titulo={`${ampliado.descricao} · ${ampliado.codigo}`}
+          aoFechar={() => setAmpliado(null)}
+        />
+      )}
     </PaginaLista>
   )
 }

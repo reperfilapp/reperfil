@@ -5,7 +5,11 @@ import {
   obterLinksTemporarios,
   BALDE_IMAGENS_PRODUTO,
 } from '@/lib/armazenamento'
-import type { Produto, ItemListaTecnica } from '@/tipos/banco'
+import type {
+  Produto,
+  ItemListaTecnica,
+  ItemListaTecnicaAcessorio,
+} from '@/tipos/banco'
 import type {
   GrupoCorte,
   SentidoMontagem,
@@ -266,6 +270,7 @@ export function useExcluirProduto() {
     onSuccess: () => {
       void cliente.invalidateQueries({ queryKey: chaves.produtos })
       void cliente.invalidateQueries({ queryKey: chaves.listaTecnica })
+      void cliente.invalidateQueries({ queryKey: chaves.listaTecnicaAcessorio })
     },
   })
 }
@@ -391,6 +396,110 @@ export function useReordenarLista() {
     },
     onSuccess: () => {
       void cliente.invalidateQueries({ queryKey: chaves.listaTecnica })
+    },
+  })
+}
+
+/* ── Lista técnica de ACESSÓRIO ───────────────────────────────────────────
+ *
+ * Paralela ao bloco de perfil acima, mas sem `ordem`/reordenar: acessório
+ * não tem sequência de montagem como o corte de perfil tem — a lista é só
+ * lida em ordem de cadastro, sem nada que dependa de posição.
+ */
+
+async function buscarListaTecnicaAcessorio(
+  produtoId: string | null,
+): Promise<ItemListaTecnicaAcessorio[]> {
+  let consulta = supabase
+    .from('itens_lista_tecnica_acessorio')
+    .select('*')
+    .order('criado_em', { ascending: true })
+
+  if (produtoId !== null) consulta = consulta.eq('produto_id', produtoId)
+
+  const { data, error } = await consulta
+
+  if (error) {
+    // Antes da migração a tabela nem existe. A tela mostra a receita vazia,
+    // em vez de um erro de banco sobre relação inexistente.
+    if (error.code === '42P01') return []
+    throw new Error(error.message)
+  }
+
+  return data as ItemListaTecnicaAcessorio[]
+}
+
+/** A lista de acessórios de UM produto — mesmo contrato de `useListaTecnica`. */
+export function useListaTecnicaAcessorio(produtoId: string | null) {
+  return useQuery({
+    queryKey: [...chaves.listaTecnicaAcessorio, produtoId],
+    enabled: produtoId !== null,
+    queryFn: () => buscarListaTecnicaAcessorio(produtoId),
+  })
+}
+
+export interface DadosItemListaAcessorio {
+  produto_id: string
+  modelo_acessorio_id: string
+  quantidade: number
+  observacao: string | null
+}
+
+export function useAdicionarItemListaAcessorio() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (dados: DadosItemListaAcessorio) => {
+      const { error } = await supabase
+        .from('itens_lista_tecnica_acessorio')
+        .insert(dados)
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.listaTecnicaAcessorio })
+    },
+  })
+}
+
+export function useEditarItemListaAcessorio() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      dados,
+    }: {
+      id: string
+      dados: Omit<DadosItemListaAcessorio, 'produto_id'>
+    }) => {
+      const { error } = await supabase
+        .from('itens_lista_tecnica_acessorio')
+        .update(dados)
+        .eq('id', id)
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.listaTecnicaAcessorio })
+    },
+  })
+}
+
+export function useRemoverItemListaAcessorio() {
+  const cliente = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('itens_lista_tecnica_acessorio')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      void cliente.invalidateQueries({ queryKey: chaves.listaTecnicaAcessorio })
     },
   })
 }
@@ -559,6 +668,8 @@ export interface ResultadoSincronizarProdutos {
   /** Código repetido apontando para outro produto do central. Ficam de fora. */
   produtos_em_conflito: number
   itens_sem_perfil: number
+  /** Mesmo papel de `itens_sem_perfil`, agora para acessório da receita. */
+  itens_sem_acessorio: number
 }
 
 export function useSincronizarProdutos() {
@@ -581,12 +692,14 @@ export function useSincronizarProdutos() {
           produtos_vinculados: 0,
           produtos_em_conflito: 0,
           itens_sem_perfil: 0,
+          itens_sem_acessorio: 0,
         }
       )
     },
     onSuccess: () => {
       void cliente.invalidateQueries({ queryKey: chaves.produtos })
       void cliente.invalidateQueries({ queryKey: chaves.listaTecnica })
+      void cliente.invalidateQueries({ queryKey: chaves.listaTecnicaAcessorio })
     },
   })
 }

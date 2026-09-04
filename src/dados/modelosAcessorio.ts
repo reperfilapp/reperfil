@@ -373,7 +373,7 @@ export function useExcluirModeloAcessorio() {
       if (error) {
         if (error.code === '23503') {
           throw new Error(
-            'Este acessório está em uso no estoque e não pode ser apagado. Desative-o em vez disso.',
+            'Este acessório está em uso (no estoque ou na lista técnica de algum produto) e não pode ser apagado. Desative-o em vez disso.',
           )
         }
         throw new Error(error.message)

@@ -119,6 +119,12 @@ export default function Produtos() {
         )
       }
 
+      if (r.itens_sem_acessorio > 0) {
+        partes.push(
+          `${r.itens_sem_acessorio} ${r.itens_sem_acessorio === 1 ? 'acessório da receita ficou de fora' : 'acessórios da receita ficaram de fora'} por falta do acessório correspondente — importe o catálogo de acessórios e repita`,
+        )
+      }
+
       setResultadoImportar(partes.join(' · '))
     } catch (e) {
       setResultadoImportar(

@@ -80,6 +80,26 @@ cada uma, use a data e o hash do commit, não o número.
 
 ---
 
+## 1.7.4 — 04/09/2026
+
+**Acessórios na lista técnica dos produtos.**
+
+- A lista técnica de um produto agora tem duas seções: **Perfis** (como já
+  era) e **Acessórios** (novo) — dá para dizer que uma janela leva, por
+  exemplo, 4 dobradiças e 2 puxadores, com quantidade por unidade.
+- O resumo no cabeçalho mostra "X perfis · Y acessórios" em vez de um
+  número só de "componentes".
+- A folha impressa (PDF) do produto ganhou uma tabela de acessórios, logo
+  depois da lista de perfis.
+- A sincronização de produto pelo catálogo central agora também copia a
+  receita de acessório, do mesmo jeito que já copiava a de perfil.
+- Corrigidas 4 molduras que faltavam na ficha do produto (painel
+  "Produzir", foto/desenho, "Liberado para" e o bloco "Cadastro" — este
+  último aparece em todas as fichas de detalhe do sistema, não só produto).
+- A visualização de desenho técnico de acessório (`GaleriaDesenhos`) passou
+  a usar o mesmo visualizador com zoom, copiar e compartilhar que a lista
+  de acessórios já tinha.
+
 ## 1.7.2 — 01/09/2026
 
 **Catálogo de acessórios importado do fabricante, sincronização em lote
