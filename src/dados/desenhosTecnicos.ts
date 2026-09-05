@@ -217,19 +217,45 @@ export function useCapasDesenhos(
       // `useModelosPerfil`: o catálogo central ficou visível por RLS para
       // quem sincroniza, e sem isto esta consulta trazia também as imagens
       // de lá, misturadas com as da própria organização.
-      const { data, error } = await supabase
-        .from('arquivos_vetoriais')
-        .select(`${coluna}, arquivo_url, ordem`)
-        .eq('organizacao_id', organizacaoId as string)
-        .eq('tipo', tipo)
-        .order('ordem')
+      //
+      // `.not(coluna, 'is', null)` filtra do lado do banco a entidade que
+      // NÃO é esta — `arquivos_vetoriais` guarda perfil e acessório na
+      // mesma tabela, e sem este filtro a consulta de perfil também
+      // carregava (e contava para o limite de linhas) toda imagem de
+      // acessório, e vice-versa.
+      //
+      // A PAGINAÇÃO existe porque o PostgREST devolve no máximo 1000 linhas
+      // por página, sem avisar que cortou o resto. Uma organização com mais
+      // de 1000 imagens perdia, em silêncio, a capa de quem ficasse fora da
+      // primeira página — foi o que aconteceu depois que o catálogo de
+      // acessórios passou de mil imagens: perfis sem nenhuma relação com
+      // acessório ficaram sem miniatura, porque a paginação implícita do
+      // servidor cortava a lista antes de chegar neles.
+      const PAGINA = 1000
+      const registros: { arquivo_url: string; [key: string]: string | null }[] =
+        []
 
-      if (error) throw new Error(error.message)
+      for (let desde = 0; ; desde += PAGINA) {
+        const { data, error } = await supabase
+          .from('arquivos_vetoriais')
+          .select(`${coluna}, arquivo_url, ordem`)
+          .eq('organizacao_id', organizacaoId as string)
+          .eq('tipo', tipo)
+          .not(coluna, 'is', null)
+          .order('ordem')
+          .range(desde, desde + PAGINA - 1)
 
-      const registros = data as unknown as {
-        arquivo_url: string
-        [key: string]: string | null
-      }[]
+        if (error) throw new Error(error.message)
+
+        const pagina = data as unknown as {
+          arquivo_url: string
+          [key: string]: string | null
+        }[]
+
+        registros.push(...pagina)
+
+        if (pagina.length < PAGINA) break
+      }
 
       /*
        * Todos os arquivos de cada item, na ordem — não só o primeiro.

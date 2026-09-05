@@ -80,9 +80,9 @@ cada uma, use a data e o hash do commit, não o número.
 
 ---
 
-## 1.7.4 — 04/09/2026
+## 1.7.5 — 04/09/2026
 
-**Acessórios na lista técnica dos produtos.**
+**Acessórios na lista técnica dos produtos, e correção de miniaturas de perfil sumidas.**
 
 - A lista técnica de um produto agora tem duas seções: **Perfis** (como já
   era) e **Acessórios** (novo) — dá para dizer que uma janela leva, por
@@ -95,10 +95,17 @@ cada uma, use a data e o hash do commit, não o número.
   receita de acessório, do mesmo jeito que já copiava a de perfil.
 - Corrigidas 4 molduras que faltavam na ficha do produto (painel
   "Produzir", foto/desenho, "Liberado para" e o bloco "Cadastro" — este
-  último aparece em todas as fichas de detalhe do sistema, não só produto).
+  último aparece em todas as fichas de detalhe do sistema, não só produto)
+  — e corrigido o texto do card "Liberado para" no modo escuro, ilegível
+  sobre o fundo claro que não escurece.
 - A visualização de desenho técnico de acessório (`GaleriaDesenhos`) passou
   a usar o mesmo visualizador com zoom, copiar e compartilhar que a lista
   de acessórios já tinha.
+- **Corrigido bug real:** miniatura de desenho técnico sumindo para vários
+  perfis, sempre os mesmos, em qualquer aparelho. Causa: o catálogo de
+  acessórios passou de mil imagens cadastradas, e o Supabase limita a 1000
+  linhas por consulta sem avisar — a busca de miniaturas cortava o restante
+  em silêncio. Corrigido com paginação nessa consulta.
 
 ## 1.7.2 — 01/09/2026
 
